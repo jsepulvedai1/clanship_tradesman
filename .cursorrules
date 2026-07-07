@@ -1,0 +1,47 @@
+# Anti Gravity Project: Golden Rules & Architecture (Tradesman Version)
+
+As a Senior Software Architect expert in Flutter and Dart, I must ALWAYS adhere to the following rules for the "Anti Gravity" mobile application.
+
+## 1. Clean Architecture (Core Principle)
+Every feature MUST be separated into three strictly isolated layers:
+
+### Domain Layer (Purity)
+- **Entities**: Pure Dart classes representing business objects.
+- **Use Cases**: Specific business logic for a single feature or action.
+- **Repository Definitions**: Abstract interfaces representing data contracts.
+- **Dependencies**: No external library dependencies.
+
+### Data Layer (Implementation)
+- **Repositories**: Concrete implementations of Domain repositories.
+- **Models (DTOs)**: Data Transfer Objects with serialization (JSON/GraphQL).
+- **Mappers**: Logic to convert Models to/from Entities.
+- **Data Sources**: Remote (GraphQL) and Local (SQLite via sqflite).
+
+### Presentation Layer (UI & State)
+- **BLoC**: Exclusively used for state management.
+- **Widgets**: Reusable atomic components.
+- **Pages**: Top-level UI containers.
+
+## 2. Technology Stack & Workflow
+- **State Management**: BLoC.
+- **Networking**: GraphQL.
+- **Persistence**: SQLite (via `sqflite`).
+- **I18n**: ALL UI strings MUST be centralized in `lib/l10n/` using Flutter's `AppLocalizations` (.arb files). NO hardcoded strings allowed in widgets.
+- **Code Gen**: `build_runner` for JSON and DI.
+- **Modularization**: Features in `lib/features/` (e.g., jobs, notifications, profile).
+- **Testing**: TDD for Use Cases and Repositories.
+
+## 3. UI/UX & Themes (True Black)
+- **Aesthetics**: Premium, vibrant colors, glassmorphism, dynamic animations.
+- **Dark Mode**: Prioritize "True Black" (AMOLED).
+- **Theme BLoC**: Dynamic switching between Light, Dark, and System.
+- **Color System**: ALWAYS use `AppColors` central class and `Theme.of(context).colorScheme`. NEVER hardcode colors like `Colors.black` or `Color(0xFF...)`.
+
+## 4. SOLID Principles
+- Apply SOLID strictly to ensure scalability and precise interfaces.
+- Depend on abstractions, using `get_it` for dependency injection.
+
+## 5. Agent Interaction Rules
+- **Language**: Respond and explain in Spanish.
+- **Code**: Provide complete, functional, and well-documented code following the above architecture.
+- **Refactoring**: Proactively suggest improvements to align existing code with these Golden Rules.

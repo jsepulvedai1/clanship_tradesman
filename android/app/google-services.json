@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "364034107308",
+    "project_id": "clan-be918",
+    "storage_bucket": "clan-be918.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:364034107308:android:82210434865a61402b3c09",
+        "android_client_info": {
+          "package_name": "com.clanship.clanship_mobile_tradesman"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmmBWNlohG0Lr610FXjdXQ2cRWzRXwHJ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:364034107308:android:c271cf58f27c49752b3c09",
+        "android_client_info": {
+          "package_name": "com.clanship.cliente"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmmBWNlohG0Lr610FXjdXQ2cRWzRXwHJ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
