@@ -31,7 +31,9 @@ class ServiceTagsSection extends StatelessWidget {
           color: isDark ? AppColors.cardDark : AppColors.pureWhite,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isDark ? AppColors.pureWhite.withAlpha(20) : AppColors.trueBlack.withAlpha(20),
+            color: isDark
+                ? AppColors.pureWhite.withAlpha(20)
+                : AppColors.trueBlack.withAlpha(20),
             width: 0.5,
           ),
           boxShadow: [
@@ -41,81 +43,6 @@ class ServiceTagsSection extends StatelessWidget {
                 blurRadius: 15,
                 offset: const Offset(0, 8),
               ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.profileServiceTags,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: tags
-                  .map((tag) => _ServiceTag(
-                        label: tag,
-                        isPrimary: tag == primaryTag,
-                        onPrimaryTap: onPrimaryTap != null ? () => onPrimaryTap!(tag) : null,
-                        onDelete: onDeleteTap != null ? () => onDeleteTap!(tag) : null,
-                      ))
-                  .toList(),
-            ),
-            const SizedBox(height: 24),
-            // Sección de agregar más
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withAlpha(5) : AppColors.lightGrey.withAlpha(100),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                children: [
-                   Text(
-                    l10n.profileAddServiceTag,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton(
-                    onPressed: onSearchTap,
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                        color: isDark ? Colors.white.withAlpha(100) : Colors.black.withAlpha(100),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                    ),
-                    child: Text(
-                      l10n.profileSearchTags,
-                      style: TextStyle(
-                        color: isDark ? Colors.white.withAlpha(150) : Colors.black.withAlpha(150),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    l10n.profileMaxTagsHint,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: (isDark ? Colors.white : Colors.black).withAlpha(100),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -145,7 +72,7 @@ class _ServiceTag extends StatelessWidget {
         decoration: BoxDecoration(
           color: isPrimary ? AppColors.primaryAzure : AppColors.primaryBlue,
           borderRadius: BorderRadius.circular(12),
-          border: isPrimary 
+          border: isPrimary
               ? Border.all(color: AppColors.starGold, width: 1.5)
               : null,
         ),
@@ -170,11 +97,7 @@ class _ServiceTag extends StatelessWidget {
               const SizedBox(width: 8),
               GestureDetector(
                 onTap: onDelete,
-                child: const Icon(
-                  Icons.close,
-                  color: Colors.white70,
-                  size: 14,
-                ),
+                child: const Icon(Icons.close, color: Colors.white70, size: 14),
               ),
             ],
           ],

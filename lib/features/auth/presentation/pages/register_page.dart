@@ -13,6 +13,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:clanship_mobile_tradesman/core/widgets/address_picker_page.dart';
+import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
+import 'package:clanship_mobile_tradesman/features/auth/domain/repositories/auth_repository.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -47,6 +49,41 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // Step 2 Fields (Foto de Perfil)
   String? _avatarPath;
+
+  // Tags
+  List<Map<String, dynamic>> _availableTags = [];
+  List<String> _selectedTagIds = [];
+  bool _isLoadingTags = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTags();
+  }
+
+  Future<void> _loadTags() async {
+    setState(() {
+      _isLoadingTags = true;
+    });
+    final result = await di.sl<AuthRepository>().getAvailableTags();
+    result.fold(
+      (failure) {
+        // ignore error
+      },
+      (tags) {
+        if (mounted) {
+          setState(() {
+            _availableTags = tags;
+          });
+        }
+      },
+    );
+    if (mounted) {
+      setState(() {
+        _isLoadingTags = false;
+      });
+    }
+  }
 
   // Step 3 Fields (Documentos)
   String? _cedulaFrontPath;
@@ -168,12 +205,108 @@ class _RegisterPageState extends State<RegisterPage> {
     return true;
   }
 
+  void _showTagsDialog(BuildContext context) {
+    if (_availableTags.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cargando etiquetas de servicio...')),
+      );
+      return;
+    }
+
+    List<String> tempSelectedTagIds = List.from(_selectedTagIds);
+    List<String> tempSelectedTagNames = _availableTags
+        .where((t) => tempSelectedTagIds.contains(t['id'].toString()))
+        .map((t) => t['name'] as String)
+        .toList();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: AppColors.cardDark,
+              title: const Text(
+                'Selecciona hasta 6 etiquetas',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _availableTags.map((tag) {
+                      final id = tag['id'].toString();
+                      final name = tag['name'] as String;
+                      final isSelected = tempSelectedTagIds.contains(id);
+
+                      return FilterChip(
+                        label: Text(name),
+                        selected: isSelected,
+                        backgroundColor: AppColors.trueBlack,
+                        selectedColor: AppColors.primaryBlue,
+                        checkmarkColor: Colors.white,
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : Colors.white,
+                        ),
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              if (tempSelectedTagIds.length < 6) {
+                                tempSelectedTagIds.add(id);
+                                tempSelectedTagNames.add(name);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Máximo de 6 etiquetas de servicios.'),
+                                  ),
+                                );
+                              }
+                            } else {
+                              tempSelectedTagIds.remove(id);
+                              tempSelectedTagNames.remove(name);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    this.setState(() {
+                      _selectedTagIds = tempSelectedTagIds;
+                    });
+                    Navigator.pop(dialogContext);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryBlue,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Guardar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   // Step 1 Validation
   bool _isStep1FormValid() {
     final phone = _phoneController.text.trim();
     return _addressController.text.trim().isNotEmpty &&
         phone.length == 8 &&
         RegExp(r'^[0-9]{8}$').hasMatch(phone) &&
+        _selectedTagIds.isNotEmpty &&
         _acceptedTerms;
   }
 
@@ -564,6 +697,52 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
           const SizedBox(height: 16),
           _buildPhoneField(),
+          const SizedBox(height: 32),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.black12),
+            ),
+            child: Column(
+              children: [
+                const Text(
+                  'Etiquetas de Servicio',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0D2B45),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _selectedTagIds.isEmpty 
+                      ? 'No has seleccionado ninguna etiqueta. Selecciona al menos una para continuar.' 
+                      : '${_selectedTagIds.length} etiquetas seleccionadas.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: _selectedTagIds.isEmpty ? Colors.red : Colors.green,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (_isLoadingTags)
+                  const CircularProgressIndicator()
+                else
+                  OutlinedButton.icon(
+                    onPressed: () => _showTagsDialog(context),
+                    icon: const Icon(Icons.sell_outlined),
+                    label: const Text('Seleccionar Etiquetas'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF0D2B45),
+                      side: const BorderSide(color: Color(0xFF0D2B45)),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           const SizedBox(height: 32),
           GestureDetector(
             onTap: _showTermsDialog,
@@ -1008,6 +1187,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         certificates: _certificates,
                         latitude: _latitude,
                         longitude: _longitude,
+                        tagIds: _selectedTagIds,
                       ),
                     );
                   },

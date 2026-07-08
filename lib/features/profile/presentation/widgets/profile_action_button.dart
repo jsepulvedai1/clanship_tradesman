@@ -30,7 +30,7 @@ class ProfileActionButton extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isDark ? Colors.white10 : Colors.black12,
+                color: isDark ? AppColors.primaryBlue : Colors.black12,
               ),
               boxShadow: [
                 if (!isDark)
@@ -47,8 +47,8 @@ class ProfileActionButton extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: isSecondary 
-                      ? (isDark ? Colors.white70 : Colors.black54)
+                  color: isSecondary
+                      ? (isDark ? AppColors.primaryBlue : Colors.black54)
                       : AppColors.primaryBlue,
                 ),
               ),

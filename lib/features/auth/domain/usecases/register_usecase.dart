@@ -24,6 +24,7 @@ class RegisterUseCase implements UseCase<User, RegisterParams> {
       certificates: params.certificates,
       latitude: params.latitude,
       longitude: params.longitude,
+      tagIds: params.tagIds,
     );
   }
 }
@@ -41,6 +42,7 @@ class RegisterParams {
   final List<Map<String, String>>? certificates;
   final double? latitude;
   final double? longitude;
+  final List<String>? tagIds;
 
   RegisterParams({
     required this.email,
@@ -55,5 +57,6 @@ class RegisterParams {
     this.certificates,
     this.latitude,
     this.longitude,
+    this.tagIds,
   });
 }

@@ -34,6 +34,7 @@ class AuthRepositoryImpl implements AuthRepository {
     List<Map<String, String>>? certificates,
     double? latitude,
     double? longitude,
+    List<String>? tagIds,
   }) async {
     try {
       final userModel = await remoteDataSource.register(
@@ -49,8 +50,19 @@ class AuthRepositoryImpl implements AuthRepository {
         certificates: certificates,
         latitude: latitude,
         longitude: longitude,
+        tagIds: tagIds,
       );
       return Right(UserMapper.toEntity(userModel));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Map<String, dynamic>>>> getAvailableTags() async {
+    try {
+      final tags = await remoteDataSource.getAvailableTags();
+      return Right(tags);
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }

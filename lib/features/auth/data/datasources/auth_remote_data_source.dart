@@ -20,10 +20,13 @@ abstract class AuthRemoteDataSource {
     List<Map<String, String>>? certificates,
     double? latitude,
     double? longitude,
+    List<String>? tagIds,
   });
   Future<UserModel> getCurrentUser();
   Future<void> logout();
   Future<void> requestPasswordReset(String email);
+  Future<void> sendPasswordResetEmail(String email);
+  Future<List<Map<String, dynamic>>> getAvailableTags();
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -127,6 +130,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     List<Map<String, String>>? certificates,
     double? latitude,
     double? longitude,
+    List<String>? tagIds,
   }) async {
     // Clear any existing token to prevent AuthLink from sending an invalid/expired token
     // which causes 'Error decoding signature' on the server.
@@ -312,6 +316,31 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         }
       }
     }
+      
+    // Update tags if provided
+    if (tagIds != null && tagIds.isNotEmpty) {
+      const String updateTagsMutation = r'''
+        mutation UpdateProfessionalProfile($tagIds: [ID!]) {
+          updateProfessionalProfile(tagIds: $tagIds) {
+            success
+          }
+        }
+      ''';
+        
+      final MutationOptions updateTagsOptions = MutationOptions(
+        document: gql(updateTagsMutation),
+        variables: {
+          'tagIds': tagIds,
+        },
+        fetchPolicy: FetchPolicy.networkOnly,
+      );
+        
+      try {
+        await client.mutate(updateTagsOptions);
+      } catch (e) {
+        print('Error updating professional tags: $e');
+      }
+    }
 
     return finalUserModel;
   }
@@ -395,4 +424,41 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw Exception(message ?? 'Failed to request password reset');
     }
   }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    // This is a placeholder since the interface defines it but it was missing here
+    await requestPasswordReset(email);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getAvailableTags() async {
+    const String query = r'''
+      query GetTags {
+        tags {
+          id
+          name
+        }
+      }
+    ''';
+
+    final QueryOptions options = QueryOptions(
+      document: gql(query),
+      fetchPolicy: FetchPolicy.networkOnly,
+    );
+
+    final QueryResult result = await client.query(options);
+
+    if (result.hasException) {
+      throw Exception(result.exception.toString());
+    }
+
+    final tagsList = result.data?['tags'] as List?;
+    if (tagsList == null) {
+      return [];
+    }
+
+    return tagsList.map((t) => Map<String, dynamic>.from(t)).toList();
+  }
 }
+

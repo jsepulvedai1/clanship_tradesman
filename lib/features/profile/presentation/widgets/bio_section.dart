@@ -27,7 +27,9 @@ class BioSection extends StatelessWidget {
           color: isDark ? AppColors.cardDark : AppColors.pureWhite,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isDark ? AppColors.pureWhite.withAlpha(20) : AppColors.trueBlack.withAlpha(20),
+            color: isDark
+                ? AppColors.pureWhite.withAlpha(20)
+                : AppColors.trueBlack.withAlpha(20),
             width: 0.5,
           ),
           boxShadow: [
@@ -56,9 +58,11 @@ class BioSection extends StatelessWidget {
                 TextButton(
                   onPressed: onEditTap,
                   child: Text(
-                     l10n.profileEdit,
+                    l10n.profileEdit,
                     style: TextStyle(
-                      color: isDark ? AppColors.primaryAzure.withValues(alpha: 0.8) : AppColors.primaryAzure,
+                      color: isDark
+                          ? AppColors.primaryAzure.withValues(alpha: 0.8)
+                          : AppColors.primaryAzure,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -67,42 +71,45 @@ class BioSection extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              biography.isNotEmpty ? biography : 'Sin biografía aún. Haz clic en Editar para agregar una.',
+              biography.isNotEmpty
+                  ? biography
+                  : 'Sin biografía aún. Haz clic en Editar para agregar una.',
               style: TextStyle(
                 fontSize: 14,
-                color: (isDark ? AppColors.pureWhite : AppColors.textDark).withValues(alpha: 0.7),
+                color: (isDark ? AppColors.pureWhite : AppColors.textDark)
+                    .withValues(alpha: 0.7),
                 height: 1.6,
               ),
             ),
             const SizedBox(height: 16),
             const Divider(height: 1, thickness: 0.5),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Icon(
-                  Icons.monetization_on_outlined,
-                  color: AppColors.accentCyan,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Tarifa por hora: ',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white70 : AppColors.textDark.withValues(alpha: 0.8),
-                  ),
-                ),
-                Text(
-                  '\$${hourlyRate.toStringAsFixed(0)} / hr',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.accentCyan,
-                  ),
-                ),
-              ],
-            ),
+            // Row(
+            //   children: [
+            //     Icon(
+            //       Icons.monetization_on_outlined,
+            //       color: AppColors.accentCyan,
+            //       size: 20,
+            //     ),
+            //     const SizedBox(width: 8),
+            //     // Text(
+            //     //   'Tarifa por hora: ',
+            //     //   style: TextStyle(
+            //     //     fontSize: 14,
+            //     //     fontWeight: FontWeight.w600,
+            //     //     color: isDark ? Colors.white70 : AppColors.textDark.withValues(alpha: 0.8),
+            //     //   ),
+            //     // ),
+            //     Text(
+            //       '\$${hourlyRate.toStringAsFixed(0)} / hr',
+            //       style: const TextStyle(
+            //         fontSize: 15,
+            //         fontWeight: FontWeight.bold,
+            //         color: AppColors.accentCyan,
+            //       ),
+            //     ),
+            //   ],
+            // ),
           ],
         ),
       ),

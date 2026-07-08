@@ -49,5 +49,9 @@
 	<string>Necesitamos acceso a tu ubicación para geolocalizarte en el mapa y que puedas recibir ofertas de trabajo cercanas.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Necesitamos acceso continuo a tu ubicación para poder notificarte de trabajos en tu área de servicio.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Necesitamos acceso a tu cámara para que puedas tomar una foto de perfil o evidencia de tu trabajo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Necesitamos acceso a tu galería para que puedas seleccionar una foto de perfil o evidencia de tu trabajo.</string>
 </dict>
 </plist>

@@ -56,14 +56,14 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                TextField(
-                  controller: rateController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Tarifa por hora (\$)',
-                    hintText: 'Ej: 15000',
-                  ),
-                ),
+                // TextField(
+                //   controller: rateController,
+                //   keyboardType: TextInputType.number,
+                //   decoration: const InputDecoration(
+                //     labelText: 'Tarifa por hora (\$)',
+                //     hintText: 'Ej: 15000',
+                //   ),
+                // ),
               ],
             ),
           ),
@@ -508,7 +508,7 @@ class ProfilePage extends StatelessWidget {
                           ),
                           ProfileActionButton(
                             title: l10n.profileViewDocuments,
-                            isSecondary: true,
+                            isSecondary: false,
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -518,6 +518,7 @@ class ProfilePage extends StatelessWidget {
                               );
                             },
                           ),
+                          const ServicesHeaderBanner(),
                           const SizedBox(height: 24),
                           Padding(
                             padding: const EdgeInsets.symmetric(
@@ -631,59 +632,7 @@ class ProfilePage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          const ServicesHeaderBanner(),
-                          ServiceTagsSection(
-                            tags: user.serviceTags,
-                            primaryTag: user.serviceTags.isNotEmpty
-                                ? user.serviceTags.first
-                                : null,
-                            onPrimaryTap: (tagName) {
-                              final currentTags = List<String>.from(
-                                user.serviceTags,
-                              );
-                              if (currentTags.remove(tagName)) {
-                                currentTags.insert(0, tagName);
 
-                                final newTagIds = currentTags
-                                    .map((name) {
-                                      final tagObj = state.availableTags
-                                          .firstWhere(
-                                            (t) => t['name'] == name,
-                                            orElse: () => <String, dynamic>{},
-                                          );
-                                      return tagObj['id']?.toString() ?? '';
-                                    })
-                                    .where((id) => id.isNotEmpty)
-                                    .toList();
-
-                                context.read<ProfileBloc>().add(
-                                  UpdateProfessionalProfileEvent(
-                                    tagIds: newTagIds,
-                                  ),
-                                );
-                              }
-                            },
-                            onSearchTap: () => _showTagsDialog(
-                              context,
-                              user,
-                              state.availableTags,
-                            ),
-                            onDeleteTap: (tagName) {
-                              final remainingTagIds = state.availableTags
-                                  .where(
-                                    (t) =>
-                                        user.serviceTags.contains(t['name']) &&
-                                        t['name'] != tagName,
-                                  )
-                                  .map((t) => t['id'] as String)
-                                  .toList();
-                              context.read<ProfileBloc>().add(
-                                UpdateProfessionalProfileEvent(
-                                  tagIds: remainingTagIds,
-                                ),
-                              );
-                            },
-                          ),
                           const SizedBox(height: 24),
                         ],
                       ),

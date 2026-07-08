@@ -17,8 +17,10 @@ abstract class AuthRepository {
     List<Map<String, String>>? certificates,
     double? latitude,
     double? longitude,
+    List<String>? tagIds,
   });
   Future<Either<Failure, void>> logout();
   Future<Either<Failure, User>> getCurrentUser();
   Future<Either<Failure, void>> requestPasswordReset(String email);
+  Future<Either<Failure, List<Map<String, dynamic>>>> getAvailableTags();
 }

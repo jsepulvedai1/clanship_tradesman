@@ -14,11 +14,7 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   final UserEntity user;
   final VoidCallback? onSyncTap;
 
-  const ProfileAppBar({
-    super.key,
-    required this.user,
-    this.onSyncTap,
-  });
+  const ProfileAppBar({super.key, required this.user, this.onSyncTap});
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +34,9 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
         color: backgroundColor,
         border: Border(
           bottom: BorderSide(
-            color: isDark ? AppColors.pureWhite.withAlpha(20) : AppColors.trueBlack.withAlpha(20),
+            color: isDark
+                ? AppColors.pureWhite.withAlpha(20)
+                : AppColors.trueBlack.withAlpha(20),
             width: 0.5,
           ),
         ),
@@ -57,14 +55,18 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
                   Text(
                     l10n.homeWelcomePrefix,
                     style: TextStyle(
-                      color: isDark ? AppColors.pureWhite.withValues(alpha: 0.7) : AppColors.textDark.withValues(alpha: 0.7),
+                      color: isDark
+                          ? AppColors.pureWhite.withValues(alpha: 0.7)
+                          : AppColors.textDark.withValues(alpha: 0.7),
                       fontSize: 14,
                     ),
                   ),
                   Text(
                     '${user.name}!',
                     style: TextStyle(
-                      color: isDark ? AppColors.pureWhite : AppColors.primaryBlue,
+                      color: isDark
+                          ? AppColors.pureWhite
+                          : AppColors.primaryBlue,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -77,47 +79,30 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
           Row(
             children: [
               // Icono Sincronización
-              IconButton(
-                onPressed: onSyncTap,
-                icon: Icon(
-                  Icons.sync_rounded,
-                  color: isDark ? AppColors.pureWhite.withAlpha(150) : AppColors.trueBlack.withAlpha(150),
-                  size: 26,
-                ),
-              ),
-              // Icono Configuración
-              IconButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SettingsPage()),
-                  );
-                },
-                icon: Icon(
-                  Icons.settings_outlined,
-                  color: isDark ? AppColors.pureWhite.withAlpha(150) : AppColors.trueBlack.withAlpha(150),
-                  size: 26,
-                ),
-              ),
               const SizedBox(width: 4),
               // Foto de Perfil
               BlocBuilder<ProfileBloc, ProfileState>(
                 builder: (context, state) {
-                  final isUploading = state is ProfileLoaded && state.isAvatarUploading;
-                  
+                  final isUploading =
+                      state is ProfileLoaded && state.isAvatarUploading;
+
                   return GestureDetector(
-                    onTap: isUploading ? null : () async {
-                      final picker = ImagePicker();
-                      final XFile? image = await picker.pickImage(
-                        source: ImageSource.gallery,
-                        maxWidth: 800,
-                        maxHeight: 800,
-                        imageQuality: 60,
-                      );
-                      if (image != null && context.mounted) {
-                        context.read<ProfileBloc>().add(UploadAvatarEvent(image.path));
-                      }
-                    },
+                    onTap: isUploading
+                        ? null
+                        : () async {
+                            final picker = ImagePicker();
+                            final XFile? image = await picker.pickImage(
+                              source: ImageSource.gallery,
+                              maxWidth: 800,
+                              maxHeight: 800,
+                              imageQuality: 60,
+                            );
+                            if (image != null && context.mounted) {
+                              context.read<ProfileBloc>().add(
+                                UploadAvatarEvent(image.path),
+                              );
+                            }
+                          },
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
@@ -127,18 +112,35 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(color: accentColor, width: 2),
-                            image: user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty
+                            image:
+                                user.profileImageUrl != null &&
+                                    user.profileImageUrl!.isNotEmpty
                                 ? DecorationImage(
-                                    image: (user.profileImageUrl!.startsWith('http://') ||
-                                            user.profileImageUrl!.startsWith('https://'))
-                                        ? NetworkImage(user.profileImageUrl!) as ImageProvider
-                                        : FileImage(File(user.profileImageUrl!)),
+                                    image:
+                                        (user.profileImageUrl!.startsWith(
+                                              'http://',
+                                            ) ||
+                                            user.profileImageUrl!.startsWith(
+                                              'https://',
+                                            ))
+                                        ? NetworkImage(user.profileImageUrl!)
+                                              as ImageProvider
+                                        : FileImage(
+                                            File(user.profileImageUrl!),
+                                          ),
                                     fit: BoxFit.cover,
                                   )
                                 : null,
                           ),
-                          child: user.profileImageUrl == null || user.profileImageUrl!.isEmpty
-                              ? Icon(Icons.person, color: isDark ? AppColors.pureWhite : AppColors.trueBlack)
+                          child:
+                              user.profileImageUrl == null ||
+                                  user.profileImageUrl!.isEmpty
+                              ? Icon(
+                                  Icons.person,
+                                  color: isDark
+                                      ? AppColors.pureWhite
+                                      : AppColors.trueBlack,
+                                )
                               : null,
                         ),
                         if (isUploading)
