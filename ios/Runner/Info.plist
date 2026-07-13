@@ -53,5 +53,11 @@
 	<string>Necesitamos acceso a tu cámara para que puedas tomar una foto de perfil o evidencia de tu trabajo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Necesitamos acceso a tu galería para que puedas seleccionar una foto de perfil o evidencia de tu trabajo.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Necesitamos acceso a tu micrófono para que puedas enviar mensajes de voz en el chat.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

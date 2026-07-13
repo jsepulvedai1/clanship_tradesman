@@ -16,7 +16,7 @@ class RequestsRepositoryImpl implements RequestsRepository {
         .map((model) {
       return ActiveRequestDetailEntity(
         id: model.id,
-        category: 'Reparación General', // Hardcoded as requested
+        category: 'Nueva solicitud',
         instruction: model.description,
         clientName: model.customer?.firstName ?? 'Sin nombre',
         clientPhone: model.customer?.phoneNumber ?? 'Sin teléfono',
@@ -41,7 +41,7 @@ class RequestsRepositoryImpl implements RequestsRepository {
     return models.map((model) {
       return CompletedJobEntity(
         id: model.id,
-        category: 'Reparación General',
+        category: 'Nueva solicitud',
         description: model.description,
         date: model.scheduledDate ?? '',
         time: model.scheduledTime ?? '',
@@ -57,7 +57,7 @@ class RequestsRepositoryImpl implements RequestsRepository {
     return models.map((model) {
       return ActiveRequestDetailEntity(
         id: model.id,
-        category: 'Reparación General',
+        category: 'Nueva solicitud',
         instruction: model.description,
         clientName: model.customer?.firstName ?? 'Sin nombre',
         clientPhone: model.customer?.phoneNumber ?? 'Sin teléfono',
@@ -87,7 +87,7 @@ class RequestsRepositoryImpl implements RequestsRepository {
   }
 
   @override
-  Future<void> scheduleJobVisit(int jobId, String scheduledDate, String scheduledTime, int notificationLeadMinutes) async {
-    await remoteDataSource.scheduleJobVisit(jobId, scheduledDate, scheduledTime, notificationLeadMinutes);
+  Future<void> scheduleJobVisit(int jobId, String scheduledDate, String scheduledTime, int notificationLeadMinutes, {double? agreedPrice}) async {
+    await remoteDataSource.scheduleJobVisit(jobId, scheduledDate, scheduledTime, notificationLeadMinutes, agreedPrice: agreedPrice);
   }
 }

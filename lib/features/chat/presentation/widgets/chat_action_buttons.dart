@@ -5,12 +5,14 @@ class ChatActionButtons extends StatelessWidget {
   final VoidCallback onSchedule;
   final VoidCallback onBack;
   final VoidCallback onReject;
+  final VoidCallback? onAccept;
 
   const ChatActionButtons({
     super.key,
     required this.onSchedule,
     required this.onBack,
     required this.onReject,
+    this.onAccept,
   });
 
   @override
@@ -19,22 +21,16 @@ class ChatActionButtons extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          Expanded(
-            child: _ActionButton(
-              text: 'Agendar',
-              color: AppColors.primaryBlue,
-              textColor: Colors.white,
-              onTap: onSchedule,
-            ),
-          ),
           const SizedBox(width: 8),
           Expanded(
             child: _ActionButton(
-              text: 'Regresar',
-              color: Colors.white,
-              textColor: AppColors.primaryBlue,
-              isOutline: true,
-              onTap: onBack,
+              text: onAccept != null ? 'Agendar' : 'Regresar',
+              color: onAccept != null ? AppColors.primaryBlue : Colors.white,
+              textColor: onAccept != null
+                  ? Colors.white
+                  : AppColors.primaryBlue,
+              isOutline: onAccept != null ? false : true,
+              onTap: onAccept != null ? onSchedule : onBack,
             ),
           ),
           const SizedBox(width: 8),
@@ -76,9 +72,13 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: isOutline ? (isDark ? Colors.transparent : Colors.white) : color,
+          color: isOutline
+              ? (isDark ? Colors.transparent : Colors.white)
+              : color,
           borderRadius: BorderRadius.circular(24),
-          border: isOutline ? Border.all(color: AppColors.primaryBlue.withAlpha(50)) : null,
+          border: isOutline
+              ? Border.all(color: AppColors.primaryBlue.withAlpha(50))
+              : null,
           boxShadow: [
             if (!isOutline && !isDark)
               BoxShadow(

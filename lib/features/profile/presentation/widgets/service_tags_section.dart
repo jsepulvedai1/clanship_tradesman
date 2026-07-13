@@ -58,7 +58,7 @@ class _ServiceTag extends StatelessWidget {
 
   const _ServiceTag({
     required this.label,
-    this.isPrimary = false,
+    required this.isPrimary,
     this.onPrimaryTap,
     this.onDelete,
   });

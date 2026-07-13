@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:clanship_mobile_tradesman/core/utils/error_parser.dart';
 import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/get_pending_requests_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/get_completed_requests_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/get_rejected_requests_usecase.dart';
@@ -41,7 +42,7 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
       final requests = await getPendingRequests();
       emit(RequestsLoaded(requests));
     } catch (e) {
-      emit(RequestsError(e.toString()));
+      emit(RequestsError(sanitizeErrorForUser(e)));
     }
   }
 
@@ -54,7 +55,7 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
       final completedJobs = await getCompletedRequests();
       emit(CompletedRequestsLoaded(completedJobs));
     } catch (e) {
-      emit(RequestsError(e.toString()));
+      emit(RequestsError(sanitizeErrorForUser(e)));
     }
   }
 
@@ -67,7 +68,7 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
       final rejected = await getRejectedRequests();
       emit(RejectedRequestsLoaded(rejected));
     } catch (e) {
-      emit(RequestsError(e.toString()));
+      emit(RequestsError(sanitizeErrorForUser(e)));
     }
   }
 
@@ -81,7 +82,7 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
       final requests = await getPendingRequests();
       emit(RequestsLoaded(requests));
     } catch (e) {
-      emit(RequestsError(e.toString()));
+      emit(RequestsError(sanitizeErrorForUser(e)));
     }
   }
 
@@ -109,11 +110,12 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
         scheduledDate: event.scheduledDate,
         scheduledTime: event.scheduledTime,
         notificationLeadMinutes: event.notificationLeadMinutes,
+        agreedPrice: event.agreedPrice,
       );
       final requests = await getPendingRequests();
       emit(RequestsLoaded(requests));
     } catch (e) {
-      emit(RequestsError(e.toString()));
+      emit(RequestsError(sanitizeErrorForUser(e)));
     }
   }
 }

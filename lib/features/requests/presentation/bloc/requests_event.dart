@@ -40,14 +40,16 @@ class ScheduleJobVisitEvent extends RequestsEvent {
   final String scheduledDate;
   final String scheduledTime;
   final int notificationLeadMinutes;
+  final double? agreedPrice;
 
   const ScheduleJobVisitEvent({
     required this.jobId,
     required this.scheduledDate,
     required this.scheduledTime,
     required this.notificationLeadMinutes,
+    this.agreedPrice,
   });
 
   @override
-  List<Object?> get props => [jobId, scheduledDate, scheduledTime, notificationLeadMinutes];
+  List<Object?> get props => [jobId, scheduledDate, scheduledTime, notificationLeadMinutes, agreedPrice];
 }

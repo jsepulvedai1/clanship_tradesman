@@ -16,11 +16,13 @@ class AvailabilityWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final bool isSmallScreen = screenHeight < 750;
     final Color activeColor = const Color(0xFF0B6E4F); // Verde esmeralda
     final Color inactiveColor = Colors.grey;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16 : 20),
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -34,28 +36,31 @@ class AvailabilityWidget extends StatelessWidget {
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: isSmallScreen ? 10 : 16,
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // Icono circular a la izquierda
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
               decoration: BoxDecoration(
                 color: (isAvailable ? activeColor : inactiveColor).withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
               child: SvgPicture.asset(
                 'assets/icon/icons_ F28C28/dialog.svg',
-                width: 20,
-                height: 20,
+                width: isSmallScreen ? 16 : 20,
+                height: isSmallScreen ? 16 : 20,
                 colorFilter: ColorFilter.mode(
                   isAvailable ? activeColor : inactiveColor,
                   BlendMode.srcIn,
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: isSmallScreen ? 8 : 12),
             // Texto descriptivo
             Expanded(
               child: Column(
@@ -64,17 +69,17 @@ class AvailabilityWidget extends StatelessWidget {
                 children: [
                   Text(
                     l10n.homeAvailabilityTitle,
-                    style: const TextStyle(
-                      fontSize: 15,
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 14 : 15,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2E3135),
+                      color: const Color(0xFF2E3135),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: isSmallScreen ? 2 : 4),
                   Text(
                     l10n.homeAvailabilitySubtitle,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: isSmallScreen ? 10 : 11,
                       color: const Color(0xFF2E3135).withValues(alpha: 0.6),
                     ),
                   ),

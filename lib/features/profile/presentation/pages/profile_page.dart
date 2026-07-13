@@ -12,7 +12,6 @@ import '../widgets/profile_app_bar.dart';
 import '../widgets/subscription_banner.dart';
 import '../widgets/bio_section.dart';
 import '../widgets/portfolio_gallery.dart';
-import '../widgets/service_tags_section.dart';
 import '../widgets/section_header.dart';
 import '../widgets/services_header_banner.dart';
 import '../widgets/working_radius_section.dart';
@@ -20,9 +19,11 @@ import '../widgets/profile_skeleton.dart';
 import '../widgets/social_link_section.dart';
 import '../widgets/profile_action_button.dart';
 import 'documents_page.dart';
+import 'profile_preview_page.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
+import 'package:clanship_mobile_tradesman/core/utils/image_cropper_helper.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -369,8 +370,14 @@ class ProfilePage extends StatelessWidget {
       maxWidth: 1080,
       maxHeight: 1080,
     );
-    if (pickedFile != null) {
-      context.read<ProfileBloc>().add(AddPortfolioPhotoEvent(pickedFile.path));
+    if (pickedFile != null && context.mounted) {
+      final croppedPath = await ImageCropperHelper.cropImage(
+        imagePath: pickedFile.path,
+        isSquare: false,
+      );
+      if (croppedPath != null && context.mounted) {
+        context.read<ProfileBloc>().add(AddPortfolioPhotoEvent(croppedPath));
+      }
     }
   }
 
@@ -382,6 +389,29 @@ class ProfilePage extends StatelessWidget {
         backgroundColor: Theme.of(context).brightness == Brightness.dark
             ? AppColors.trueBlack
             : AppColors.smokeWhite,
+        floatingActionButton: BlocBuilder<ProfileBloc, ProfileState>(
+          builder: (context, state) {
+            if (state is ProfileLoaded) {
+              return FloatingActionButton.extended(
+                backgroundColor: AppColors.primaryBlue,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProfilePreviewPage(user: state.user),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.remove_red_eye, color: Colors.white),
+                label: const Text(
+                  'Vista Previa',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
         body: BlocListener<ProfileBloc, ProfileState>(
           listenWhen: (previous, current) {
             if (previous is ProfileLoaded && current is ProfileLoaded) {
@@ -469,6 +499,11 @@ class ProfilePage extends StatelessWidget {
                                 onDeleteTap: (photoId) {
                                   context.read<ProfileBloc>().add(
                                     DeletePortfolioPhotoEvent(photoId),
+                                  );
+                                },
+                                onSetAvatarTap: (imageUrl) {
+                                  context.read<ProfileBloc>().add(
+                                    SetAvatarFromUrlEvent(imageUrl),
                                   );
                                 },
                               ),

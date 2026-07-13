@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:clanship_mobile_tradesman/core/utils/error_parser.dart';
 import 'package:clanship_mobile_tradesman/features/chat/domain/usecases/get_chat_history_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/chat/domain/usecases/stream_chat_messages_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/chat/domain/usecases/send_chat_message_usecase.dart';
@@ -55,7 +57,7 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
         },
       );
     } catch (e) {
-      emit(ChatMessagesError(e.toString()));
+      emit(ChatMessagesError(sanitizeErrorForUser(e)));
     }
   }
 
@@ -79,11 +81,15 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
     Emitter<ChatMessagesState> emit,
   ) async {
     try {
-      await sendChatMessage(event.roomId, event.text);
-      // We don't manually add the message here if we expect the WebSocket to broadcast it back.
-      // If we want optimistic UI, we could add it to the state locally first.
+      await sendChatMessage(
+        event.roomId,
+        event.text,
+        fileBase64: event.fileBase64,
+        fileName: event.fileName,
+        messageType: event.messageType,
+      );
     } catch (e) {
-      // If it fails, maybe show a toast or error
+      debugPrint('Error sending message: $e');
     }
   }
 

@@ -69,7 +69,7 @@ class _SettingsPageState extends State<SettingsPage> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Error al subir foto: ${failure.toString()}'),
+                  content: Text('Lo sentimos, no se pudo subir la foto.'),
                 ),
               );
             }
@@ -103,7 +103,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error al procesar foto: $e')));
+        ).showSnackBar(SnackBar(content: Text('Lo sentimos, no se pudo procesar la foto.')));
       }
     } finally {
       if (mounted) {
@@ -208,7 +208,8 @@ class _SettingsPageState extends State<SettingsPage> {
                             : 'English',
                         style: TextStyle(
                           fontSize: 14,
-                          color: (isDark ? Colors.white : AppColors.textDark).withOpacity(0.7),
+                          color: (isDark ? Colors.white : AppColors.textDark)
+                              .withOpacity(0.7),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -216,7 +217,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       Icon(
                         Icons.arrow_forward_ios_rounded,
                         size: 14,
-                        color: (isDark ? Colors.white : AppColors.textDark).withOpacity(0.24),
+                        color: (isDark ? Colors.white : AppColors.textDark)
+                            .withOpacity(0.24),
                       ),
                     ],
                   ),
@@ -321,7 +323,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white,
-                      border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                      border: Border.all(
+                        color: const Color(0xFFE2E8F0),
+                        width: 2,
+                      ),
                       image: avatarImage != null
                           ? DecorationImage(
                               image: avatarImage,
@@ -508,7 +513,10 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle_rounded, color: AppColors.primaryAzure),
+              const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.primaryAzure,
+              ),
           ],
         ),
       ),

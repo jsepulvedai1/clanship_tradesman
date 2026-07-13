@@ -118,3 +118,12 @@ class SubscribeToPlanEvent extends ProfileEvent {
   List<Object?> get props => [planId];
 }
 
+class SetAvatarFromUrlEvent extends ProfileEvent {
+  final String imageUrl;
+
+  const SetAvatarFromUrlEvent(this.imageUrl);
+
+  @override
+  List<Object?> get props => [imageUrl];
+}
+

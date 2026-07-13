@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum ChatMessageType { text, appointment }
+enum ChatMessageType { text, appointment, image, audio }
 
 class ChatMessage extends Equatable {
   final String id;
@@ -12,6 +12,7 @@ class ChatMessage extends Equatable {
   final String? appointmentDate;
   final String? appointmentTime;
   final String? appointmentPrice;
+  final String? fileUrl;
 
   const ChatMessage({
     required this.id,
@@ -23,6 +24,7 @@ class ChatMessage extends Equatable {
     this.appointmentDate,
     this.appointmentTime,
     this.appointmentPrice,
+    this.fileUrl,
   });
 
   @override
@@ -36,5 +38,6 @@ class ChatMessage extends Equatable {
         appointmentDate,
         appointmentTime,
         appointmentPrice,
+        fileUrl,
       ];
 }

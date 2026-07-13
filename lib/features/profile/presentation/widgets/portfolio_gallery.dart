@@ -7,12 +7,14 @@ class PortfolioGallery extends StatelessWidget {
   final List<PortfolioPhotoEntity> portfolioPhotos;
   final VoidCallback? onAddTap;
   final Function(String photoId)? onDeleteTap;
+  final Function(String imageUrl)? onSetAvatarTap;
 
   const PortfolioGallery({
     super.key,
     required this.portfolioPhotos,
     this.onAddTap,
     this.onDeleteTap,
+    this.onSetAvatarTap,
   });
 
   @override
@@ -66,6 +68,7 @@ class PortfolioGallery extends StatelessWidget {
                   return _PortfolioItem(
                     photo: portfolioPhotos[index],
                     onDelete: onDeleteTap,
+                    onSetAvatar: onSetAvatarTap,
                   );
                 }
                 return _AddPortfolioItem(onTap: onAddTap);
@@ -81,45 +84,89 @@ class PortfolioGallery extends StatelessWidget {
 class _PortfolioItem extends StatelessWidget {
   final PortfolioPhotoEntity photo;
   final Function(String photoId)? onDelete;
+  final Function(String imageUrl)? onSetAvatar;
 
   const _PortfolioItem({
     required this.photo,
     this.onDelete,
+    this.onSetAvatar,
   });
+
+  void _showOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.account_circle, color: AppColors.primaryBlue),
+                title: const Text('Establecer como foto de perfil'),
+                onTap: () {
+                  Navigator.pop(context);
+                  onSetAvatar?.call(photo.imageUrl);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: AppColors.errorRed),
+                title: const Text('Eliminar de la galería'),
+                onTap: () {
+                  Navigator.pop(context);
+                  onDelete?.call(photo.id);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.close),
+                title: const Text('Cancelar'),
+                onTap: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            image: DecorationImage(
-              image: NetworkImage(photo.imageUrl),
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-        Positioned(
-          top: 4,
-          right: 4,
-          child: GestureDetector(
-            onTap: () => onDelete?.call(photo.id),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.black.withAlpha(150),
-              ),
-              child: const Icon(
-                Icons.close,
-                color: Colors.white,
-                size: 14,
+    return GestureDetector(
+      onTap: () => _showOptions(context),
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              image: DecorationImage(
+                image: NetworkImage(photo.imageUrl),
+                fit: BoxFit.cover,
               ),
             ),
           ),
-        ),
-      ],
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: () => onDelete?.call(photo.id),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withAlpha(150),
+                ),
+                child: const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

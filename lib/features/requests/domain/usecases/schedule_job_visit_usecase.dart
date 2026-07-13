@@ -10,12 +10,14 @@ class ScheduleJobVisitUseCase {
     required String scheduledDate,
     required String scheduledTime,
     required int notificationLeadMinutes,
+    double? agreedPrice,
   }) async {
     return await repository.scheduleJobVisit(
       jobId,
       scheduledDate,
       scheduledTime,
       notificationLeadMinutes,
+      agreedPrice: agreedPrice,
     );
   }
 }

@@ -21,11 +21,20 @@ class LoadChatMessages extends ChatMessagesEvent {
 class SendMessage extends ChatMessagesEvent {
   final String roomId;
   final String text;
+  final String? fileBase64;
+  final String? fileName;
+  final String? messageType;
 
-  const SendMessage(this.roomId, this.text);
+  const SendMessage(
+    this.roomId, 
+    this.text, {
+    this.fileBase64,
+    this.fileName,
+    this.messageType,
+  });
 
   @override
-  List<Object?> get props => [roomId, text];
+  List<Object?> get props => [roomId, text, fileBase64, fileName, messageType];
 }
 
 class MessageReceived extends ChatMessagesEvent {

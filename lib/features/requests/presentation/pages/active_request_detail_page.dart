@@ -20,10 +20,7 @@ import 'package:clanship_mobile_tradesman/features/chat/presentation/pages/chat_
 class ActiveRequestDetailPage extends StatelessWidget {
   final ActiveRequestDetailEntity request;
 
-  const ActiveRequestDetailPage({
-    super.key,
-    required this.request,
-  });
+  const ActiveRequestDetailPage({super.key, required this.request});
 
   @override
   Widget build(BuildContext context) {
@@ -43,13 +40,21 @@ class ActiveRequestDetailPage extends StatelessWidget {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => const Center(child: CircularProgressIndicator()),
+                  builder: (context) =>
+                      const Center(child: CircularProgressIndicator()),
                 );
               } else if (state is ChatRoomSuccess) {
                 Navigator.pop(context); // Close loading dialog
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ChatPage(roomId: state.roomId)),
+                  MaterialPageRoute(
+                    builder: (context) => ChatPage(
+                      roomId: state.roomId,
+                      jobId: int.tryParse(request.id),
+                      jobStatus: request.status,
+                      customerName: request.clientName,
+                    ),
+                  ),
                 );
               } else if (state is ChatRoomError) {
                 Navigator.pop(context); // Close loading dialog
@@ -65,12 +70,15 @@ class ActiveRequestDetailPage extends StatelessWidget {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => const Center(child: CircularProgressIndicator()),
+                  builder: (context) =>
+                      const Center(child: CircularProgressIndicator()),
                 );
               } else if (state is RequestsLoaded) {
                 Navigator.pop(context); // Close loading dialog
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Estado de trabajo actualizado con éxito')),
+                  const SnackBar(
+                    content: Text('Estado de trabajo actualizado con éxito'),
+                  ),
                 );
                 Navigator.pop(context); // Close detail page
               } else if (state is RequestsError) {
@@ -85,34 +93,44 @@ class ActiveRequestDetailPage extends StatelessWidget {
         child: Builder(
           builder: (context) {
             return Scaffold(
-              backgroundColor: isDark ? AppColors.trueBlack : AppColors.pureWhite,
+              backgroundColor: isDark
+                  ? AppColors.trueBlack
+                  : AppColors.pureWhite,
               appBar: AppBar(
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 leading: IconButton(
-                  icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : AppColors.trueBlack),
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: isDark ? Colors.white : AppColors.trueBlack,
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
               body: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 10,
+                ),
                 child: Column(
                   children: [
                     if (request.isUrgent) const UrgentHeader(),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Category & Instruction Section
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.cardDark : AppColors.lightGrey.withAlpha(150),
+                        color: isDark
+                            ? AppColors.cardDark
+                            : AppColors.lightGrey.withAlpha(150),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Column(
                         children: [
-                           Text(
+                          Text(
                             request.category,
                             style: TextStyle(
                               fontSize: 18,
@@ -133,9 +151,9 @@ class ActiveRequestDetailPage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 32),
-                    
+
                     // Informacion del Cliente Title
                     Align(
                       alignment: Alignment.center,
@@ -148,9 +166,9 @@ class ActiveRequestDetailPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Client Info Cards
                     ClientInfoItem(
                       icon: Icons.person_outline,
@@ -168,28 +186,40 @@ class ActiveRequestDetailPage extends StatelessWidget {
                       value: request.clientAddress,
                     ),
 
-                    if (request.enrichedDetails != null && request.enrichedDetails!.isNotEmpty) ...[
+                    if (request.enrichedDetails != null &&
+                        request.enrichedDetails!.isNotEmpty) ...[
                       const SizedBox(height: 20),
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.grey.shade900 : const Color(0xFFFFF9E6),
+                          color: isDark
+                              ? Colors.grey.shade900
+                              : const Color(0xFFFFF9E6),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.amber.shade400, width: 1.5),
+                          border: Border.all(
+                            color: Colors.amber.shade400,
+                            width: 1.5,
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.info_outline_rounded, color: Colors.amber.shade800, size: 22),
+                                Icon(
+                                  Icons.info_outline_rounded,
+                                  color: Colors.amber.shade800,
+                                  size: 22,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   l10n.requestEnrichedDetailsTitle,
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: isDark ? Colors.white : Colors.amber.shade900,
+                                    color: isDark
+                                        ? Colors.white
+                                        : Colors.amber.shade900,
                                   ),
                                 ),
                               ],
@@ -202,26 +232,37 @@ class ActiveRequestDetailPage extends StatelessWidget {
                                 color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
-                            if (request.additionalPhotoUrl != null && request.additionalPhotoUrl!.isNotEmpty) ...[
+                            if (request.additionalPhotoUrl != null &&
+                                request.additionalPhotoUrl!.isNotEmpty) ...[
                               const SizedBox(height: 12),
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
                                 child: Image.network(
                                   request.additionalPhotoUrl!,
                                   fit: BoxFit.cover,
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return const SizedBox(
-                                      height: 150,
-                                      child: Center(child: CircularProgressIndicator()),
-                                    );
-                                  },
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                        if (loadingProgress == null) {
+                                          return child;
+                                        }
+                                        return const SizedBox(
+                                          height: 150,
+                                          child: Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                        );
+                                      },
                                   errorBuilder: (context, error, stackTrace) {
                                     return Container(
                                       height: 100,
-                                      color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+                                      color: isDark
+                                          ? Colors.grey.shade800
+                                          : Colors.grey.shade300,
                                       child: const Center(
-                                        child: Icon(Icons.broken_image, size: 40),
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          size: 40,
+                                        ),
                                       ),
                                     );
                                   },
@@ -232,7 +273,7 @@ class ActiveRequestDetailPage extends StatelessWidget {
                         ),
                       ),
                     ],
-                    
+
                     // Action Buttons
                     ActionButtonsSection(
                       onChatTap: () {
@@ -245,46 +286,58 @@ class ActiveRequestDetailPage extends StatelessWidget {
                       },
                       onGoogleMapsTap: () async {
                         final address = request.clientAddress;
-                        final googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}';
+                        final googleMapsUrl =
+                            'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}';
                         final uri = Uri.parse(googleMapsUrl);
                         if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('No se pudo abrir Google Maps')),
+                            const SnackBar(
+                              content: Text('No se pudo abrir Google Maps'),
+                            ),
                           );
                         }
                       },
                       onWazeTap: () async {
                         final address = request.clientAddress;
-                        final wazeUrl = 'https://waze.com/ul?q=${Uri.encodeComponent(address)}&navigate=yes';
+                        final wazeUrl =
+                            'https://waze.com/ul?q=${Uri.encodeComponent(address)}&navigate=yes';
                         final uri = Uri.parse(wazeUrl);
                         if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('No se pudo abrir Waze')),
+                            const SnackBar(
+                              content: Text('No se pudo abrir Waze'),
+                            ),
                           );
                         }
                       },
                     ),
-                    
+
                     const SizedBox(height: 10),
 
                     // Status progression actions
                     _buildStatusActions(context),
 
                     const SizedBox(height: 10),
-                    
+
                     // Reminder Box
                     const ReminderBox(),
-                    
+
                     const SizedBox(height: 40),
                   ],
                 ),
               ),
             );
-          }
+          },
         ),
       ),
     );
@@ -309,11 +362,17 @@ class ActiveRequestDetailPage extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: () {
                         context.read<RequestsBloc>().add(
-                          UpdateJobStatusEvent(jobId: jobIdInt, newStatus: 'CANCELLED'),
+                          UpdateJobStatusEvent(
+                            jobId: jobIdInt,
+                            newStatus: 'CANCELLED',
+                          ),
                         );
                       },
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.errorRed, width: 2),
+                        side: const BorderSide(
+                          color: AppColors.errorRed,
+                          width: 2,
+                        ),
                         foregroundColor: AppColors.errorRed,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -322,32 +381,38 @@ class ActiveRequestDetailPage extends StatelessWidget {
                       ),
                       child: const Text(
                         'Rechazar',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        context.read<RequestsBloc>().add(
-                          UpdateJobStatusEvent(jobId: jobIdInt, newStatus: 'AGREED'),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.successGreen,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text(
-                        'Aceptar',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                  ),
+                  // Expanded(
+                  //   child: ElevatedButton(
+                  //     onPressed: () {
+                  //       context.read<RequestsBloc>().add(
+                  //         UpdateJobStatusEvent(
+                  //           jobId: jobIdInt,
+                  //           newStatus: 'AGREED',
+                  //         ),
+                  //       );
+                  //     },
+                  //     style: ElevatedButton.styleFrom(
+                  //       backgroundColor: AppColors.successGreen,
+                  //       foregroundColor: Colors.white,
+                  //       shape: RoundedRectangleBorder(
+                  //         borderRadius: BorderRadius.circular(16),
+                  //       ),
+                  //       padding: const EdgeInsets.symmetric(vertical: 16),
+                  //     ),
+                  //     // child: const Text(
+                  //     //   'Aceptar',
+                  //     //   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  //     // ),
+                  //   ),
+                  //),
                 ],
               ),
               const SizedBox(height: 12),
@@ -360,7 +425,62 @@ class ActiveRequestDetailPage extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryBlue,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+      case 'SCHEDULED':
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.orange.shade300, width: 1.5),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.orange),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Esperando que el cliente confirme la visita programada.',
+                        style: TextStyle(
+                          color: Colors.orange.shade900,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showScheduleDialog(context, jobIdInt),
+                  icon: const Icon(Icons.calendar_today_rounded),
+                  label: Text(l10n.requestRescheduleVisit),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(
+                      color: AppColors.primaryBlue,
+                      width: 2,
+                    ),
+                    foregroundColor: AppColors.primaryBlue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
@@ -379,7 +499,10 @@ class ActiveRequestDetailPage extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () {
                     context.read<RequestsBloc>().add(
-                      UpdateJobStatusEvent(jobId: jobIdInt, newStatus: 'IN_VISIT'),
+                      UpdateJobStatusEvent(
+                        jobId: jobIdInt,
+                        newStatus: 'IN_VISIT',
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -404,9 +527,14 @@ class ActiveRequestDetailPage extends StatelessWidget {
                   icon: const Icon(Icons.calendar_today_rounded),
                   label: Text(l10n.requestRescheduleVisit),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.primaryBlue, width: 2),
+                    side: const BorderSide(
+                      color: AppColors.primaryBlue,
+                      width: 2,
+                    ),
                     foregroundColor: AppColors.primaryBlue,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
@@ -415,7 +543,10 @@ class ActiveRequestDetailPage extends StatelessWidget {
               TextButton(
                 onPressed: () {
                   context.read<RequestsBloc>().add(
-                    UpdateJobStatusEvent(jobId: jobIdInt, newStatus: 'CANCELLED'),
+                    UpdateJobStatusEvent(
+                      jobId: jobIdInt,
+                      newStatus: 'CANCELLED',
+                    ),
                   );
                 },
                 style: TextButton.styleFrom(
@@ -509,11 +640,26 @@ class ActiveRequestDetailPage extends StatelessWidget {
                     value: tempMinutes,
                     isExpanded: true,
                     items: [
-                      DropdownMenuItem(value: 15, child: Text(l10n.requestSchedule15Mins)),
-                      DropdownMenuItem(value: 30, child: Text(l10n.requestSchedule30Mins)),
-                      DropdownMenuItem(value: 60, child: Text(l10n.requestSchedule1Hour)),
-                      DropdownMenuItem(value: 120, child: Text(l10n.requestSchedule2Hours)),
-                      DropdownMenuItem(value: 180, child: Text(l10n.requestSchedule3Hours)),
+                      DropdownMenuItem(
+                        value: 15,
+                        child: Text(l10n.requestSchedule15Mins),
+                      ),
+                      DropdownMenuItem(
+                        value: 30,
+                        child: Text(l10n.requestSchedule30Mins),
+                      ),
+                      DropdownMenuItem(
+                        value: 60,
+                        child: Text(l10n.requestSchedule1Hour),
+                      ),
+                      DropdownMenuItem(
+                        value: 120,
+                        child: Text(l10n.requestSchedule2Hours),
+                      ),
+                      DropdownMenuItem(
+                        value: 180,
+                        child: Text(l10n.requestSchedule3Hours),
+                      ),
                     ],
                     onChanged: (val) {
                       if (val != null) {
@@ -544,8 +690,10 @@ class ActiveRequestDetailPage extends StatelessWidget {
     if (pickedMinutes == null) return;
     selectedLeadMinutes = pickedMinutes;
 
-    final String formattedDate = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
-    final String formattedTime = "${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}:00";
+    final String formattedDate =
+        "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
+    final String formattedTime =
+        "${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}:00";
 
     requestsBloc.add(
       ScheduleJobVisitEvent(

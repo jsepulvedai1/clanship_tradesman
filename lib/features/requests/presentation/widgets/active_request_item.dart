@@ -96,8 +96,27 @@ class ActiveRequestItem extends StatelessWidget {
                 color: isUrgent ? Colors.white70 : Theme.of(context).textTheme.bodyMedium?.color?.withAlpha(180),
               ),
             ),
-            if (request.status == 'AGREED' || request.status == 'IN_VISIT') ...[
+            if (request.status == 'AGREED' || request.status == 'SCHEDULED' || request.status == 'IN_VISIT') ...[
               const SizedBox(height: 6),
+              if (request.status == 'SCHEDULED') ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  margin: const EdgeInsets.only(bottom: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Text(
+                    'Por confirmar por cliente',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                ),
+              ],
               if (request.scheduledDate != null && request.scheduledDate!.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),

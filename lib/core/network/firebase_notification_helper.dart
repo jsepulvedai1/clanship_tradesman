@@ -24,6 +24,13 @@ class FirebaseNotificationHelper {
 
       debugPrint('User granted notification permission: ${settings.authorizationStatus}');
 
+      // Habilitar alertas/popups/sonidos cuando la app está abierta en primer plano (foreground)
+      await messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
       // Handle foreground messages
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         debugPrint('Foreground push notification received: ${message.notification?.title} - ${message.notification?.body}');

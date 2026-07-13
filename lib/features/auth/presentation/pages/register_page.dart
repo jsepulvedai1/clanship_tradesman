@@ -14,6 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:clanship_mobile_tradesman/core/widgets/address_picker_page.dart';
 import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
+import 'package:clanship_mobile_tradesman/core/utils/image_cropper_helper.dart';
 import 'package:clanship_mobile_tradesman/features/auth/domain/repositories/auth_repository.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -32,7 +33,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final _repeatEmailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _repeatPasswordController = TextEditingController();
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _birthdateController = TextEditingController();
   DateTime? _selectedBirthdate;
 
@@ -97,7 +99,8 @@ class _RegisterPageState extends State<RegisterPage> {
     _repeatEmailController.dispose();
     _passwordController.dispose();
     _repeatPasswordController.dispose();
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _birthdateController.dispose();
     _addressController.dispose();
     _phoneController.dispose();
@@ -110,18 +113,26 @@ class _RegisterPageState extends State<RegisterPage> {
       final picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: source,
+        maxWidth: 1200,
+        maxHeight: 1200,
         imageQuality: 70,
       );
       if (image != null) {
-        setState(() {
-          _avatarPath = image.path;
-        });
+        final croppedPath = await ImageCropperHelper.cropImage(
+          imagePath: image.path,
+          isSquare: true,
+        );
+        if (croppedPath != null) {
+          setState(() {
+            _avatarPath = croppedPath;
+          });
+        }
       }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al seleccionar imagen: $e'),
+          content: Text('Lo sentimos, no se pudo seleccionar la imagen.'),
           backgroundColor: AppColors.errorRed,
         ),
       );
@@ -169,16 +180,28 @@ class _RegisterPageState extends State<RegisterPage> {
     final repeatEmail = _repeatEmailController.text.trim();
     final password = _passwordController.text;
     final repeatPassword = _repeatPasswordController.text;
-    final name = _nameController.text.trim();
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
     final birthdate = _birthdateController.text;
 
     if (email.isEmpty ||
         repeatEmail.isEmpty ||
         password.isEmpty ||
         repeatPassword.isEmpty ||
-        name.isEmpty ||
+        firstName.isEmpty ||
+        lastName.isEmpty ||
         birthdate.isEmpty) {
       _showError('Por favor completa todos los campos.');
+      return false;
+    }
+
+    if (firstName.length > 30) {
+      _showError('El nombre no puede superar los 30 caracteres.');
+      return false;
+    }
+
+    if (lastName.length > 30) {
+      _showError('El apellido no puede superar los 30 caracteres.');
       return false;
     }
 
@@ -547,10 +570,19 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
           const SizedBox(height: 12),
           _buildTextField(
-            controller: _nameController,
-            hint: 'Nombre y Apellido',
+            controller: _firstNameController,
+            hint: 'Nombre',
             keyboardType: TextInputType.name,
             icon: Icons.person_outline,
+            inputFormatters: [LengthLimitingTextInputFormatter(30)],
+          ),
+          const SizedBox(height: 12),
+          _buildTextField(
+            controller: _lastNameController,
+            hint: 'Apellido',
+            keyboardType: TextInputType.name,
+            icon: Icons.person_outline,
+            inputFormatters: [LengthLimitingTextInputFormatter(30)],
           ),
           const SizedBox(height: 12),
           GestureDetector(
@@ -1177,7 +1209,8 @@ class _RegisterPageState extends State<RegisterPage> {
                       RegisterRequested(
                         email: _emailController.text.trim(),
                         password: _passwordController.text,
-                        name: _nameController.text.trim(),
+                        firstName: _firstNameController.text.trim(),
+                        lastName: _lastNameController.text.trim(),
                         birthdate: _birthdateController.text,
                         address: _addressController.text.trim(),
                         phoneNumber: '+569${_phoneController.text.trim()}',
@@ -1221,6 +1254,7 @@ class _RegisterPageState extends State<RegisterPage> {
     TextInputType keyboardType = TextInputType.text,
     void Function(String)? onChanged,
     Widget? suffixIcon,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1239,6 +1273,7 @@ class _RegisterPageState extends State<RegisterPage> {
         obscureText: obscureText,
         keyboardType: keyboardType,
         onChanged: onChanged,
+        inputFormatters: inputFormatters,
         style: const TextStyle(color: Color(0xFF2E3135), fontSize: 14),
         cursorColor: const Color(0xFF0D2B45),
         decoration: InputDecoration(
@@ -1447,6 +1482,8 @@ class _RegisterPageState extends State<RegisterPage> {
         final picker = ImagePicker();
         final XFile? image = await picker.pickImage(
           source: source,
+          maxWidth: 1200,
+          maxHeight: 1200,
           imageQuality: 70,
         );
         if (image != null) {
@@ -1459,7 +1496,7 @@ class _RegisterPageState extends State<RegisterPage> {
           });
         }
       } catch (e) {
-        _showError('Error al seleccionar imagen: $e');
+        _showError('Lo sentimos, no se pudo seleccionar la imagen.');
       }
     }
   }
@@ -1471,6 +1508,8 @@ class _RegisterPageState extends State<RegisterPage> {
         final picker = ImagePicker();
         final XFile? image = await picker.pickImage(
           source: source,
+          maxWidth: 1200,
+          maxHeight: 1200,
           imageQuality: 70,
         );
         if (image != null) {
@@ -1484,7 +1523,7 @@ class _RegisterPageState extends State<RegisterPage> {
           }
         }
       } catch (e) {
-        _showError('Error al seleccionar imagen: $e');
+        _showError('Lo sentimos, no se pudo seleccionar la imagen.');
       }
     }
   }

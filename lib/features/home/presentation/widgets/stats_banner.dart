@@ -20,11 +20,16 @@ class StatsBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final bool isSmallScreen = screenHeight < 750;
 
     return Center(
       child: Container(
         width: MediaQuery.of(context).size.width * 0.90,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: isSmallScreen ? 10 : 16,
+        ),
         decoration: BoxDecoration(
           color: const Color(0xFF0D2B45),
           borderRadius: BorderRadius.circular(20),
@@ -46,27 +51,27 @@ class StatsBanner extends StatelessWidget {
               children: [
                 Text(
                   l10n.homeRatingLabel,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.pureWhite,
-                    fontSize: 15,
+                    fontSize: isSmallScreen ? 13 : 15,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: isSmallScreen ? 3 : 6),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.star_rounded,
-                      color: Color(0xFFF28C28),
-                      size: 28,
+                      color: const Color(0xFFF28C28),
+                      size: isSmallScreen ? 22 : 28,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       rating.toString().replaceAll('.', ','),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: isSmallScreen ? 20 : 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -75,7 +80,7 @@ class StatsBanner extends StatelessWidget {
                       '($reviewsCount ${l10n.homeReviewsText})',
                       style: TextStyle(
                         color: Colors.white.withAlpha(200),
-                        fontSize: 13,
+                        fontSize: isSmallScreen ? 11 : 13,
                       ),
                     ),
                   ],
@@ -86,7 +91,7 @@ class StatsBanner extends StatelessWidget {
             // Línea divisoria vertical blanca
             Container(
               width: 1,
-              height: 55,
+              height: isSmallScreen ? 40 : 55,
               color: Colors.white.withValues(alpha: 0.2),
             ),
 
@@ -100,17 +105,17 @@ class StatsBanner extends StatelessWidget {
                   padding: const EdgeInsets.all(4.0),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.open_in_new_rounded,
                         color: Colors.white,
-                        size: 26,
+                        size: isSmallScreen ? 20 : 26,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         l10n.homeServicesLink,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: isSmallScreen ? 15 : 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

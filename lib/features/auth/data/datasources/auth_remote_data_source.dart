@@ -182,91 +182,98 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     final userModel = await login(email, password);
 
     UserModel finalUserModel = userModel;
+    if (avatarPath != null && avatarPath.isNotEmpty) {
+      finalUserModel = finalUserModel.copyWith(avatarPath: avatarPath);
+    }
+
+    final List<Future<void>> uploadFutures = [];
 
     // If address, phone, or avatar is provided, update the profile with simulated location
     if ((address != null && address.isNotEmpty) || 
         (phoneNumber != null && phoneNumber.isNotEmpty) || 
         (avatarPath != null && avatarPath.isNotEmpty)) {
-      String? base64Image;
-      if (avatarPath != null && avatarPath.isNotEmpty) {
-        try {
-          final file = File(avatarPath);
-          if (await file.exists()) {
-            final bytes = await file.readAsBytes();
-            base64Image = base64Encode(bytes);
+      uploadFutures.add(() async {
+        String? base64Image;
+        if (avatarPath != null && avatarPath.isNotEmpty) {
+          try {
+            final file = File(avatarPath);
+            if (await file.exists()) {
+              final bytes = await file.readAsBytes();
+              base64Image = base64Encode(bytes);
+            }
+          } catch (e) {
+            print('Error encoding avatar image: $e');
           }
-        } catch (e) {
-          print('Error encoding avatar image: $e');
         }
-      }
 
-      // Use passed coordinates or fallback to a simulated latitude/longitude near Santiago Centro, Chile
-      final double finalLat = latitude ?? (-33.4489 + (Random().nextDouble() - 0.5) * 0.1);
-      final double finalLng = longitude ?? (-70.6693 + (Random().nextDouble() - 0.5) * 0.1);
+        // Use passed coordinates or fallback to a simulated latitude/longitude near Santiago Centro, Chile
+        final double finalLat = latitude ?? (-33.4489 + (Random().nextDouble() - 0.5) * 0.1);
+        final double finalLng = longitude ?? (-70.6693 + (Random().nextDouble() - 0.5) * 0.1);
 
-      const String updateProfileMutation = r'''
-        mutation UpdateProfile(
-          $firstName: String!, 
-          $lastName: String!, 
-          $email: String!, 
-          $phoneNumber: String, 
-          $address: String, 
-          $latitude: Float, 
-          $longitude: Float, 
-          $avatarBase64: String
-        ) {
-          updateProfile(
-            firstName: $firstName, 
-            lastName: $lastName, 
-            email: $email, 
-            phoneNumber: $phoneNumber, 
-            address: $address, 
-            latitude: $latitude, 
-            longitude: $longitude, 
-            avatarBase64: $avatarBase64
+        const String updateProfileMutation = r'''
+          mutation UpdateProfile(
+            $firstName: String!, 
+            $lastName: String!, 
+            $email: String!, 
+            $phoneNumber: String, 
+            $address: String, 
+            $latitude: Float, 
+            $longitude: Float, 
+            $avatarBase64: String
           ) {
-            success
-            user {
-              id
-              username
-              email
-              phoneNumber
-              firstName
-              lastName
-              address
-              latitude
-              longitude
-              avatarUrl
+            updateProfile(
+              firstName: $firstName, 
+              lastName: $lastName, 
+              email: $email, 
+              phoneNumber: $phoneNumber, 
+              address: $address, 
+              latitude: $latitude, 
+              longitude: $longitude, 
+              avatarBase64: $avatarBase64
+            ) {
+              success
+              user {
+                id
+                username
+                email
+                phoneNumber
+                firstName
+                lastName
+                address
+                latitude
+                longitude
+                avatarUrl
+              }
+            }
+          }
+        ''';
+
+        final MutationOptions updateOptions = MutationOptions(
+          document: gql(updateProfileMutation),
+          variables: {
+            'firstName': firstName,
+            'lastName': lastName,
+            'email': email,
+            'phoneNumber': phoneNumber,
+            'address': address,
+            'latitude': finalLat,
+            'longitude': finalLng,
+            'avatarBase64': base64Image,
+          },
+          fetchPolicy: FetchPolicy.networkOnly,
+        );
+
+        final QueryResult updateResult = await client.mutate(updateOptions);
+        if (!updateResult.hasException) {
+          final updateSuccess = updateResult.data?['updateProfile']?['success'] as bool? ?? false;
+          if (updateSuccess) {
+            final updatedUserData = updateResult.data?['updateProfile']?['user'] as Map<String, dynamic>?;
+            if (updatedUserData != null) {
+              // Avatar is uploaded and saved on server
             }
           }
         }
-      ''';
-
-      final MutationOptions updateOptions = MutationOptions(
-        document: gql(updateProfileMutation),
-        variables: {
-          'firstName': firstName,
-          'lastName': lastName,
-          'email': email,
-          'phoneNumber': phoneNumber,
-          'address': address,
-          'latitude': finalLat,
-          'longitude': finalLng,
-          'avatarBase64': base64Image,
-        },
-        fetchPolicy: FetchPolicy.networkOnly,
-      );
-
-      final QueryResult updateResult = await client.mutate(updateOptions);
-      if (!updateResult.hasException) {
-        final updateSuccess = updateResult.data?['updateProfile']?['success'] as bool? ?? false;
-        if (updateSuccess) {
-          final updatedUserData = updateResult.data?['updateProfile']?['user'] as Map<String, dynamic>?;
-          if (updatedUserData != null) {
-            finalUserModel = UserModel.fromJson(updatedUserData);
-          }
-        }
-      }
+      }());
     }
 
     // Upload ID Card and Certificates
@@ -302,45 +309,50 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
 
     if (cedulaFrontPath != null && cedulaFrontPath.isNotEmpty) {
-      await uploadDoc(cedulaFrontPath, 'Cédula de Identidad (Frontal)');
+      uploadFutures.add(uploadDoc(cedulaFrontPath, 'Cédula de Identidad (Frontal)'));
     }
     if (cedulaBackPath != null && cedulaBackPath.isNotEmpty) {
-      await uploadDoc(cedulaBackPath, 'Cédula de Identidad (Posterior)');
+      uploadFutures.add(uploadDoc(cedulaBackPath, 'Cédula de Identidad (Posterior)'));
     }
     if (certificates != null && certificates.isNotEmpty) {
       for (final cert in certificates) {
         final p = cert['path'];
         final n = cert['name'];
         if (p != null && p.isNotEmpty && n != null && n.isNotEmpty) {
-          await uploadDoc(p, n);
+          uploadFutures.add(uploadDoc(p, n));
         }
       }
     }
       
     // Update tags if provided
     if (tagIds != null && tagIds.isNotEmpty) {
-      const String updateTagsMutation = r'''
-        mutation UpdateProfessionalProfile($tagIds: [ID!]) {
-          updateProfessionalProfile(tagIds: $tagIds) {
-            success
+      uploadFutures.add(() async {
+        const String updateTagsMutation = r'''
+          mutation UpdateProfessionalProfile($tagIds: [ID!]) {
+            updateProfessionalProfile(tagIds: $tagIds) {
+              success
+            }
           }
+        ''';
+          
+        final MutationOptions updateTagsOptions = MutationOptions(
+          document: gql(updateTagsMutation),
+          variables: {
+            'tagIds': tagIds,
+          },
+          fetchPolicy: FetchPolicy.networkOnly,
+        );
+          
+        try {
+          await client.mutate(updateTagsOptions);
+        } catch (e) {
+          print('Error updating professional tags: $e');
         }
-      ''';
-        
-      final MutationOptions updateTagsOptions = MutationOptions(
-        document: gql(updateTagsMutation),
-        variables: {
-          'tagIds': tagIds,
-        },
-        fetchPolicy: FetchPolicy.networkOnly,
-      );
-        
-      try {
-        await client.mutate(updateTagsOptions);
-      } catch (e) {
-        print('Error updating professional tags: $e');
-      }
+      }());
     }
+
+    // Await all parallel uploads
+    await Future.wait(uploadFutures);
 
     return finalUserModel;
   }

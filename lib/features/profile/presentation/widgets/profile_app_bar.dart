@@ -5,10 +5,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 import 'package:clanship_mobile_tradesman/features/home/domain/entities/user_entity.dart';
-import 'package:clanship_mobile_tradesman/features/settings/presentation/pages/settings_page.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/bloc/profile_event.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/bloc/profile_state.dart';
+import 'package:clanship_mobile_tradesman/core/utils/image_cropper_helper.dart';
 
 class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   final UserEntity user;
@@ -98,9 +98,15 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
                               imageQuality: 60,
                             );
                             if (image != null && context.mounted) {
-                              context.read<ProfileBloc>().add(
-                                UploadAvatarEvent(image.path),
+                              final croppedPath = await ImageCropperHelper.cropImage(
+                                imagePath: image.path,
+                                isSquare: true,
                               );
+                              if (croppedPath != null && context.mounted) {
+                                context.read<ProfileBloc>().add(
+                                  UploadAvatarEvent(croppedPath),
+                                );
+                              }
                             }
                           },
                     child: Stack(

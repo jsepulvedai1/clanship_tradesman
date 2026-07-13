@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:clanship_mobile_tradesman/core/utils/error_parser.dart';
 import 'package:clanship_mobile_tradesman/features/chat/domain/usecases/get_or_create_chat_room_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/chat/presentation/bloc/chat_room_event.dart';
 import 'package:clanship_mobile_tradesman/features/chat/presentation/bloc/chat_room_state.dart';
@@ -19,7 +20,7 @@ class ChatRoomBloc extends Bloc<ChatRoomEvent, ChatRoomState> {
       final roomId = await getOrCreateChatRoom(event.customerId, jobId: event.jobId);
       emit(ChatRoomSuccess(roomId));
     } catch (e) {
-      emit(ChatRoomError(e.toString()));
+      emit(ChatRoomError(sanitizeErrorForUser(e)));
     }
   }
 }

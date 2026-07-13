@@ -66,17 +66,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       RegisterRequested event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
 
-    // Split name and surname if space is present
-    final parts = event.name.trim().split(' ');
-    final firstName = parts.isNotEmpty ? parts[0] : event.name;
-    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
-
     final result = await registerUseCase(
       RegisterParams(
         email: event.email,
         password: event.password,
-        firstName: firstName,
-        lastName: lastName,
+        firstName: event.firstName,
+        lastName: event.lastName,
         address: event.address,
         phoneNumber: event.phoneNumber,
         avatarPath: event.avatarPath,

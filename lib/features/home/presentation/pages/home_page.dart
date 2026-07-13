@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
@@ -26,6 +25,7 @@ import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_s
 import 'package:clanship_mobile_tradesman/core/network/jobs_websocket_service.dart';
 import 'package:clanship_mobile_tradesman/core/network/firebase_notification_helper.dart';
 import '../../../../core/widgets/skeleton_box.dart';
+import 'package:clanship_mobile_tradesman/core/widgets/address_picker_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -70,13 +70,20 @@ class _HomePageState extends State<HomePage> {
         body: BlocBuilder<HomeBloc, HomeState>(
           builder: (context, state) {
             if (state is HomeDataLoaded) {
+              final double screenHeight = MediaQuery.of(context).size.height;
+              final bool isSmallScreen = screenHeight < 750;
+              final double spacing = isSmallScreen ? 6.0 : 10.0;
+
               return RefreshIndicator(
                 onRefresh: () async {
                   _homeBloc.add(LoadUserData());
                   await Future.delayed(const Duration(seconds: 1));
                 },
                 child: ListView(
-                  padding: const EdgeInsets.only(top: 10, bottom: 40),
+                  padding: EdgeInsets.only(
+                    top: isSmallScreen ? 6 : 10,
+                    bottom: isSmallScreen ? 20 : 40,
+                  ),
                   children: [
                     StatsBanner(
                       rating: state.user.rating,
@@ -85,7 +92,7 @@ class _HomePageState extends State<HomePage> {
                         // Acción próximamente
                       },
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: spacing),
                     StatsGrid(
                       active: state.user.activeJobs,
                       completed: state.user.completedJobs,
@@ -121,16 +128,16 @@ class _HomePageState extends State<HomePage> {
                         );
                       },
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: spacing),
                     AvailabilityWidget(
                       isAvailable: state.user.isAvailable,
                       onToggle: (value) {
                         _homeBloc.add(ToggleAvailability(value));
                       },
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: spacing),
                     _LocationWidget(user: state.user),
-                    const SizedBox(height: 10),
+                    SizedBox(height: spacing),
                     RecentRequestsWidget(
                       requests: state.recentRequests,
                       onRequestTap: (request) {
@@ -222,7 +229,7 @@ class _AppBarLoaderState extends State<_AppBarLoader> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Error al subir foto: ${failure.toString()}'),
+                content: Text('Lo sentimos, no se pudo subir la foto.'),
               ),
             );
           }
@@ -253,7 +260,7 @@ class _AppBarLoaderState extends State<_AppBarLoader> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error al procesar foto: $e')));
+        ).showSnackBar(SnackBar(content: Text('Lo sentimos, no se pudo procesar la foto.')));
       }
     } finally {
       if (mounted) {
@@ -392,7 +399,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
         _showSuccess('Ubicación GPS actualizada con éxito.');
       });
     } catch (e) {
-      _showError(e.toString());
+      _showError('Lo sentimos, hubo un error. Por favor, intenta de nuevo.');
     } finally {
       if (mounted) {
         setState(() {
@@ -406,6 +413,8 @@ class _LocationWidgetState extends State<_LocationWidget> {
     BuildContext context,
     HomeBloc homeBloc,
     String address,
+    double latitude,
+    double longitude,
   ) async {
     if (address.trim().isEmpty) return;
 
@@ -414,10 +423,6 @@ class _LocationWidgetState extends State<_LocationWidget> {
     });
 
     try {
-      final random = Random();
-      final double latitude = -33.4489 + (random.nextDouble() - 0.5) * 0.1;
-      final double longitude = -70.6693 + (random.nextDouble() - 0.5) * 0.1;
-
       final updateUseCase = di.sl<UpdateProfileUseCase>();
       final result = await updateUseCase(
         UpdateProfileParams(
@@ -435,7 +440,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
         _showSuccess('Dirección fija actualizada con éxito.');
       });
     } catch (e) {
-      _showError(e.toString());
+      _showError('Lo sentimos, hubo un error. Por favor, intenta de nuevo.');
     } finally {
       if (mounted) {
         setState(() {
@@ -445,66 +450,20 @@ class _LocationWidgetState extends State<_LocationWidget> {
     }
   }
 
-  void _showManualAddressDialog(BuildContext context, HomeBloc homeBloc) {
-    final controller = TextEditingController(
-      text: widget.user.address == 'Ubicación GPS actual'
-          ? ''
-          : widget.user.address,
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text('Fijar Dirección Manual'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              hintText: 'Ingresa tu dirección fija (Ej: Av. Providencia 1234)',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancelar',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final address = controller.text.trim();
-                Navigator.pop(context);
-                _updateLocationManual(context, homeBloc, address);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryBlue,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Guardar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final homeBloc = context.read<HomeBloc>();
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final bool isSmallScreen = screenHeight < 750;
     final String currentAddress =
         widget.user.address ?? 'Sin dirección configurada';
     final hasCoordinates =
         widget.user.latitude != null && widget.user.longitude != null;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(18),
+      margin: EdgeInsets.symmetric(horizontal: isSmallScreen ? 12 : 16),
+      padding: EdgeInsets.all(isSmallScreen ? 12 : 18),
       decoration: BoxDecoration(
         color: isDark ? Colors.grey[900] : Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -523,31 +482,31 @@ class _LocationWidgetState extends State<_LocationWidget> {
             children: [
               SvgPicture.asset(
                 'assets/icon/icons_ F28C28/map-point.svg',
-                width: 24,
-                height: 24,
+                width: isSmallScreen ? 20 : 24,
+                height: isSmallScreen ? 20 : 24,
                 colorFilter: const ColorFilter.mode(
                   Color(0xFF0D2B45),
                   BlendMode.srcIn,
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 'Mi Área de Servicio / Ubicación',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: isSmallScreen ? 14 : 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF2E3135),
+                  color: const Color(0xFF2E3135),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: isSmallScreen ? 8 : 14),
           Text(
             currentAddress,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: isSmallScreen ? 12 : 14,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF2E3135),
+              color: const Color(0xFF2E3135),
             ),
           ),
           if (hasCoordinates) ...[
@@ -555,13 +514,13 @@ class _LocationWidgetState extends State<_LocationWidget> {
             Text(
               'Coordenadas: ${widget.user.latitude.toStringAsFixed(5)}, ${widget.user.longitude.toStringAsFixed(5)}',
               style: TextStyle(
-                fontSize: 11,
+                fontSize: isSmallScreen ? 10 : 11,
                 color: Colors.grey[600],
                 fontFamily: 'monospace',
               ),
             ),
           ],
-          const SizedBox(height: 18),
+          SizedBox(height: isSmallScreen ? 12 : 18),
           if (_isLoading)
             const Center(
               child: Padding(
@@ -577,55 +536,84 @@ class _LocationWidgetState extends State<_LocationWidget> {
                     onPressed: () => _updateLocationWithGPS(context, homeBloc),
                     icon: SvgPicture.asset(
                       'assets/icon/icons_ F28C28/dialog.svg',
-                      width: 16,
-                      height: 16,
+                      width: isSmallScreen ? 14 : 16,
+                      height: isSmallScreen ? 14 : 16,
                       colorFilter: const ColorFilter.mode(
                         Colors.white,
                         BlendMode.srcIn,
                       ),
                     ),
-                    label: const Text(
+                    label: Text(
                       'GPS Actual',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: isSmallScreen ? 11 : 12,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0D2B45),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: EdgeInsets.symmetric(
+                        vertical: isSmallScreen ? 10 : 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: isSmallScreen ? 8 : 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () =>
-                        _showManualAddressDialog(context, homeBloc),
+                    onPressed: () async {
+                      final result =
+                          await Navigator.push<Map<String, dynamic>?>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddressPickerPage(
+                                initialAddress:
+                                    widget.user.address ==
+                                        'Ubicación GPS actual'
+                                    ? ''
+                                    : widget.user.address,
+                              ),
+                            ),
+                          );
+                      if (result != null && mounted) {
+                        final address = result['address'] as String;
+                        final lat = result['latitude'] as double;
+                        final lng = result['longitude'] as double;
+                        _updateLocationManual(
+                          context,
+                          homeBloc,
+                          address,
+                          lat,
+                          lng,
+                        );
+                      }
+                    },
                     icon: SvgPicture.asset(
                       'assets/icon/icons_ F28C28/dialog.svg',
-                      width: 16,
-                      height: 16,
+                      width: isSmallScreen ? 14 : 16,
+                      height: isSmallScreen ? 14 : 16,
                       colorFilter: const ColorFilter.mode(
                         Colors.white,
                         BlendMode.srcIn,
                       ),
                     ),
-                    label: const Text(
+                    label: Text(
                       'Fijar Dirección',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: isSmallScreen ? 11 : 12,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0B6E4F),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: EdgeInsets.symmetric(
+                        vertical: isSmallScreen ? 10 : 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),

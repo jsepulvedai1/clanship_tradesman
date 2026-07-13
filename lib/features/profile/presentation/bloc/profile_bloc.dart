@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
 import 'profile_event.dart';
 import 'profile_state.dart';
 
@@ -22,6 +23,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<LoadSpecialtiesEvent>(_onLoadSpecialties);
     on<LoadSubscriptionPlansEvent>(_onLoadSubscriptionPlans);
     on<SubscribeToPlanEvent>(_onSubscribeToPlan);
+    on<SetAvatarFromUrlEvent>(_onSetAvatarFromUrl);
   }
 
   void _onLoadProfileData(LoadProfileData event, Emitter<ProfileState> emit) async {
@@ -30,7 +32,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     final result = await profileRepository.getMyProfile();
 
     result.fold(
-      (failure) => emit(ProfileError('Error cargando perfil: ${failure.toString()}')),
+      (failure) => emit(ProfileError(failure.message)),
       (user) {
         emit(ProfileLoaded(user: user));
         add(LoadTagsEvent());
@@ -257,6 +259,41 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           isSubscribing: false,
         )),
       );
+    }
+  }
+
+  Future<void> _onSetAvatarFromUrl(SetAvatarFromUrlEvent event, Emitter<ProfileState> emit) async {
+    final currentState = state;
+    if (currentState is ProfileLoaded) {
+      emit(currentState.copyWith(isAvatarUploading: true));
+
+      try {
+        final response = await http.get(Uri.parse(event.imageUrl));
+        if (response.statusCode == 200) {
+          final bytes = response.bodyBytes;
+          final base64Image = base64Encode(bytes);
+
+          final result = await profileRepository.updateProfile(
+            firstName: currentState.user.firstName,
+            lastName: currentState.user.lastName,
+            email: currentState.user.email,
+            avatarBase64: base64Image,
+          );
+
+          result.fold(
+            (failure) => emit(currentState.copyWith(isAvatarUploading: false)),
+            (user) {
+              emit(ProfileLoaded(user: user));
+              add(LoadTagsEvent());
+              add(LoadSpecialtiesEvent());
+            },
+          );
+        } else {
+          emit(currentState.copyWith(isAvatarUploading: false));
+        }
+      } catch (e) {
+        emit(currentState.copyWith(isAvatarUploading: false));
+      }
     }
   }
 }

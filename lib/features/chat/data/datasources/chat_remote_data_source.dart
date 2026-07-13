@@ -10,7 +10,13 @@ abstract class ChatRemoteDataSource {
   Future<String> getOrCreateChatRoomWithCustomer(int customerId, {int? jobId});
   Future<List<MessageModel>> getChatHistory(String roomId);
   Stream<MessageModel> getMessagesStream(String roomId);
-  Future<void> sendMessage(String roomId, String text);
+  Future<void> sendMessage(
+    String roomId, 
+    String text, {
+    String? fileBase64, 
+    String? fileName, 
+    String? messageType,
+  });
   void closeConnection();
 }
 
@@ -74,9 +80,12 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
           id
           text
           createdAt
+          fileUrl
+          messageType
           sender {
             id
             username
+            avatarUrl
           }
         }
       }
@@ -139,10 +148,20 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   }
 
   @override
-  Future<void> sendMessage(String roomId, String text) async {
+  Future<void> sendMessage(
+    String roomId, 
+    String text, {
+    String? fileBase64, 
+    String? fileName, 
+    String? messageType,
+  }) async {
     if (_channel != null) {
-      // Send via WebSocket
-      _channel!.sink.add(jsonEncode({'message': text}));
+      _channel!.sink.add(jsonEncode({
+        'message': text,
+        'file_base64': fileBase64,
+        'file_name': fileName,
+        'message_type': messageType ?? 'TEXT',
+      }));
     } else {
       throw Exception('WebSocket is not connected');
     }

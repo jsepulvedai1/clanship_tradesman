@@ -7,7 +7,7 @@ abstract class RequestsRemoteDataSource {
   Future<List<JobRequestModel>> getRejectedJobRequests();
   Future<void> updateJobStatus(int jobId, String newStatus);
   Future<void> markJobAsRead(int jobId);
-  Future<void> scheduleJobVisit(int jobId, String scheduledDate, String scheduledTime, int notificationLeadMinutes);
+  Future<void> scheduleJobVisit(int jobId, String scheduledDate, String scheduledTime, int notificationLeadMinutes, {double? agreedPrice});
 }
 
 class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
@@ -218,10 +218,10 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
   }
 
   @override
-  Future<void> scheduleJobVisit(int jobId, String scheduledDate, String scheduledTime, int notificationLeadMinutes) async {
+  Future<void> scheduleJobVisit(int jobId, String scheduledDate, String scheduledTime, int notificationLeadMinutes, {double? agreedPrice}) async {
     const String mutation = r'''
-      mutation ScheduleJobVisit($jobId: Int!, $scheduledDate: Date!, $scheduledTime: Time!, $notificationLeadMinutes: Int!) {
-        scheduleJobVisit(jobId: $jobId, scheduledDate: $scheduledDate, scheduledTime: $scheduledTime, notificationLeadMinutes: $notificationLeadMinutes) {
+      mutation ScheduleJobVisit($jobId: Int!, $scheduledDate: Date!, $scheduledTime: Time!, $notificationLeadMinutes: Int!, $agreedPrice: Decimal) {
+        scheduleJobVisit(jobId: $jobId, scheduledDate: $scheduledDate, scheduledTime: $scheduledTime, notificationLeadMinutes: $notificationLeadMinutes, agreedPrice: $agreedPrice) {
           success
         }
       }
@@ -234,6 +234,7 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
         'scheduledDate': scheduledDate,
         'scheduledTime': scheduledTime,
         'notificationLeadMinutes': notificationLeadMinutes,
+        'agreedPrice': agreedPrice,
       },
       fetchPolicy: FetchPolicy.networkOnly,
     );

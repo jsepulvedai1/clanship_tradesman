@@ -106,7 +106,7 @@ class _RequestsPageState extends State<RequestsPage> {
                 final requests = state.requests;
                 
                 final pendingRequests = requests.where((r) => r.status == 'REQUESTED').toList();
-                final agreedRequests = requests.where((r) => r.status == 'AGREED' || r.status == 'IN_VISIT').toList();
+                final agreedRequests = requests.where((r) => r.status == 'AGREED' || r.status == 'SCHEDULED' || r.status == 'IN_VISIT').toList();
 
                 return TabBarView(
                   children: [

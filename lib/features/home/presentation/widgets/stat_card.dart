@@ -28,6 +28,8 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final bool isSmallScreen = screenHeight < 750;
 
     Color cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     if (hasHighlight) {
@@ -56,24 +58,27 @@ class StatCard extends StatelessWidget {
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: EdgeInsets.symmetric(
+          horizontal: isSmallScreen ? 8 : 12,
+          vertical: isSmallScreen ? 8 : 12,
+        ),
         child: Row(
           children: [
             // Icono con círculo de fondo
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
               decoration: BoxDecoration(
                 color: iconColor.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
               child: SvgPicture.asset(
                 svgIconPath,
-                width: 20,
-                height: 20,
+                width: isSmallScreen ? 16 : 20,
+                height: isSmallScreen ? 16 : 20,
                 colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: isSmallScreen ? 8 : 12),
             // Textos
             Expanded(
               child: Column(
@@ -84,16 +89,16 @@ class StatCard extends StatelessWidget {
                     value,
                     style: TextStyle(
                       color: valueColor,
-                      fontSize: 24,
+                      fontSize: isSmallScreen ? 18 : 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     label,
-                    style: const TextStyle(
-                      color: Color(0xFF2E3135),
-                      fontSize: 10,
+                    style: TextStyle(
+                      color: const Color(0xFF2E3135),
+                      fontSize: isSmallScreen ? 9 : 10,
                       fontWeight: FontWeight.bold,
                       height: 1.2,
                     ),
@@ -102,7 +107,7 @@ class StatCard extends StatelessWidget {
               ),
             ),
             if (showChevron) ...[
-              Icon(Icons.arrow_forward_ios, size: 12, color: chevronColor),
+              Icon(Icons.arrow_forward_ios, size: isSmallScreen ? 10 : 12, color: chevronColor),
             ],
           ],
         ),

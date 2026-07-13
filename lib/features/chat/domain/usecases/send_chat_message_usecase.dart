@@ -5,7 +5,19 @@ class SendChatMessageUseCase {
 
   SendChatMessageUseCase(this.repository);
 
-  Future<void> call(String roomId, String text) async {
-    return await repository.sendMessage(roomId, text);
+  Future<void> call(
+    String roomId, 
+    String text, {
+    String? fileBase64, 
+    String? fileName, 
+    String? messageType,
+  }) async {
+    return await repository.sendMessage(
+      roomId, 
+      text, 
+      fileBase64: fileBase64, 
+      fileName: fileName, 
+      messageType: messageType,
+    );
   }
 }
