@@ -40,6 +40,9 @@ class JobRequestModel extends Equatable {
   final String? enrichedDetails;
   final String? additionalPhotoUrl;
   final int? notificationLeadMinutes;
+  final bool hasUnreadMessages;
+  final String? cancellationReason;
+  final String? cancelledByUserName;
 
   const JobRequestModel({
     required this.id,
@@ -55,6 +58,9 @@ class JobRequestModel extends Equatable {
     this.enrichedDetails,
     this.additionalPhotoUrl,
     this.notificationLeadMinutes,
+    this.hasUnreadMessages = false,
+    this.cancellationReason,
+    this.cancelledByUserName,
   });
 
   factory JobRequestModel.fromJson(Map<String, dynamic> json) {
@@ -69,11 +75,14 @@ class JobRequestModel extends Equatable {
       customer: json['customer'] != null ? CustomerModel.fromJson(json['customer']) : null,
       createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) : null,
       isRead: json['isRead'] ?? false,
+      hasUnreadMessages: json['hasUnreadMessages'] ?? false,
       enrichedDetails: json['enrichedDetails'],
       additionalPhotoUrl: json['additionalPhotoUrl'],
       notificationLeadMinutes: json['notificationLeadMinutes'] != null
           ? int.tryParse(json['notificationLeadMinutes'].toString())
           : null,
+      cancellationReason: json['cancellationReason']?.toString(),
+      cancelledByUserName: json['cancelledByUserName']?.toString(),
     );
   }
 
@@ -89,8 +98,11 @@ class JobRequestModel extends Equatable {
         customer,
         createdAt,
         isRead,
+        hasUnreadMessages,
         enrichedDetails,
         additionalPhotoUrl,
         notificationLeadMinutes,
+        cancellationReason,
+        cancelledByUserName,
       ];
 }

@@ -4,8 +4,10 @@ class AppColors {
   // Brand Colors (Vibrant/Action)
   static const Color primaryBlue = Color(0xFF0D2B45); // Deep Blue
   static const Color primaryAzure = Color(0xFF0B6E4F); // Green
+  static const Color availabilityGreen = Color(0xFF13D934); // Green
   static const Color accentCyan = Color(0xFFF28C28); // Orange
   static const Color textDark = Color(0xFF2E3135); // Graphite Grey
+  static const Color gray = Color(0xFF323437);
 
   // Neutral Colors (Dark/True Black)
   static const Color trueBlack = Color(0xFF000000);
@@ -25,7 +27,7 @@ class AppColors {
   static const Color statsBlue = Color(0xFF0B6E4F);
   static const Color statsRed = Color(0xFFFF5252);
   static const Color statsOrange = Color(0xFFFFAB40);
-  static const Color availabilityActive = Color.fromARGB(221, 19, 217, 52);
+  static const Color availabilityActive = Color.fromARGB(221, 2, 122, 24);
 
   // Other Semantic Colors
   static const Color starGold = Color(0xFFFFD740);
@@ -34,4 +36,6 @@ class AppColors {
 
   // Helper for Gradients
   static const List<Color> logoGradient = [primaryBlue, primaryAzure];
+
+  static var primary;
 }

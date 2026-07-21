@@ -5,6 +5,7 @@ import 'package:clanship_mobile_tradesman/core/config/environment_config.dart';
 
 class GraphQLService {
   late final GraphQLClient client;
+  late final GraphQLClient publicClient;
   final storage = const FlutterSecureStorage();
 
   GraphQLService(SharedPreferences sharedPreferences) {
@@ -49,6 +50,11 @@ class GraphQLService {
     client = GraphQLClient(
       cache: GraphQLCache(store: HiveStore()),
       link: link,
+    );
+
+    publicClient = GraphQLClient(
+      cache: GraphQLCache(store: InMemoryStore()),
+      link: httpLink,
     );
   }
 }

@@ -55,7 +55,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileWhoAmI => 'Quien soy';
 
   @override
-  String get profileProfessionalProfile => 'Mi perfil profesional';
+  String get profileProfessionalProfile => 'Cuéntanos sobre ti';
 
   @override
   String get profileEdit => 'Editar';
@@ -81,7 +81,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Puedes tener un máximo de 6 etiquetas de servicios.';
 
   @override
-  String get profilePhotosVideos => 'Fotos/videos';
+  String get profilePhotosVideos => 'Fotos de tus trabajos';
 
   @override
   String get profilePlanReminder => 'Te quedan';

@@ -71,6 +71,8 @@ class BioSection extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
               biography.isNotEmpty
                   ? biography
                   : 'Sin biografía aún. Haz clic en Editar para agregar una.',

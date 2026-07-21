@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:clanship_mobile_tradesman/features/auth/data/models/user_model.dart';
+import 'package:clanship_mobile_tradesman/core/network/firebase_notification_helper.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 abstract class AuthRemoteDataSource {
@@ -20,7 +21,9 @@ abstract class AuthRemoteDataSource {
     List<Map<String, String>>? certificates,
     double? latitude,
     double? longitude,
+    List<String>? specialtyIds,
     List<String>? tagIds,
+    List<String>? subtagIds,
   });
   Future<UserModel> getCurrentUser();
   Future<void> logout();
@@ -130,7 +133,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     List<Map<String, String>>? certificates,
     double? latitude,
     double? longitude,
+    List<String>? specialtyIds,
     List<String>? tagIds,
+    List<String>? subtagIds,
   }) async {
     // Clear any existing token to prevent AuthLink from sending an invalid/expired token
     // which causes 'Error decoding signature' on the server.
@@ -324,12 +329,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     }
       
-    // Update tags if provided
-    if (tagIds != null && tagIds.isNotEmpty) {
+    // Update specialties, tags, and subtags if provided
+    if ((specialtyIds != null && specialtyIds.isNotEmpty) || 
+        (tagIds != null && tagIds.isNotEmpty) || 
+        (subtagIds != null && subtagIds.isNotEmpty)) {
       uploadFutures.add(() async {
         const String updateTagsMutation = r'''
-          mutation UpdateProfessionalProfile($tagIds: [ID!]) {
-            updateProfessionalProfile(tagIds: $tagIds) {
+          mutation UpdateProfessionalProfile($specialtyIds: [ID!], $tagIds: [ID!], $subtagIds: [ID!]) {
+            updateProfessionalProfile(specialtyIds: $specialtyIds, tagIds: $tagIds, subtagIds: $subtagIds) {
               success
             }
           }
@@ -338,7 +345,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         final MutationOptions updateTagsOptions = MutationOptions(
           document: gql(updateTagsMutation),
           variables: {
+            'specialtyIds': specialtyIds,
             'tagIds': tagIds,
+            'subtagIds': subtagIds,
           },
           fetchPolicy: FetchPolicy.networkOnly,
         );
@@ -403,6 +412,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> logout() async {
+    try {
+      await FirebaseNotificationHelper.deleteFcmToken();
+    } catch (e) {
+      // Ignorar errores de red para asegurar que el logout local ocurra de todos modos
+    }
     const storage = FlutterSecureStorage();
     await storage.delete(key: 'jwt_token');
   }
@@ -446,10 +460,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<List<Map<String, dynamic>>> getAvailableTags() async {
     const String query = r'''
-      query GetTags {
-        tags {
+      query GetSpecialties {
+        specialties {
           id
           name
+          iconUrl
+          tags {
+            id
+            name
+            subtags {
+              id
+              name
+            }
+          }
         }
       }
     ''';
@@ -465,12 +488,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw Exception(result.exception.toString());
     }
 
-    final tagsList = result.data?['tags'] as List?;
-    if (tagsList == null) {
+    final specialtiesList = result.data?['specialties'] as List?;
+    if (specialtiesList == null) {
       return [];
     }
-
-    return tagsList.map((t) => Map<String, dynamic>.from(t)).toList();
+    return specialtiesList.map((s) => s as Map<String, dynamic>).toList();
   }
 }
-

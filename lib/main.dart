@@ -9,6 +9,7 @@ import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/
 import 'package:clanship_mobile_tradesman/core/theme/bloc/theme_bloc.dart';
 import 'package:clanship_mobile_tradesman/core/theme/bloc/language_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_bloc.dart';
 
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 
@@ -34,6 +35,9 @@ class AntiGravityApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => di.sl<AuthBloc>(),
+        ),
+        BlocProvider(
+          create: (_) => di.sl<RequestsBloc>(),
         ),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(

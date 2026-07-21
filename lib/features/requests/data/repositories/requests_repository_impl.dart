@@ -28,9 +28,12 @@ class RequestsRepositoryImpl implements RequestsRepository {
         agreedPrice: model.agreedPrice,
         status: model.status,
         isRead: model.isRead,
+        hasUnreadMessages: model.hasUnreadMessages,
         enrichedDetails: model.enrichedDetails,
         additionalPhotoUrl: model.additionalPhotoUrl,
         notificationLeadMinutes: model.notificationLeadMinutes,
+        cancellationReason: model.cancellationReason,
+        cancelledByUserName: model.cancelledByUserName,
       );
     }).toList();
   }
@@ -72,13 +75,15 @@ class RequestsRepositoryImpl implements RequestsRepository {
         enrichedDetails: model.enrichedDetails,
         additionalPhotoUrl: model.additionalPhotoUrl,
         notificationLeadMinutes: model.notificationLeadMinutes,
+        cancellationReason: model.cancellationReason,
+        cancelledByUserName: model.cancelledByUserName,
       );
     }).toList();
   }
 
   @override
-  Future<void> updateJobStatus(int jobId, String newStatus) async {
-    await remoteDataSource.updateJobStatus(jobId, newStatus);
+  Future<void> updateJobStatus(int jobId, String newStatus, {String? cancellationReason}) async {
+    await remoteDataSource.updateJobStatus(jobId, newStatus, cancellationReason: cancellationReason);
   }
 
   @override

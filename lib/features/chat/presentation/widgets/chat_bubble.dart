@@ -6,10 +6,14 @@ import '../../domain/entities/chat_message.dart';
 
 class ChatBubble extends StatelessWidget {
   final ChatMessage message;
+  final String? jobStatus;
+  final bool isLatestProposal;
 
   const ChatBubble({
     super.key,
     required this.message,
+    this.jobStatus,
+    this.isLatestProposal = true,
   });
 
   @override
@@ -204,6 +208,58 @@ class ChatBubble extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
+          if (isLatestProposal &&
+              (jobStatus == 'AGREED' ||
+               jobStatus == 'IN_VISIT' ||
+               jobStatus == 'FINISHED')) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Divider(height: 1),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.green,
+                  size: 18,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Propuesta Aceptada',
+                  style: TextStyle(
+                    color: Colors.green.shade800,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ] else if (isLatestProposal && jobStatus == 'CANCELLED') ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Divider(height: 1),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.cancel_rounded,
+                  color: Colors.red,
+                  size: 18,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Propuesta Rechazada',
+                  style: TextStyle(
+                    color: Colors.red.shade800,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

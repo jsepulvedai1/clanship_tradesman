@@ -68,6 +68,7 @@ class UserEntity extends Equatable {
   final int rejectedJobs;
   final int scheduledJobs;
   final bool isAvailable;
+  final bool isEmergency;
   final String biography;
   final String planName;
   final int daysRemaining;
@@ -87,6 +88,7 @@ class UserEntity extends Equatable {
   final String? specialtyName;
   final String? specialtyIconUrl;
   final List<Map<String, dynamic>> specialties;
+  final List<Map<String, dynamic>> subtags;
 
   const UserEntity({
     required this.id,
@@ -103,6 +105,7 @@ class UserEntity extends Equatable {
     this.rejectedJobs = 0,
     this.scheduledJobs = 0,
     this.isAvailable = true,
+    this.isEmergency = false,
     this.biography = '',
     this.planName = 'Básico',
     this.daysRemaining = 0,
@@ -122,6 +125,7 @@ class UserEntity extends Equatable {
     this.specialtyName,
     this.specialtyIconUrl,
     this.specialties = const [],
+    this.subtags = const [],
   });
 
   UserEntity copyWith({
@@ -139,6 +143,7 @@ class UserEntity extends Equatable {
     int? rejectedJobs,
     int? scheduledJobs,
     bool? isAvailable,
+    bool? isEmergency,
     String? biography,
     String? planName,
     int? daysRemaining,
@@ -158,6 +163,7 @@ class UserEntity extends Equatable {
     String? specialtyName,
     String? specialtyIconUrl,
     List<Map<String, dynamic>>? specialties,
+    List<Map<String, dynamic>>? subtags,
   }) {
     return UserEntity(
       id: id ?? this.id,
@@ -174,6 +180,7 @@ class UserEntity extends Equatable {
       rejectedJobs: rejectedJobs ?? this.rejectedJobs,
       scheduledJobs: scheduledJobs ?? this.scheduledJobs,
       isAvailable: isAvailable ?? this.isAvailable,
+      isEmergency: isEmergency ?? this.isEmergency,
       biography: biography ?? this.biography,
       planName: planName ?? this.planName,
       daysRemaining: daysRemaining ?? this.daysRemaining,
@@ -193,6 +200,7 @@ class UserEntity extends Equatable {
       specialtyName: specialtyName ?? this.specialtyName,
       specialtyIconUrl: specialtyIconUrl ?? this.specialtyIconUrl,
       specialties: specialties ?? this.specialties,
+      subtags: subtags ?? this.subtags,
     );
   }
 
@@ -212,6 +220,7 @@ class UserEntity extends Equatable {
         rejectedJobs,
         scheduledJobs,
         isAvailable,
+        isEmergency,
         biography,
         planName,
         daysRemaining,
@@ -231,5 +240,6 @@ class UserEntity extends Equatable {
         specialtyName,
         specialtyIconUrl,
         specialties,
+        subtags,
       ];
 }

@@ -160,10 +160,23 @@ class ActiveRequestItem extends StatelessWidget {
             ],
           ],
         ),
-        trailing: Icon(
-          Icons.arrow_forward_ios,
-          size: 16,
-          color: isUrgent ? Colors.white : Colors.grey,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (request.hasUnreadMessages) ...[
+              const Icon(
+                Icons.chat_bubble_rounded,
+                color: Color(0xFFEF4444),
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+            ],
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: isUrgent ? Colors.white : Colors.grey,
+            ),
+          ],
         ),
         onTap: onTap,
       ),

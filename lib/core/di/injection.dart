@@ -64,10 +64,10 @@ Future<void> init() async {
 
   // Features - Splash
   sl.registerFactory(() => SplashBloc(sl()));
-  
+
   // Features - Navigation
   sl.registerFactory(() => NavigationBloc());
-  
+
   // Features - Home
   sl.registerFactory(() => HomeBloc(sl(), sl(), sl()));
 
@@ -78,53 +78,61 @@ Future<void> init() async {
   sl.registerFactory(() => AuthBloc(sl(), sl(), sl(), sl()));
 
   // Features - Requests
-  sl.registerFactory(() => RequestsBloc(
-        getPendingRequests: sl(),
-        getCompletedRequests: sl(),
-        getRejectedRequests: sl(),
-        updateJobStatus: sl(),
-        markJobAsRead: sl(),
-        scheduleJobVisit: sl(),
-      ));
+  sl.registerFactory(
+    () => RequestsBloc(
+      getPendingRequests: sl(),
+      getCompletedRequests: sl(),
+      getRejectedRequests: sl(),
+      updateJobStatus: sl(),
+      markJobAsRead: sl(),
+      scheduleJobVisit: sl(),
+    ),
+  );
 
   // Features - Chat
   sl.registerFactory(() => ChatRoomBloc(getOrCreateChatRoom: sl()));
-  sl.registerFactory(() => ChatMessagesBloc(
-        getChatHistory: sl(),
-        streamChatMessages: sl(),
-        sendChatMessage: sl(),
-        repository: sl(),
-      ));
+  sl.registerFactory(
+    () => ChatMessagesBloc(
+      getChatHistory: sl(),
+      streamChatMessages: sl(),
+      sendChatMessage: sl(),
+      repository: sl(),
+    ),
+  );
 
   // Core - Theme / Language
   sl.registerLazySingleton(() => ThemeBloc());
   sl.registerLazySingleton(() => LanguageBloc());
-  
+
   // Data Sources
   sl.registerLazySingleton<AuthRemoteDataSource>(
-      () => AuthRemoteDataSourceImpl(sl<GraphQLService>().client));
+    () => AuthRemoteDataSourceImpl(sl<GraphQLService>().client),
+  );
   sl.registerLazySingleton<ProfileRemoteDataSource>(
-      () => ProfileRemoteDataSourceImpl(sl<GraphQLService>().client));
+    () => ProfileRemoteDataSourceImpl(sl<GraphQLService>().client),
+  );
   sl.registerLazySingleton<RequestsRemoteDataSource>(
-      () => RequestsRemoteDataSourceImpl(sl<GraphQLService>().client));
+    () => RequestsRemoteDataSourceImpl(sl<GraphQLService>().client),
+  );
   sl.registerLazySingleton<ChatRemoteDataSource>(
-      () => ChatRemoteDataSourceImpl(sl<GraphQLService>().client));
+    () => ChatRemoteDataSourceImpl(sl<GraphQLService>().client),
+  );
 
   // Repositories
-  sl.registerLazySingleton<AuthRepository>(
-      () => AuthRepositoryImpl(sl()));
+  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()));
   sl.registerLazySingleton<ProfileRepository>(
-      () => ProfileRepositoryImpl(sl()));
+    () => ProfileRepositoryImpl(sl()),
+  );
   sl.registerLazySingleton<RequestsRepository>(
-      () => RequestsRepositoryImpl(sl()));
-  sl.registerLazySingleton<ChatRepository>(
-      () => ChatRepositoryImpl(sl()));
+    () => RequestsRepositoryImpl(sl()),
+  );
+  sl.registerLazySingleton<ChatRepository>(() => ChatRepositoryImpl(sl()));
 
   // UseCases
   sl.registerLazySingleton(() => LoginUseCase(sl()));
   sl.registerLazySingleton(() => RegisterUseCase(sl()));
   sl.registerLazySingleton(() => GetCurrentUserUseCase(sl()));
-  sl.registerLazySingleton(() => LogoutUseCase(sl()));
+  sl.registerLazySingleton(() => LogoutUseCase(sl(), sl()));
   sl.registerLazySingleton(() => RequestPasswordResetUseCase(sl()));
   sl.registerLazySingleton(() => GetMyProfileUseCase(sl()));
   sl.registerLazySingleton(() => UpdateProfileUseCase(sl()));
@@ -141,6 +149,6 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetChatHistoryUseCase(sl()));
   sl.registerLazySingleton(() => StreamChatMessagesUseCase(sl()));
   sl.registerLazySingleton(() => SendChatMessageUseCase(sl()));
-  
+
   // Core
 }

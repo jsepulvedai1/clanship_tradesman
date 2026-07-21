@@ -20,13 +20,28 @@ import '../widgets/social_link_section.dart';
 import '../widgets/profile_action_button.dart';
 import 'documents_page.dart';
 import 'profile_preview_page.dart';
+import 'package:clanship_mobile_tradesman/features/profile/presentation/widgets/tradesman_subtags_sheet.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
 import 'package:clanship_mobile_tradesman/core/utils/image_cropper_helper.dart';
+import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/navigation_bloc.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   void _showEditBioDialog(BuildContext context, UserEntity user) {
     final bioController = TextEditingController(text: user.biography);
@@ -99,269 +114,6 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  void _showSpecialtiesDialog(
-    BuildContext context,
-    UserEntity user,
-    List<Map<String, dynamic>> availableSpecialties,
-  ) {
-    if (availableSpecialties.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cargando especialidades...')),
-      );
-      context.read<ProfileBloc>().add(LoadSpecialtiesEvent());
-      return;
-    }
-
-    List<String> selectedIds = user.specialties
-        .map((s) => s['id']?.toString() ?? '')
-        .toList();
-    String? selectedPrincipalId = user.specialtyId;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setState) {
-            final isDark = Theme.of(context).brightness == Brightness.dark;
-            return AlertDialog(
-              backgroundColor: isDark ? AppColors.cardDark : Colors.white,
-              title: const Text(
-                'Seleccionar Especialidades',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Marca las especialidades que dominas y selecciona la estrella de tu especialidad principal.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 12),
-                    Flexible(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: availableSpecialties.length,
-                        itemBuilder: (context, index) {
-                          final specialty = availableSpecialties[index];
-                          final id = specialty['id']?.toString() ?? '';
-                          final name = specialty['name'] ?? '';
-                          final iconUrl = specialty['iconUrl']?.toString();
-                          final isSelected = selectedIds.contains(id);
-                          final isPrincipal = selectedPrincipalId == id;
-
-                          return CheckboxListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Row(
-                              children: [
-                                if (iconUrl != null && iconUrl.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 8.0),
-                                    child: Image.network(
-                                      iconUrl,
-                                      width: 24,
-                                      height: 24,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              const Icon(
-                                                Icons.work_outline,
-                                                size: 24,
-                                              ),
-                                    ),
-                                  )
-                                else
-                                  const Padding(
-                                    padding: EdgeInsets.only(right: 8.0),
-                                    child: Icon(Icons.work_outline, size: 24),
-                                  ),
-                                Expanded(child: Text(name)),
-                              ],
-                            ),
-                            value: isSelected,
-                            onChanged: (checked) {
-                              setState(() {
-                                if (checked == true) {
-                                  selectedIds.add(id);
-                                  selectedPrincipalId ??= id;
-                                } else {
-                                  selectedIds.remove(id);
-                                  if (selectedPrincipalId == id) {
-                                    selectedPrincipalId = selectedIds.isNotEmpty
-                                        ? selectedIds.first
-                                        : null;
-                                  }
-                                }
-                              });
-                            },
-                            secondary: isSelected
-                                ? IconButton(
-                                    icon: Icon(
-                                      isPrincipal
-                                          ? Icons.star
-                                          : Icons.star_border,
-                                      color: isPrincipal
-                                          ? Colors.amber
-                                          : Colors.grey,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        selectedPrincipalId = id;
-                                      });
-                                    },
-                                  )
-                                : null,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (selectedIds.isNotEmpty && selectedPrincipalId == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Debes seleccionar una especialidad principal',
-                          ),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                      return;
-                    }
-                    context.read<ProfileBloc>().add(
-                      UpdateProfessionalProfileEvent(
-                        specialtyId: selectedPrincipalId,
-                        specialtyIds: selectedIds,
-                      ),
-                    );
-                    Navigator.pop(dialogContext);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void _showTagsDialog(
-    BuildContext context,
-    UserEntity user,
-    List<Map<String, dynamic>> availableTags,
-  ) {
-    if (availableTags.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cargando etiquetas de servicio...')),
-      );
-      context.read<ProfileBloc>().add(LoadTagsEvent());
-      return;
-    }
-
-    final selectedTagNames = List<String>.from(user.serviceTags);
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setState) {
-            final isDark = Theme.of(context).brightness == Brightness.dark;
-            return AlertDialog(
-              backgroundColor: isDark ? AppColors.cardDark : Colors.white,
-              title: const Text(
-                'Seleccionar Etiquetas',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              content: SingleChildScrollView(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: availableTags.map((tag) {
-                    final name = tag['name'] as String;
-                    final isSelected = selectedTagNames.contains(name);
-                    return FilterChip(
-                      selected: isSelected,
-                      label: Text(name),
-                      selectedColor: AppColors.primaryBlue,
-                      checkmarkColor: Colors.white,
-                      labelStyle: TextStyle(
-                        color: isSelected
-                            ? Colors.white
-                            : (isDark ? Colors.white : Colors.black),
-                      ),
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            if (selectedTagNames.length < 6) {
-                              selectedTagNames.add(name);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Máximo de 6 etiquetas de servicios.',
-                                  ),
-                                ),
-                              );
-                            }
-                          } else {
-                            selectedTagNames.remove(name);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text(
-                    'Cancelar',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    final tagIds = availableTags
-                        .where((t) => selectedTagNames.contains(t['name']))
-                        .map((t) => t['id'] as String)
-                        .toList();
-                    context.read<ProfileBloc>().add(
-                      UpdateProfessionalProfileEvent(tagIds: tagIds),
-                    );
-                    Navigator.pop(dialogContext);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
   Future<void> _pickPortfolioImage(BuildContext context) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(
@@ -381,6 +133,85 @@ class ProfilePage extends StatelessWidget {
     }
   }
 
+  void _showSubtagsBottomSheet(
+    BuildContext context,
+    UserEntity user,
+    List<Map<String, dynamic>> availableSpecialties,
+  ) {
+    if (availableSpecialties.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cargando especialidades...')),
+      );
+      context.read<ProfileBloc>().add(LoadSpecialtiesEvent());
+      return;
+    }
+
+    final initialSpecialtyIds = user.specialties
+        .map((s) => s['id']?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toSet();
+
+    final initialTagIds = user.serviceTags
+        .map((name) {
+          for (final spec in availableSpecialties) {
+            final tags = spec['tags'] as List?;
+            if (tags != null) {
+              for (final tag in tags) {
+                if (tag['name'] == name &&
+                    (tag['subtags'] == null ||
+                        (tag['subtags'] as List).isEmpty)) {
+                  return tag['id']?.toString();
+                }
+              }
+            }
+          }
+          return null;
+        })
+        .whereType<String>()
+        .toSet();
+
+    final initialSubtagIds = user.subtags
+        .map((s) => s['id']?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toSet();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return TradesmanSubtagsSheet(
+          specialties: availableSpecialties,
+          initialSelectedSpecialtyIds: initialSpecialtyIds,
+          initialSelectedTagIds: initialTagIds,
+          initialSelectedSubtagIds: initialSubtagIds,
+          onSave: (selectedSpecialtyIds, selectedTagIds, selectedSubtagIds) {
+            context.read<ProfileBloc>().add(
+              UpdateProfessionalProfileEvent(
+                specialtyIds: selectedSpecialtyIds.toList(),
+                tagIds: selectedTagIds.toList(),
+                subtagIds: selectedSubtagIds.toList(),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -398,290 +229,351 @@ class ProfilePage extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ProfilePreviewPage(user: state.user),
+                      builder: (context) =>
+                          ProfilePreviewPage(user: state.user),
                     ),
                   );
                 },
                 icon: const Icon(Icons.remove_red_eye, color: Colors.white),
                 label: const Text(
                   'Vista Previa',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               );
             }
             return const SizedBox.shrink();
           },
         ),
-        body: BlocListener<ProfileBloc, ProfileState>(
-          listenWhen: (previous, current) {
-            if (previous is ProfileLoaded && current is ProfileLoaded) {
-              return previous.isAvatarUploading &&
-                  !current.isAvatarUploading &&
-                  previous.user.profileImageUrl != current.user.profileImageUrl;
-            }
-            return false;
-          },
-          listener: (context, state) {
-            if (state is ProfileLoaded) {
-              final authState = context.read<AuthBloc>().state;
-              if (authState is AuthAuthenticated) {
-                final updatedUser = authState.user.copyWith(
-                  avatarPath: state.user.profileImageUrl,
-                );
-                context.read<AuthBloc>().add(ProfileUpdated(updatedUser));
+        body: BlocListener<NavigationBloc, NavigationState>(
+          listenWhen: (prev, curr) =>
+              curr.scrollToServices && curr.currentIndex == 2,
+          listener: (context, state) => _scrollToBottom(),
+          child: BlocListener<ProfileBloc, ProfileState>(
+            listenWhen: (previous, current) {
+              if (previous is ProfileLoaded && current is ProfileLoaded) {
+                return previous.isAvatarUploading &&
+                    !current.isAvatarUploading &&
+                    previous.user.profileImageUrl !=
+                        current.user.profileImageUrl;
               }
-            }
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Foto de perfil actualizada con éxito'),
-                backgroundColor: AppColors.successGreen,
-              ),
-            );
-          },
-          child: BlocBuilder<ProfileBloc, ProfileState>(
-            builder: (context, state) {
-              if (state is ProfileLoading) {
-                return const ProfileSkeleton();
-              }
-
+              return false;
+            },
+            listener: (context, state) {
               if (state is ProfileLoaded) {
-                final user = state.user;
-                final l10n = AppLocalizations.of(context)!;
+                final authState = context.read<AuthBloc>().state;
+                if (authState is AuthAuthenticated) {
+                  final updatedUser = authState.user.copyWith(
+                    avatarPath: state.user.profileImageUrl,
+                  );
+                  context.read<AuthBloc>().add(ProfileUpdated(updatedUser));
+                }
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Foto de perfil actualizada con éxito'),
+                  backgroundColor: AppColors.successGreen,
+                ),
+              );
+            },
+            child: BlocBuilder<ProfileBloc, ProfileState>(
+              builder: (context, state) {
+                if (state is ProfileLoading) {
+                  return const ProfileSkeleton();
+                }
 
-                return Column(
-                  children: [
-                    ProfileAppBar(user: user),
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.only(bottom: 40),
-                        children: [
-                          SectionHeader(title: l10n.profileWhoAmI),
-                          SubscriptionBanner(
-                            planName: user.planName,
-                            daysRemaining: user.daysRemaining,
-                          ),
-                          const SizedBox(height: 24),
-                          WorkingRadiusSection(
-                            initialRadius: user.serviceRadius,
-                            onRadiusChanged: (value) {
-                              context.read<ProfileBloc>().add(
-                                UpdateProfessionalProfileEvent(
-                                  serviceRadius: value.toInt(),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 24),
-                          BioSection(
-                            biography: user.biography,
-                            hourlyRate: user.hourlyRate,
-                            onEditTap: () => _showEditBioDialog(context, user),
-                          ),
-                          const SizedBox(height: 24),
-                          Stack(
-                            children: [
-                              PortfolioGallery(
-                                portfolioPhotos: user.portfolioPhotos,
-                                onAddTap: () {
-                                  if (user.portfolioPhotos.length >= 8) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'No puedes subir más de 8 fotos a tu portafolio',
-                                        ),
-                                        backgroundColor: Colors.redAccent,
-                                      ),
-                                    );
-                                  } else {
-                                    _pickPortfolioImage(context);
-                                  }
-                                },
-                                onDeleteTap: (photoId) {
-                                  context.read<ProfileBloc>().add(
-                                    DeletePortfolioPhotoEvent(photoId),
-                                  );
-                                },
-                                onSetAvatarTap: (imageUrl) {
-                                  context.read<ProfileBloc>().add(
-                                    SetAvatarFromUrlEvent(imageUrl),
-                                  );
-                                },
+                if (state is ProfileLoaded) {
+                  final user = state.user;
+                  final l10n = AppLocalizations.of(context)!;
+
+                  return Column(
+                    children: [
+                      ProfileAppBar(user: user),
+                      Expanded(
+                        child: ListView(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.only(bottom: 40),
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                                vertical: 24.0,
                               ),
-                              if (state.isPhotoUploading ||
-                                  state.isPhotoDeleting ||
-                                  state.isUpdating)
-                                Positioned.fill(
-                                  child: Container(
-                                    color: Colors.black12,
-                                    child: const Center(
-                                      child: CircularProgressIndicator(
-                                        color: AppColors.primaryBlue,
-                                      ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    l10n.profileWhoAmI,
+                                    style: const TextStyle(
+                                      color: AppColors.primaryBlue,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          SocialLinkSection(
-                            facebookUrl: user.facebookUrl,
-                            instagramUrl: user.instagramUrl,
-                            tiktokUrl: user.tiktokUrl,
-                            onEditLinks: (facebook, instagram, tiktok) {
-                              context.read<ProfileBloc>().add(
-                                UpdateProfessionalProfileEvent(
-                                  facebookUrl: facebook,
-                                  instagramUrl: instagram,
-                                  tiktokUrl: tiktok,
-                                ),
-                              );
-                            },
-                          ),
-                          ProfileActionButton(
-                            title: l10n.profileClientReviews,
-                            onTap: () => print('Ver valoraciones'),
-                          ),
-                          ProfileActionButton(
-                            title: l10n.profileViewDocuments,
-                            isSecondary: false,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const DocumentsPage(),
-                                ),
-                              );
-                            },
-                          ),
-                          const ServicesHeaderBanner(),
-                          const SizedBox(height: 24),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Text(
-                                      'Mis Especialidades',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    TextButton.icon(
-                                      onPressed: () => _showSpecialtiesDialog(
-                                        context,
-                                        user,
-                                        state.availableSpecialties,
-                                      ),
-                                      icon: const Icon(Icons.edit, size: 18),
-                                      label: const Text('Editar'),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: AppColors.primaryBlue,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                if (user.specialties.isEmpty)
-                                  const Text(
-                                    'No has seleccionado especialidades.',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  )
-                                else
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: user.specialties.map((spec) {
-                                      final isPrincipal =
-                                          spec['id']?.toString() ==
-                                          user.specialtyId;
-                                      final iconUrl = spec['iconUrl']
-                                          ?.toString();
-                                      return Chip(
-                                        avatar:
-                                            iconUrl != null &&
-                                                iconUrl.isNotEmpty
-                                            ? CircleAvatar(
-                                                backgroundImage: NetworkImage(
-                                                  iconUrl,
-                                                ),
-                                                backgroundColor:
-                                                    Colors.transparent,
-                                              )
-                                            : const Icon(
-                                                Icons.work_outline,
-                                                size: 16,
-                                              ),
-                                        label: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(spec['name'] ?? ''),
-                                            if (isPrincipal) ...[
-                                              const SizedBox(width: 4),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 4,
-                                                      vertical: 2,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.successGreen,
-                                                  borderRadius:
-                                                      BorderRadius.circular(4),
-                                                ),
-                                                child: const Text(
-                                                  'Principal',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 10,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ],
+                                  Row(
+                                    children: [
+                                      ...List.generate(5, (index) {
+                                        final starValue = index + 1;
+                                        final rating = user.rating;
+                                        IconData icon;
+                                        if (rating >= starValue) {
+                                          icon = Icons.star_rounded;
+                                        } else if (rating >= starValue - 0.5) {
+                                          icon = Icons.star_half_rounded;
+                                        } else {
+                                          icon = Icons.star_outline_rounded;
+                                        }
+                                        return Icon(
+                                          icon,
+                                          color: const Color(0xFFFFC107),
+                                          size: 22,
+                                        );
+                                      }),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        user.rating.toStringAsFixed(1),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
                                         ),
-                                        backgroundColor: isPrincipal
-                                            ? AppColors.primaryBlue.withOpacity(
-                                                0.1,
-                                              )
-                                            : Colors.grey.withOpacity(0.1),
-                                        side: BorderSide(
-                                          color: isPrincipal
-                                              ? AppColors.primaryBlue
-                                              : Colors.grey.shade300,
-                                          width: isPrincipal ? 1.5 : 1.0,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SubscriptionBanner(
+                              planName: user.planName,
+                              daysRemaining: user.daysRemaining,
+                            ),
+                            const SizedBox(height: 24),
+                            BioSection(
+                              biography: user.biography,
+                              hourlyRate: user.hourlyRate,
+                              onEditTap: () =>
+                                  _showEditBioDialog(context, user),
+                            ),
+                            ServicesHeaderBanner(
+                              onTap: () => _showSubtagsBottomSheet(
+                                context,
+                                user,
+                                state.availableSpecialties,
+                              ),
+                            ),
+
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Row(
+                                  //   mainAxisAlignment:
+                                  //       MainAxisAlignment.spaceBetween,
+                                  //   children: [
+                                  //     const Text(
+                                  //       'Mis Especialidades',
+                                  //       style: TextStyle(
+                                  //         fontSize: 18,
+                                  //         fontWeight: FontWeight.bold,
+                                  //       ),
+                                  //     ),
+                                  //     TextButton.icon(
+                                  //       onPressed: () =>
+                                  //           _showSubtagsBottomSheet(
+                                  //             context,
+                                  //             user,
+                                  //             state.availableSpecialties,
+                                  //           ),
+                                  //       icon: const Icon(Icons.edit, size: 18),
+                                  //       label: const Text('Editar'),
+                                  //       style: TextButton.styleFrom(
+                                  //         foregroundColor:
+                                  //             AppColors.primaryBlue,
+                                  //       ),
+                                  //     ),
+                                  //   ],
+                                  // ),
+                                  const SizedBox(height: 8),
+                                  if (user.specialties.isEmpty &&
+                                      user.serviceTags.isEmpty &&
+                                      user.subtags.isEmpty)
+                                    const Text(
+                                      'No has seleccionado especialidades.',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    )
+                                  else
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        ...user.specialties.map((spec) {
+                                          final specName = spec['name'] ?? '';
+                                          return Chip(
+                                            label: Text(specName),
+                                            backgroundColor: AppColors
+                                                .primaryBlue
+                                                .withOpacity(0.12),
+                                            side: const BorderSide(
+                                              color: AppColors.primaryBlue,
+                                              width: 1.5,
+                                            ),
+                                          );
+                                        }),
+                                        ...user.serviceTags
+                                            .where((name) {
+                                              return !user.specialties.any(
+                                                (s) => s['name'] == name,
+                                              );
+                                            })
+                                            .map((tagName) {
+                                              return Chip(
+                                                label: Text(tagName),
+                                                backgroundColor: Colors.grey
+                                                    .withOpacity(0.1),
+                                                side: BorderSide(
+                                                  color: Colors.grey.shade300,
+                                                ),
+                                              );
+                                            }),
+                                        ...user.subtags.map((subtag) {
+                                          final subtagName =
+                                              subtag['name'] ?? '';
+                                          final tagName =
+                                              subtag['tag']?['name'] ?? '';
+                                          return Chip(
+                                            label: Text(
+                                              tagName.isNotEmpty
+                                                  ? '$tagName > $subtagName'
+                                                  : subtagName,
+                                            ),
+                                            backgroundColor: AppColors
+                                                .primaryBlue
+                                                .withOpacity(0.08),
+                                            side: const BorderSide(
+                                              color: AppColors.primaryBlue,
+                                            ),
+                                          );
+                                        }),
+                                      ],
+                                    ),
+                                  const SizedBox(height: 20),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            WorkingRadiusSection(
+                              initialRadius: user.serviceRadius,
+                              onRadiusChanged: (value) {
+                                context.read<ProfileBloc>().add(
+                                  UpdateProfessionalProfileEvent(
+                                    serviceRadius: value.toInt(),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 24),
+
+                            const SizedBox(height: 24),
+                            Stack(
+                              children: [
+                                PortfolioGallery(
+                                  portfolioPhotos: user.portfolioPhotos,
+                                  onAddTap: () {
+                                    if (user.portfolioPhotos.length >= 8) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'No puedes subir más de 8 fotos a tu portafolio',
+                                          ),
+                                          backgroundColor: Colors.redAccent,
                                         ),
                                       );
-                                    }).toList(),
+                                    } else {
+                                      _pickPortfolioImage(context);
+                                    }
+                                  },
+                                  onDeleteTap: (photoId) {
+                                    context.read<ProfileBloc>().add(
+                                      DeletePortfolioPhotoEvent(photoId),
+                                    );
+                                  },
+                                  onSetAvatarTap: (imageUrl) {
+                                    context.read<ProfileBloc>().add(
+                                      SetAvatarFromUrlEvent(imageUrl),
+                                    );
+                                  },
+                                ),
+                                if (state.isPhotoUploading ||
+                                    state.isPhotoDeleting ||
+                                    state.isUpdating)
+                                  Positioned.fill(
+                                    child: Container(
+                                      color: Colors.black12,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          color: AppColors.primaryBlue,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: 24),
 
-                          const SizedBox(height: 24),
-                        ],
+                            ProfileActionButton(
+                              title: l10n.profileViewDocuments,
+                              isSecondary: false,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const DocumentsPage(),
+                                  ),
+                                );
+                              },
+                            ),
+                            SocialLinkSection(
+                              facebookUrl: user.facebookUrl,
+                              instagramUrl: user.instagramUrl,
+                              tiktokUrl: user.tiktokUrl,
+                              onEditLinks: (facebook, instagram, tiktok) {
+                                context.read<ProfileBloc>().add(
+                                  UpdateProfessionalProfileEvent(
+                                    facebookUrl: facebook,
+                                    instagramUrl: instagram,
+                                    tiktokUrl: tiktok,
+                                  ),
+                                );
+                              },
+                            ),
+
+                            const SizedBox(height: 24),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                );
-              }
+                    ],
+                  );
+                }
 
-              if (state is ProfileError) {
-                return Center(child: Text(state.message));
-              }
+                if (state is ProfileError) {
+                  return Center(child: Text(state.message));
+                }
 
-              return const SizedBox.shrink();
-            },
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       ),

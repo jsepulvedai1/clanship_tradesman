@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/navigation_bloc.dart';
@@ -5,34 +6,68 @@ import 'package:clanship_mobile_tradesman/features/home/presentation/pages/home_
 import 'package:clanship_mobile_tradesman/features/requests/presentation/pages/requests_page.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/profile_page.dart';
 import 'package:clanship_mobile_tradesman/features/settings/presentation/pages/settings_page.dart';
+import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_bloc.dart';
+import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_event.dart';
+import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_state.dart';
+import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
+import 'package:clanship_mobile_tradesman/core/network/jobs_websocket_service.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 
-class MainShellPage extends StatelessWidget {
+class MainShellPage extends StatefulWidget {
   const MainShellPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<Widget> pages = [
-      const HomePage(),
-      const RequestsPage(),
-      const ProfilePage(),
-      const SettingsPage(),
-    ];
+  State<MainShellPage> createState() => _MainShellPageState();
+}
 
+class _MainShellPageState extends State<MainShellPage> {
+  StreamSubscription? _socketSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // Connect and listen globally to WebSocket notifications
+    final socketService = di.sl<JobsWebSocketService>();
+    socketService.connect();
+    _socketSubscription = socketService.stream.listen((event) {
+      debugPrint('MainShellPage received jobs websocket notification: $event');
+      if (mounted) {
+        context.read<RequestsBloc>().add(LoadPendingRequests());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _socketSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return BlocBuilder<NavigationBloc, NavigationState>(
       builder: (context, state) {
         return Scaffold(
-          body: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            child: pages[state.currentIndex],
+          body: IndexedStack(
+            index: state.currentIndex,
+            children: const [
+              HomePage(),
+              RequestsPage(),
+              ProfilePage(),
+              SettingsPage(),
+            ],
           ),
-          bottomNavigationBar: _PremiumBottomNavBar(
-            currentIndex: state.currentIndex,
-            onTap: (index) {
-              context.read<NavigationBloc>().add(TabChanged(index));
+          bottomNavigationBar: BlocBuilder<RequestsBloc, RequestsState>(
+            builder: (context, requestsState) {
+              final bool hasUnread = requestsState is RequestsLoaded &&
+                  requestsState.requests.any((r) => !r.isRead || r.hasUnreadMessages);
+              return _PremiumBottomNavBar(
+                currentIndex: state.currentIndex,
+                hasUnreadRequests: hasUnread,
+                onTap: (index) {
+                  context.read<NavigationBloc>().add(TabChanged(index));
+                },
+              );
             },
           ),
         );
@@ -44,10 +79,12 @@ class MainShellPage extends StatelessWidget {
 class _PremiumBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final bool hasUnreadRequests;
 
   const _PremiumBottomNavBar({
     required this.currentIndex,
     required this.onTap,
+    required this.hasUnreadRequests,
   });
 
   @override
@@ -70,6 +107,7 @@ class _PremiumBottomNavBar extends StatelessWidget {
         activeIcon: Icons.assignment_rounded,
         inactiveIcon: Icons.assignment_outlined,
         label: l10n.navRequests,
+        showBadge: hasUnreadRequests,
       ),
       _NavBarItemData(
         activeIcon: Icons.person_rounded,
@@ -110,10 +148,14 @@ class _PremiumBottomNavBar extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    isActive ? item.activeIcon : item.inactiveIcon,
-                    color: isActive ? activeColor : inactiveColor,
-                    size: 26,
+                  Badge(
+                    isLabelVisible: item.showBadge,
+                    backgroundColor: const Color(0xFFEF4444),
+                    child: Icon(
+                      isActive ? item.activeIcon : item.inactiveIcon,
+                      color: isActive ? activeColor : inactiveColor,
+                      size: 26,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   // Green indicator line
@@ -148,10 +190,12 @@ class _NavBarItemData {
   final IconData activeIcon;
   final IconData inactiveIcon;
   final String label;
+  final bool showBadge;
 
   const _NavBarItemData({
     required this.activeIcon,
     required this.inactiveIcon,
     required this.label,
+    this.showBadge = false,
   });
 }

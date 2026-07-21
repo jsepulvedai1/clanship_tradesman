@@ -73,7 +73,15 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
     }
     if (permission == LocationPermission.deniedForever) return null;
 
-    return await Geolocator.getCurrentPosition();
+    try {
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) return lastKnown;
+    } catch (_) {}
+
+    return await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.low,
+      timeLimit: const Duration(seconds: 5),
+    );
   }
 
   Future<void> _reverseGeocode(LatLng position) async {

@@ -186,6 +186,10 @@ class ActiveRequestDetailPage extends StatelessWidget {
                       value: request.clientAddress,
                     ),
 
+                    if (request.status == 'CANCELLED') ...[
+                      const SizedBox(height: 20),
+                      _buildRejectionCard(context, request, isDark),
+                    ],
                     if (request.enrichedDetails != null &&
                         request.enrichedDetails!.isNotEmpty) ...[
                       const SizedBox(height: 20),
@@ -541,14 +545,7 @@ class ActiveRequestDetailPage extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               TextButton(
-                onPressed: () {
-                  context.read<RequestsBloc>().add(
-                    UpdateJobStatusEvent(
-                      jobId: jobIdInt,
-                      newStatus: 'CANCELLED',
-                    ),
-                  );
-                },
+                onPressed: () => _showRejectionDialog(context, jobIdInt),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.errorRed,
                 ),
@@ -701,6 +698,122 @@ class ActiveRequestDetailPage extends StatelessWidget {
         scheduledDate: formattedDate,
         scheduledTime: formattedTime,
         notificationLeadMinutes: selectedLeadMinutes,
+      ),
+    );
+  }
+
+  Widget _buildRejectionCard(BuildContext context, ActiveRequestDetailEntity request, bool isDark) {
+    final byWho = request.cancelledByUserName != null && request.cancelledByUserName!.isNotEmpty
+        ? 'Rechazado por: ${request.cancelledByUserName}'
+        : 'Trabajo Rechazado / Cancelado';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.red.shade300, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.cancel_outlined, color: Colors.red, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  byWho,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.red.shade300 : Colors.red.shade900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (request.cancellationReason != null && request.cancellationReason!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Motivo de rechazo:',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.red.shade200 : Colors.red.shade800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              request.cancellationReason!,
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.85),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showRejectionDialog(BuildContext context, int jobIdInt) {
+    final reasonController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Cancelar / Rechazar Trabajo'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '¿Deseas indicar la razón del rechazo? (Opcional)',
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Escribe tu razón aquí...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.all(12),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Volver'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF5277),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () {
+              final reason = reasonController.text.trim();
+              Navigator.pop(dialogContext);
+              context.read<RequestsBloc>().add(
+                UpdateJobStatusEvent(
+                  jobId: jobIdInt,
+                  newStatus: 'CANCELLED',
+                  cancellationReason: reason.isNotEmpty ? reason : null,
+                ),
+              );
+            },
+            child: const Text('Confirmar Rechazo'),
+          ),
+        ],
       ),
     );
   }

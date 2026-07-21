@@ -22,19 +22,20 @@ class RequestsPage extends StatefulWidget {
 
 class _RequestsPageState extends State<RequestsPage> {
   StreamSubscription? _socketSubscription;
-  late final RequestsBloc _requestsBloc;
 
   @override
   void initState() {
     super.initState();
-    _requestsBloc = di.sl<RequestsBloc>()..add(LoadPendingRequests());
+    context.read<RequestsBloc>().add(LoadPendingRequests());
 
     // Escuchar notificaciones del WebSocket para actualizar la lista
     final socketService = di.sl<JobsWebSocketService>();
     socketService.connect();
     _socketSubscription = socketService.stream.listen((event) {
       debugPrint('RequestsPage received jobs websocket notification: $event');
-      _requestsBloc.add(LoadPendingRequests());
+      if (mounted) {
+        context.read<RequestsBloc>().add(LoadPendingRequests());
+      }
     });
   }
 
@@ -49,13 +50,11 @@ class _RequestsPageState extends State<RequestsPage> {
     final l10n = AppLocalizations.of(context)!;
     final initialIndex = context.watch<NavigationBloc>().state.requestsSubIndex;
 
-    return BlocProvider.value(
-      value: _requestsBloc,
-      child: DefaultTabController(
-        key: ValueKey(initialIndex),
-        length: 2,
-        initialIndex: initialIndex,
-        child: Scaffold(
+    return DefaultTabController(
+      key: ValueKey(initialIndex),
+      length: 2,
+      initialIndex: initialIndex,
+      child: Scaffold(
           backgroundColor: const Color(0xFFF7F7F5),
           appBar: AppBar(
             backgroundColor: const Color(0xFFF7F7F5),
@@ -120,7 +119,6 @@ class _RequestsPageState extends State<RequestsPage> {
             },
           ),
         ),
-      ),
     );
   }
 

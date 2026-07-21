@@ -12,7 +12,7 @@ abstract class ProfileRemoteDataSource {
     double? longitude,
     String? avatarBase64,
   });
-  Future<UserEntity> updateAvailability({required bool isAvailable});
+  Future<UserEntity> updateAvailability({required bool isAvailable, bool? isEmergency});
   Future<UserEntity> updateProfessionalProfile({
     String? bio,
     double? hourlyRate,
@@ -23,6 +23,7 @@ abstract class ProfileRemoteDataSource {
     List<String>? tagIds,
     String? specialtyId,
     List<String>? specialtyIds,
+    List<String>? subtagIds,
   });
   Future<List<Map<String, dynamic>>> getSpecialties();
   Future<UserEntity> addPortfolioPhoto({
@@ -62,6 +63,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     userType
     avatarUrl
     isAvailable
+    isEmergency
     activeJobs
     completedJobs
     scheduledJobs
@@ -98,6 +100,14 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       tags {
         id
         name
+      }
+      subtags {
+        id
+        name
+        tag {
+          id
+          name
+        }
       }
       photos {
         id
@@ -144,6 +154,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       phone: data['phoneNumber'] ?? '',
       profileImageUrl: data['avatarUrl'],
       isAvailable: data['isAvailable'] ?? false,
+      isEmergency: data['isEmergency'] ?? false,
       activeJobs: data['activeJobs'] ?? 0,
       completedJobs: data['completedJobs'] ?? 0,
       scheduledJobs: data['scheduledJobs'] ?? 0,
@@ -190,6 +201,16 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
                 'id': s['id']?.toString() ?? '',
                 'name': s['name']?.toString() ?? '',
                 'iconUrl': s['iconUrl']?.toString() ?? '',
+              })
+          .toList() ?? const [],
+      subtags: (profProfile?['subtags'] as List?)
+          ?.map((s) => {
+                'id': s['id']?.toString() ?? '',
+                'name': s['name']?.toString() ?? '',
+                'tag': {
+                  'id': s['tag']?['id']?.toString() ?? '',
+                  'name': s['tag']?['name']?.toString() ?? '',
+                },
               })
           .toList() ?? const [],
       subscriptionPlan: subscriptionPlan,
@@ -289,10 +310,10 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   }
 
   @override
-  Future<UserEntity> updateAvailability({required bool isAvailable}) async {
+  Future<UserEntity> updateAvailability({required bool isAvailable, bool? isEmergency}) async {
     final String mutation = '''
-      mutation UpdateAvailability(\$isAvailable: Boolean!) {
-        updateAvailability(isAvailable: \$isAvailable) {
+      mutation UpdateAvailability(\$isAvailable: Boolean!, \$isEmergency: Boolean) {
+        updateAvailability(isAvailable: \$isAvailable, isEmergency: \$isEmergency) {
           success
           user {
             $_userFields
@@ -305,6 +326,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       document: gql(mutation),
       variables: {
         'isAvailable': isAvailable,
+        'isEmergency': isEmergency,
       },
       fetchPolicy: FetchPolicy.networkOnly,
     );
@@ -339,6 +361,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     List<String>? tagIds,
     String? specialtyId,
     List<String>? specialtyIds,
+    List<String>? subtagIds,
   }) async {
     const String mutation = r'''
       mutation UpdateProfessionalProfile(
@@ -350,7 +373,8 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         $tiktokUrl: String,
         $tagIds: [ID],
         $specialtyId: Int,
-        $specialtyIds: [ID]
+        $specialtyIds: [ID],
+        $subtagIds: [ID]
       ) {
         updateProfessionalProfile(
           bio: $bio,
@@ -361,7 +385,8 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
           tiktokUrl: $tiktokUrl,
           tagIds: $tagIds,
           specialtyId: $specialtyId,
-          specialtyIds: $specialtyIds
+          specialtyIds: $specialtyIds,
+          subtagIds: $subtagIds
         ) {
           success
           user {
@@ -404,6 +429,14 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
                 id
                 name
               }
+              subtags {
+                id
+                name
+                tag {
+                  id
+                  name
+                }
+              }
               photos {
                 id
                 imageUrl
@@ -426,6 +459,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         if (tagIds != null) 'tagIds': tagIds,
         if (specialtyId != null) 'specialtyId': int.tryParse(specialtyId),
         if (specialtyIds != null) 'specialtyIds': specialtyIds,
+        if (subtagIds != null) 'subtagIds': subtagIds,
       },
       fetchPolicy: FetchPolicy.networkOnly,
     );
@@ -901,6 +935,14 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
           id
           name
           iconUrl
+          tags {
+            id
+            name
+            subtags {
+              id
+              name
+            }
+          }
         }
       }
     ''';

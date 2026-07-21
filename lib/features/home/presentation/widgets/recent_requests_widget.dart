@@ -27,7 +27,9 @@ class RecentRequestsWidget extends StatelessWidget {
           color: isDark ? AppColors.cardDark : AppColors.pureWhite,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isDark ? AppColors.pureWhite.withAlpha(20) : AppColors.trueBlack.withAlpha(20),
+            color: isDark
+                ? AppColors.pureWhite.withAlpha(20)
+                : AppColors.trueBlack.withAlpha(20),
             width: 0.5,
           ),
           boxShadow: [
@@ -40,24 +42,24 @@ class RecentRequestsWidget extends StatelessWidget {
           ],
         ),
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l10n.homeRecentRequestsTitle,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...requests.map((request) => _RequestItem(
-                  request: request,
-                  onRequestTap: () => onRequestTap(request),
-                )),
-          ],
-        ),
+        // child: Column(
+        //   crossAxisAlignment: CrossAxisAlignment.start,
+        //   mainAxisSize: MainAxisSize.min,
+        //   children: [
+        //     Text(
+        //       l10n.homeRecentRequestsTitle,
+        //       style: const TextStyle(
+        //         fontSize: 16,
+        //         fontWeight: FontWeight.bold,
+        //       ),
+        //     ),
+        //     const SizedBox(height: 16),
+        //     ...requests.map((request) => _RequestItem(
+        //           request: request,
+        //           onRequestTap: () => onRequestTap(request),
+        //         )),
+        //   ],
+        // ),
       ),
     );
   }
@@ -67,10 +69,7 @@ class _RequestItem extends StatelessWidget {
   final JobRequestEntity request;
   final VoidCallback onRequestTap;
 
-  const _RequestItem({
-    required this.request,
-    required this.onRequestTap,
-  });
+  const _RequestItem({required this.request, required this.onRequestTap});
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +78,9 @@ class _RequestItem extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withAlpha(10) : AppColors.lightGrey.withAlpha(150),
+        color: isDark
+            ? Colors.white.withAlpha(10)
+            : AppColors.lightGrey.withAlpha(150),
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(16),
@@ -88,17 +89,16 @@ class _RequestItem extends StatelessWidget {
         children: [
           Text(
             request.title,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             request.description,
             style: TextStyle(
               fontSize: 14,
-              color: isDark ? AppColors.pureWhite.withAlpha(180) : AppColors.trueBlack.withAlpha(180),
+              color: isDark
+                  ? AppColors.pureWhite.withAlpha(180)
+                  : AppColors.trueBlack.withAlpha(180),
               height: 1.4,
             ),
           ),
@@ -114,7 +114,10 @@ class _RequestItem extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
               ),
               child: Text(
                 l10n.homeGoToRequestAction,

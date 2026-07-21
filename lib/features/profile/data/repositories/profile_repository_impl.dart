@@ -46,9 +46,15 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }
 
   @override
-  Future<Either<Failure, UserEntity>> updateAvailability({required bool isAvailable}) async {
+  Future<Either<Failure, UserEntity>> updateAvailability({
+    required bool isAvailable,
+    bool? isEmergency,
+  }) async {
     try {
-      final userEntity = await remoteDataSource.updateAvailability(isAvailable: isAvailable);
+      final userEntity = await remoteDataSource.updateAvailability(
+        isAvailable: isAvailable,
+        isEmergency: isEmergency,
+      );
       return Right(userEntity);
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
@@ -66,6 +72,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
     List<String>? tagIds,
     String? specialtyId,
     List<String>? specialtyIds,
+    List<String>? subtagIds,
   }) async {
     try {
       final userEntity = await remoteDataSource.updateProfessionalProfile(
@@ -78,6 +85,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
         tagIds: tagIds,
         specialtyId: specialtyId,
         specialtyIds: specialtyIds,
+        subtagIds: subtagIds,
       );
       return Right(userEntity);
     } catch (e) {

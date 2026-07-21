@@ -21,7 +21,7 @@
   "homeGoToRequestAction": "Ir a la solicitud",
 
   "profileWhoAmI": "Quien soy",
-  "profileProfessionalProfile": "Mi perfil profesional",
+  "profileProfessionalProfile": "Cuéntanos sobre ti",
   "profileEdit": "Editar",
   "profileServices": "Servicios",
   "profileServicesSubtitle": "Los tipos de trabajos que ofreces",
@@ -29,7 +29,7 @@
   "profileAddServiceTag": "¿Quieres agregar otra etiqueta de servicio?",
   "profileSearchTags": "Buscar Etiquetas",
   "profileMaxTagsHint": "Puedes tener un máximo de 6 etiquetas de servicios.",
-  "profilePhotosVideos": "Fotos/videos",
+  "profilePhotosVideos": "Fotos de tus trabajos",
   "profilePlanReminder": "Te quedan",
   "profileDays": "Días",
   "profilePlanSuffix": "de tu plan",

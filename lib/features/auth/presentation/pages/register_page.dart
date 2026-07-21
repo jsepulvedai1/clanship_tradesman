@@ -16,6 +16,7 @@ import 'package:clanship_mobile_tradesman/core/widgets/address_picker_page.dart'
 import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
 import 'package:clanship_mobile_tradesman/core/utils/image_cropper_helper.dart';
 import 'package:clanship_mobile_tradesman/features/auth/domain/repositories/auth_repository.dart';
+import 'package:clanship_mobile_tradesman/features/profile/presentation/widgets/tradesman_subtags_sheet.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -54,7 +55,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // Tags
   List<Map<String, dynamic>> _availableTags = [];
+  List<String> _selectedSpecialtyIds = [];
   List<String> _selectedTagIds = [];
+  List<String> _selectedSubtagIds = [];
   bool _isLoadingTags = false;
 
   @override
@@ -236,87 +239,22 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    List<String> tempSelectedTagIds = List.from(_selectedTagIds);
-    List<String> tempSelectedTagNames = _availableTags
-        .where((t) => tempSelectedTagIds.contains(t['id'].toString()))
-        .map((t) => t['name'] as String)
-        .toList();
-
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: AppColors.cardDark,
-              title: const Text(
-                'Selecciona hasta 6 etiquetas',
-                style: TextStyle(color: Colors.white, fontSize: 18),
-              ),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: SingleChildScrollView(
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _availableTags.map((tag) {
-                      final id = tag['id'].toString();
-                      final name = tag['name'] as String;
-                      final isSelected = tempSelectedTagIds.contains(id);
-
-                      return FilterChip(
-                        label: Text(name),
-                        selected: isSelected,
-                        backgroundColor: AppColors.trueBlack,
-                        selectedColor: AppColors.primaryBlue,
-                        checkmarkColor: Colors.white,
-                        labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : Colors.white,
-                        ),
-                        onSelected: (selected) {
-                          setState(() {
-                            if (selected) {
-                              if (tempSelectedTagIds.length < 6) {
-                                tempSelectedTagIds.add(id);
-                                tempSelectedTagNames.add(name);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Máximo de 6 etiquetas de servicios.'),
-                                  ),
-                                );
-                              }
-                            } else {
-                              tempSelectedTagIds.remove(id);
-                              tempSelectedTagNames.remove(name);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    this.setState(() {
-                      _selectedTagIds = tempSelectedTagIds;
-                    });
-                    Navigator.pop(dialogContext);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return TradesmanSubtagsSheet(
+          specialties: _availableTags,
+          initialSelectedSpecialtyIds: _selectedSpecialtyIds.toSet(),
+          initialSelectedTagIds: _selectedTagIds.toSet(),
+          initialSelectedSubtagIds: _selectedSubtagIds.toSet(),
+          onSave: (selectedSpecialtyIds, selectedTagIds, selectedSubtagIds) {
+            setState(() {
+              _selectedSpecialtyIds = selectedSpecialtyIds.toList();
+              _selectedTagIds = selectedTagIds.toList();
+              _selectedSubtagIds = selectedSubtagIds.toList();
+            });
           },
         );
       },
@@ -329,7 +267,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return _addressController.text.trim().isNotEmpty &&
         phone.length == 8 &&
         RegExp(r'^[0-9]{8}$').hasMatch(phone) &&
-        _selectedTagIds.isNotEmpty &&
+        (_selectedSpecialtyIds.isNotEmpty || _selectedTagIds.isNotEmpty || _selectedSubtagIds.isNotEmpty) &&
         _acceptedTerms;
   }
 
@@ -628,31 +566,6 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
-            'o regístrate con',
-            style: TextStyle(
-              color: Color(0xFF2E3135),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildSocialIcon(
-                FontAwesomeIcons.google,
-                const Color(0xFFEA4335),
-                () {
-                  _showError('Registro con Google en desarrollo.');
-                },
-              ),
-              const SizedBox(width: 24),
-              _buildSocialIcon(FontAwesomeIcons.apple, Colors.black, () {
-                _showError('Registro con Apple en desarrollo.');
-              }),
-            ],
-          ),
           const SizedBox(height: 2),
           // Footer terms row with dialog.svg
           Padding(
@@ -750,13 +663,13 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _selectedTagIds.isEmpty 
-                      ? 'No has seleccionado ninguna etiqueta. Selecciona al menos una para continuar.' 
-                      : '${_selectedTagIds.length} etiquetas seleccionadas.',
+                  (_selectedSpecialtyIds.isEmpty && _selectedTagIds.isEmpty && _selectedSubtagIds.isEmpty) 
+                      ? 'No has seleccionado ninguna especialidad. Selecciona al menos una para continuar.' 
+                      : '${_selectedSpecialtyIds.length + _selectedTagIds.length + _selectedSubtagIds.length} especialidades seleccionadas.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: _selectedTagIds.isEmpty ? Colors.red : Colors.green,
+                    color: (_selectedSpecialtyIds.isEmpty && _selectedTagIds.isEmpty && _selectedSubtagIds.isEmpty) ? Colors.red : Colors.green,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -919,7 +832,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     icon: const Icon(Icons.image_outlined, size: 20),
                     label: const Text(
                       'Elegir en galería',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
@@ -1220,7 +1136,9 @@ class _RegisterPageState extends State<RegisterPage> {
                         certificates: _certificates,
                         latitude: _latitude,
                         longitude: _longitude,
+                        specialtyIds: _selectedSpecialtyIds,
                         tagIds: _selectedTagIds,
+                        subtagIds: _selectedSubtagIds,
                       ),
                     );
                   },
@@ -1370,7 +1288,10 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ],
           ),
-          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 0,
+            minHeight: 0,
+          ),
           filled: true,
           fillColor: Colors.transparent,
           border: OutlineInputBorder(
@@ -1390,29 +1311,6 @@ class _RegisterPageState extends State<RegisterPage> {
             vertical: 14,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSocialIcon(IconData icon, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              spreadRadius: 1,
-            ),
-          ],
-          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
-        ),
-        child: FaIcon(icon, color: color, size: 22),
       ),
     );
   }
@@ -1623,9 +1521,8 @@ class _RegisterPageState extends State<RegisterPage> {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (context) => AddressPickerPage(
-          initialAddress: _addressController.text,
-        ),
+        builder: (context) =>
+            AddressPickerPage(initialAddress: _addressController.text),
       ),
     );
 

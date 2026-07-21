@@ -34,7 +34,9 @@ class AuthRepositoryImpl implements AuthRepository {
     List<Map<String, String>>? certificates,
     double? latitude,
     double? longitude,
+    List<String>? specialtyIds,
     List<String>? tagIds,
+    List<String>? subtagIds,
   }) async {
     try {
       final userModel = await remoteDataSource.register(
@@ -50,7 +52,9 @@ class AuthRepositoryImpl implements AuthRepository {
         certificates: certificates,
         latitude: latitude,
         longitude: longitude,
+        specialtyIds: specialtyIds,
         tagIds: tagIds,
+        subtagIds: subtagIds,
       );
       return Right(UserMapper.toEntity(userModel));
     } catch (e) {

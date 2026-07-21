@@ -11,6 +11,7 @@ class ActiveRequestDetailEntity extends Equatable {
   final int customerId;
   final String status;
   final bool isRead;
+  final bool hasUnreadMessages;
 
   final String? scheduledDate;
   final String? scheduledTime;
@@ -18,6 +19,8 @@ class ActiveRequestDetailEntity extends Equatable {
   final String? enrichedDetails;
   final String? additionalPhotoUrl;
   final int? notificationLeadMinutes;
+  final String? cancellationReason;
+  final String? cancelledByUserName;
 
   const ActiveRequestDetailEntity({
     required this.id,
@@ -30,12 +33,15 @@ class ActiveRequestDetailEntity extends Equatable {
     this.status = 'REQUESTED',
     this.isUrgent = false,
     this.isRead = false,
+    this.hasUnreadMessages = false,
     this.scheduledDate,
     this.scheduledTime,
     this.agreedPrice,
     this.enrichedDetails,
     this.additionalPhotoUrl,
     this.notificationLeadMinutes,
+    this.cancellationReason,
+    this.cancelledByUserName,
   });
 
   @override
@@ -50,11 +56,14 @@ class ActiveRequestDetailEntity extends Equatable {
         customerId,
         status,
         isRead,
+        hasUnreadMessages,
         scheduledDate,
         scheduledTime,
         agreedPrice,
         enrichedDetails,
         additionalPhotoUrl,
         notificationLeadMinutes,
+        cancellationReason,
+        cancelledByUserName,
       ];
 }

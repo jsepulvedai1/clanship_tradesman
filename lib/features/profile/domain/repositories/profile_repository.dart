@@ -13,8 +13,11 @@ abstract class ProfileRepository {
     double? longitude,
     String? avatarBase64,
   });
-  Future<Either<Failure, UserEntity>> updateAvailability({required bool isAvailable});
-  
+  Future<Either<Failure, UserEntity>> updateAvailability({
+    required bool isAvailable,
+    bool? isEmergency,
+  });
+
   Future<Either<Failure, UserEntity>> updateProfessionalProfile({
     String? bio,
     double? hourlyRate,
@@ -25,6 +28,7 @@ abstract class ProfileRepository {
     List<String>? tagIds,
     String? specialtyId,
     List<String>? specialtyIds,
+    List<String>? subtagIds,
   });
   Future<Either<Failure, List<Map<String, dynamic>>>> getSpecialties();
   Future<Either<Failure, UserEntity>> addPortfolioPhoto({

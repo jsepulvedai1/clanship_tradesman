@@ -5,6 +5,9 @@ import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
 import 'package:clanship_mobile_tradesman/core/network/graphql_service.dart';
 import 'package:clanship_mobile_tradesman/firebase_options.dart';
+import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_bloc.dart';
+import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_event.dart';
+import 'package:clanship_mobile_tradesman/core/network/local_notification_service.dart';
 
 class FirebaseNotificationHelper {
   static Future<void> initialize() async {
@@ -34,13 +37,44 @@ class FirebaseNotificationHelper {
       // Handle foreground messages
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         debugPrint('Foreground push notification received: ${message.notification?.title} - ${message.notification?.body}');
+        _handleIncomingMessage(message);
+      });
+
+      // Handle notification taps when app is in background but not terminated
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        debugPrint('Notification opened app: ${message.messageId}');
+        _handleIncomingMessage(message);
+      });
+
+      // Check if the app was opened by a notification tap from terminated state
+      messaging.getInitialMessage().then((RemoteMessage? message) {
+        if (message != null) {
+          debugPrint('App opened from terminated state via notification: ${message.messageId}');
+          _handleIncomingMessage(message);
+        }
       });
 
       // Handle background/terminated state messages
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+      // Listen to token refresh and update backend
+      FirebaseMessaging.instance.onTokenRefresh.listen((token) {
+        debugPrint('Tradesman FCM Token refreshed: $token');
+        _sendTokenToBackend(token);
+      });
     } catch (e) {
       debugPrint('Error initializing Firebase Push Notifications: $e');
     }
+  }
+
+  static void _handleIncomingMessage(RemoteMessage message) {
+    final title = message.notification?.title ?? message.data['title'] ?? 'Notificación';
+    final body = message.notification?.body ?? message.data['body'] ?? 'Tienes un nuevo mensaje';
+    LocalNotificationService.saveNotification(title, body);
+
+    try {
+      di.sl<RequestsBloc>().add(LoadPendingRequests());
+    } catch (_) {}
   }
 
   static Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -48,6 +82,9 @@ class FirebaseNotificationHelper {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     debugPrint('Background message received: ${message.messageId}');
+    final title = message.notification?.title ?? message.data['title'] ?? 'Notificación';
+    final body = message.notification?.body ?? message.data['body'] ?? 'Tienes un nuevo mensaje';
+    await LocalNotificationService.saveNotification(title, body);
   }
 
   static Future<void> uploadFcmToken() async {
@@ -57,16 +94,16 @@ class FirebaseNotificationHelper {
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         // Wait for APNS token with retries (needed on real devices after cold start)
         String? apnsToken;
-        for (int attempt = 1; attempt <= 5; attempt++) {
+        // Aumentar los intentos a 8 con retraso de 1.5s para dar suficiente margen en iPhones reales
+        for (int attempt = 1; attempt <= 8; attempt++) {
           apnsToken = await FirebaseMessaging.instance.getAPNSToken();
           if (apnsToken != null) break;
-          debugPrint('Waiting for APNS token (attempt $attempt/5)...');
-          await Future.delayed(const Duration(seconds: 2));
+          debugPrint('Waiting for APNS token (attempt $attempt/8)...');
+          await Future.delayed(const Duration(milliseconds: 1500));
         }
 
         if (apnsToken == null) {
-          // This is expected on iOS simulators — not a real error.
-          debugPrint('APNS token unavailable (likely running on simulator). Skipping FCM token upload.');
+          debugPrint('APNS token unavailable (check if Push Capability is added in Xcode and provisioning profiles). Skipping FCM token upload.');
           return;
         }
 
@@ -75,11 +112,45 @@ class FirebaseNotificationHelper {
 
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null && token.isNotEmpty) {
-        debugPrint('FCM Token obtained. Uploading to backend...');
+        debugPrint('FCM Token obtained: $token. Uploading to backend...');
         await _sendTokenToBackend(token);
       }
     } catch (e) {
       debugPrint('Error uploading FCM token: $e');
+    }
+  }
+
+  static Future<void> deleteFcmToken() async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token == null || token.isEmpty) {
+        debugPrint('No FCM token found to delete.');
+        return;
+      }
+
+      const String mutation = r'''
+        mutation DeleteFcmToken($fcmToken: String!) {
+          deleteFcmToken(fcmToken: $fcmToken) {
+            success
+          }
+        }
+      ''';
+
+      final client = di.sl<GraphQLService>().client;
+      final options = MutationOptions(
+        document: gql(mutation),
+        variables: {'fcmToken': token},
+        fetchPolicy: FetchPolicy.networkOnly,
+      );
+
+      final result = await client.mutate(options);
+      if (result.hasException) {
+        debugPrint('Failed to delete FCM token: ${result.exception.toString()}');
+      } else {
+        debugPrint('FCM Token deleted successfully from backend.');
+      }
+    } catch (e) {
+      debugPrint('Error calling deleteFcmToken mutation: $e');
     }
   }
 
@@ -111,3 +182,4 @@ class FirebaseNotificationHelper {
     }
   }
 }
+

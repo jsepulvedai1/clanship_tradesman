@@ -16,14 +16,16 @@ class LoadRejectedRequests extends RequestsEvent {}
 class UpdateJobStatusEvent extends RequestsEvent {
   final int jobId;
   final String newStatus;
+  final String? cancellationReason;
 
   const UpdateJobStatusEvent({
     required this.jobId,
     required this.newStatus,
+    this.cancellationReason,
   });
 
   @override
-  List<Object?> get props => [jobId, newStatus];
+  List<Object?> get props => [jobId, newStatus, cancellationReason];
 }
 
 class MarkRequestAsReadEvent extends RequestsEvent {

@@ -5,7 +5,7 @@ abstract class RequestsRemoteDataSource {
   Future<List<JobRequestModel>> getPendingJobRequests();
   Future<List<JobRequestModel>> getCompletedJobRequests();
   Future<List<JobRequestModel>> getRejectedJobRequests();
-  Future<void> updateJobStatus(int jobId, String newStatus);
+  Future<void> updateJobStatus(int jobId, String newStatus, {String? cancellationReason});
   Future<void> markJobAsRead(int jobId);
   Future<void> scheduleJobVisit(int jobId, String scheduledDate, String scheduledTime, int notificationLeadMinutes, {double? agreedPrice});
 }
@@ -16,13 +16,15 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
   RequestsRemoteDataSourceImpl(this.client);
 
   @override
-  Future<void> updateJobStatus(int jobId, String newStatus) async {
+  Future<void> updateJobStatus(int jobId, String newStatus, {String? cancellationReason}) async {
     const String mutation = r'''
-      mutation UpdateJobStatus($jobId: Int!, $newStatus: String!) {
-        updateJobStatus(jobId: $jobId, newStatus: $newStatus) {
+      mutation UpdateJobStatus($jobId: Int!, $newStatus: String!, $cancellationReason: String) {
+        updateJobStatus(jobId: $jobId, newStatus: $newStatus, cancellationReason: $cancellationReason) {
           job {
             id
             status
+            cancellationReason
+            cancelledByUserName
           }
         }
       }
@@ -33,6 +35,7 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
       variables: {
         'jobId': jobId,
         'newStatus': newStatus,
+        'cancellationReason': cancellationReason,
       },
       fetchPolicy: FetchPolicy.networkOnly,
     );
@@ -57,9 +60,12 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
           address
           status
           isRead
+          hasUnreadMessages
           enrichedDetails
           additionalPhotoUrl
           notificationLeadMinutes
+          cancellationReason
+          cancelledByUserName
           customer {
             id
             firstName
@@ -155,6 +161,8 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
           enrichedDetails
           additionalPhotoUrl
           notificationLeadMinutes
+          cancellationReason
+          cancelledByUserName
           customer {
             id
             firstName

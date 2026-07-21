@@ -86,6 +86,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         tagIds: event.tagIds,
         specialtyId: event.specialtyId,
         specialtyIds: event.specialtyIds,
+        subtagIds: event.subtagIds,
       );
 
       result.fold(

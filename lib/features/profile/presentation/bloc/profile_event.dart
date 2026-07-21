@@ -28,6 +28,7 @@ class UpdateProfessionalProfileEvent extends ProfileEvent {
   final List<String>? tagIds;
   final String? specialtyId;
   final List<String>? specialtyIds;
+  final List<String>? subtagIds;
 
   const UpdateProfessionalProfileEvent({
     this.bio,
@@ -39,6 +40,7 @@ class UpdateProfessionalProfileEvent extends ProfileEvent {
     this.tagIds,
     this.specialtyId,
     this.specialtyIds,
+    this.subtagIds,
   });
 
   @override
@@ -52,6 +54,7 @@ class UpdateProfessionalProfileEvent extends ProfileEvent {
         tagIds,
         specialtyId,
         specialtyIds,
+        subtagIds,
       ];
 }
 

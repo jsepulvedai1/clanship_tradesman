@@ -4,13 +4,23 @@ import 'package:clanship_mobile_tradesman/features/home/domain/entities/user_ent
 import 'package:clanship_mobile_tradesman/features/profile/domain/repositories/profile_repository.dart';
 import 'package:fpdart/fpdart.dart';
 
-class UpdateAvailabilityUseCase implements UseCase<UserEntity, bool> {
+class UpdateAvailabilityParams {
+  final bool isAvailable;
+  final bool? isEmergency;
+
+  UpdateAvailabilityParams({required this.isAvailable, this.isEmergency});
+}
+
+class UpdateAvailabilityUseCase implements UseCase<UserEntity, UpdateAvailabilityParams> {
   final ProfileRepository repository;
 
   UpdateAvailabilityUseCase(this.repository);
 
   @override
-  Future<Either<Failure, UserEntity>> call(bool params) async {
-    return await repository.updateAvailability(isAvailable: params);
+  Future<Either<Failure, UserEntity>> call(UpdateAvailabilityParams params) async {
+    return await repository.updateAvailability(
+      isAvailable: params.isAvailable,
+      isEmergency: params.isEmergency,
+    );
   }
 }

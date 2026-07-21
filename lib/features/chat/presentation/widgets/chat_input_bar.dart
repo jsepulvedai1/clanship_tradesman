@@ -23,109 +23,145 @@ class ChatInputBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
+    const Color brandGreen = AppColors.primaryAzure; 
+    final Color plusBgColor = isDark
+        ? const Color(0xFF1E2D27)
+        : const Color(0xFFF1F7F4);
+    final Color barBgColor = isDark
+        ? const Color(0xFF121212)
+        : const Color(0xFFF8FAF9);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+      padding: EdgeInsets.only(
+        left: 14,
+        right: 14,
+        top: 10,
+        bottom: 10 + MediaQuery.of(context).padding.bottom,
+      ),
       decoration: BoxDecoration(
-        color: isDark ? Colors.black : Colors.white,
+        color: barBgColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(5),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
+            color: Colors.black.withAlpha(isDark ? 30 : 10),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: onAttachment,
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withAlpha(10) : Colors.grey[100],
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.add_rounded,
-                color: AppColors.primaryBlue,
-                size: 24,
+      child: SafeArea(
+        top: false,
+        bottom: false,
+        child: Row(
+          children: [
+            // Left (+) Attachment Button
+            GestureDetector(
+              onTap: onAttachment,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: plusBgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: brandGreen,
+                  size: 26,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withAlpha(10) : Colors.grey[100],
-                borderRadius: BorderRadius.circular(30),
-              ),
+            const SizedBox(width: 10),
+
+            // Center Input Field or Recording Text
+            Expanded(
               child: isRecording
                   ? Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       alignment: Alignment.centerLeft,
                       child: const Row(
                         children: [
-                          Icon(Icons.mic, color: Colors.red, size: 16),
+                          Icon(Icons.fiber_manual_record, color: Colors.red, size: 14),
                           SizedBox(width: 8),
                           Text(
                             'Grabando audio...',
                             style: TextStyle(
                               color: Colors.red,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
                             ),
                           ),
                         ],
                       ),
                     )
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: controller,
-                            decoration: const InputDecoration(
-                              hintText: 'Escribe un mensaje...',
-                              border: InputBorder.none,
-                              isDense: true,
-                            ),
-                            style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: TextField(
+                        controller: controller,
+                        textCapitalization: TextCapitalization.sentences,
+                        minLines: 1,
+                        maxLines: 4,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Escribe un mensaje...',
+                          hintStyle: TextStyle(
+                            fontSize: 16,
+                            color: isDark ? Colors.white38 : const Color(0xFFB0B0B0),
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 10,
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.mic_none_rounded,
-                            color: AppColors.primaryBlue,
-                          ),
-                          onPressed: onMic,
-                        ),
-                      ],
+                      ),
                     ),
             ),
-          ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: isRecording ? onStopRecording : onSend,
-            child: Container(
-              width: 45,
-              height: 45,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isRecording ? Colors.red : AppColors.primaryBlue,
-              ),
-              child: Icon(
-                isRecording
-                    ? Icons.stop_rounded
-                    : (controller.text.isNotEmpty
-                          ? Icons.send_rounded
-                          : Icons.arrow_upward_rounded),
-                color: Colors.white,
-              ),
+
+            const SizedBox(width: 10),
+
+            // Right Action Button (Mic / Send / Stop)
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: controller,
+              builder: (context, value, child) {
+                final bool hasText = value.text.trim().isNotEmpty;
+
+                return GestureDetector(
+                  onTap: () {
+                    if (isRecording) {
+                      onStopRecording();
+                    } else if (hasText) {
+                      onSend();
+                    } else {
+                      onMic();
+                    }
+                  },
+                  child: Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isRecording ? Colors.red : brandGreen,
+                    ),
+                    child: Icon(
+                      isRecording
+                          ? Icons.stop_rounded
+                          : (hasText ? Icons.send_rounded : Icons.mic_rounded),
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                );
+              },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
+

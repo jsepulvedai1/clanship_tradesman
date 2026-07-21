@@ -80,7 +80,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         certificates: event.certificates,
         latitude: event.latitude,
         longitude: event.longitude,
+        specialtyIds: event.specialtyIds,
         tagIds: event.tagIds,
+        subtagIds: event.subtagIds,
       ),
     );
 

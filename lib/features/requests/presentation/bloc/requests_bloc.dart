@@ -78,7 +78,11 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
   ) async {
     emit(RequestsLoading());
     try {
-      await updateJobStatus(jobId: event.jobId, newStatus: event.newStatus);
+      await updateJobStatus(
+        jobId: event.jobId,
+        newStatus: event.newStatus,
+        cancellationReason: event.cancellationReason,
+      );
       final requests = await getPendingRequests();
       emit(RequestsLoaded(requests));
     } catch (e) {

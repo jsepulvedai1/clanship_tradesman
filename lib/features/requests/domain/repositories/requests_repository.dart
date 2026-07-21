@@ -5,7 +5,7 @@ abstract class RequestsRepository {
   Future<List<ActiveRequestDetailEntity>> getPendingRequests();
   Future<List<CompletedJobEntity>> getCompletedRequests();
   Future<List<ActiveRequestDetailEntity>> getRejectedRequests();
-  Future<void> updateJobStatus(int jobId, String newStatus);
+  Future<void> updateJobStatus(int jobId, String newStatus, {String? cancellationReason});
   Future<void> markJobAsRead(int jobId);
   Future<void> scheduleJobVisit(int jobId, String scheduledDate, String scheduledTime, int notificationLeadMinutes, {double? agreedPrice});
 }

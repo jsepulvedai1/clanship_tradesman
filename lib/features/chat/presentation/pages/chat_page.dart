@@ -233,6 +233,69 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     super.dispose();
   }
 
+  void _showRejectionDialog(BuildContext context) {
+    final reasonController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Rechazar Trabajo'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '¿Deseas indicar la razón del rechazo? (Opcional)',
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Escribe tu razón aquí...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.all(12),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Volver'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF5277),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () {
+              final reason = reasonController.text.trim();
+              Navigator.pop(dialogContext);
+              if (widget.jobId != null) {
+                _pendingStatusChange = 'CANCELLED';
+                context.read<RequestsBloc>().add(
+                  UpdateJobStatusEvent(
+                    jobId: widget.jobId!,
+                    newStatus: 'CANCELLED',
+                    cancellationReason: reason.isNotEmpty ? reason : null,
+                  ),
+                );
+              }
+            },
+            child: const Text('Confirmar Rechazo'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _onScheduleTap() async {
     DateTime selectedDate = DateTime.now();
     TimeOfDay selectedTime = TimeOfDay.now();
@@ -505,10 +568,12 @@ class _ChatPageContentState extends State<_ChatPageContent> {
           final updatedStatus = _pendingStatusChange;
           _pendingStatusChange = null;
           if (updatedStatus == 'CANCELLED') {
+            setState(() {
+              _currentStatus = 'CANCELLED';
+            });
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Solicitud rechazada con éxito.')),
             );
-            Navigator.pop(context);
           } else if (updatedStatus == 'AGREED') {
             setState(() {
               _currentStatus = 'AGREED';
@@ -643,6 +708,15 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                       );
                     }
 
+                    ChatMessage? latestProposalMsg;
+                    try {
+                      latestProposalMsg = state.messages.lastWhere(
+                        (m) => m.type == ChatMessageType.appointment,
+                      );
+                    } catch (_) {
+                      latestProposalMsg = null;
+                    }
+
                     return ListView.builder(
                       reverse: true,
                       padding: const EdgeInsets.symmetric(
@@ -652,7 +726,13 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
                         final message = messages[index];
-                        return ChatBubble(message: message);
+                        final isLatest = latestProposalMsg != null && message.id == latestProposalMsg.id;
+
+                        return ChatBubble(
+                          message: message,
+                          jobStatus: _currentStatus,
+                          isLatestProposal: isLatest,
+                        );
                       },
                     );
                   }
@@ -665,24 +745,19 @@ class _ChatPageContentState extends State<_ChatPageContent> {
               builder: (context, requestsState) {
                 final isLoading = requestsState is RequestsLoading;
 
+                if (_currentStatus == 'AGREED' ||
+                    _currentStatus == 'IN_VISIT' ||
+                    _currentStatus == 'FINISHED' ||
+                    _currentStatus == 'CANCELLED') {
+                  return const SizedBox.shrink();
+                }
+
                 return ChatActionButtons(
                   onSchedule: isLoading ? () {} : _onScheduleTap,
                   onBack: () => Navigator.pop(context),
                   onReject: isLoading
                       ? () {}
-                      : () {
-                          if (widget.jobId != null) {
-                            _pendingStatusChange = 'CANCELLED';
-                            context.read<RequestsBloc>().add(
-                              UpdateJobStatusEvent(
-                                jobId: widget.jobId!,
-                                newStatus: 'CANCELLED',
-                              ),
-                            );
-                          } else {
-                            Navigator.pop(context);
-                          }
-                        },
+                      : () => _showRejectionDialog(context),
                   onAccept:
                       (widget.jobId != null &&
                           _currentStatus == 'REQUESTED' &&

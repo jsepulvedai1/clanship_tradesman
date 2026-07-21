@@ -62,7 +62,9 @@ class RegisterRequested extends AuthEvent {
   final String? cedulaFrontPath;
   final String? cedulaBackPath;
   final List<Map<String, String>>? certificates;
+  final List<String>? specialtyIds;
   final List<String>? tagIds;
+  final List<String>? subtagIds;
 
   const RegisterRequested({
     required this.email,
@@ -78,7 +80,9 @@ class RegisterRequested extends AuthEvent {
     this.certificates,
     this.latitude,
     this.longitude,
+    this.specialtyIds,
     this.tagIds,
+    this.subtagIds,
   });
 
   @override
@@ -95,7 +99,9 @@ class RegisterRequested extends AuthEvent {
         cedulaBackPath ?? '',
         latitude ?? 0.0,
         longitude ?? 0.0,
+        specialtyIds ?? [],
         tagIds ?? [],
+        subtagIds ?? [],
       ];
 }
 

@@ -5,7 +5,7 @@ class UpdateJobStatusUseCase {
 
   UpdateJobStatusUseCase(this.repository);
 
-  Future<void> call({required int jobId, required String newStatus}) async {
-    return await repository.updateJobStatus(jobId, newStatus);
+  Future<void> call({required int jobId, required String newStatus, String? cancellationReason}) async {
+    return await repository.updateJobStatus(jobId, newStatus, cancellationReason: cancellationReason);
   }
 }

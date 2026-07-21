@@ -9,6 +9,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onSyncTap;
   final VoidCallback? onAvatarTap;
   final bool isAvatarUploading;
+  final bool hasNotifications;
 
   const HomeAppBar({
     super.key,
@@ -16,6 +17,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onSyncTap,
     this.onAvatarTap,
     this.isAvatarUploading = false,
+    this.hasNotifications = false,
   });
 
   String _toTitleCase(String text) {
@@ -98,18 +100,19 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
                         ),
                       ),
                       // Punto verde (Notificación activa)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF0B6E4F),
-                            shape: BoxShape.circle,
+                      if (hasNotifications)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF00FF7F),
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),

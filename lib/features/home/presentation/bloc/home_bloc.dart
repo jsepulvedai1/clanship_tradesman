@@ -21,6 +21,13 @@ class ToggleAvailability extends HomeEvent {
   List<Object> get props => [isAvailable];
 }
 
+class ToggleUrgency extends HomeEvent {
+  final bool isEmergency;
+  ToggleUrgency(this.isEmergency);
+  @override
+  List<Object> get props => [isEmergency];
+}
+
 // States
 abstract class HomeState extends Equatable {
   @override
@@ -59,6 +66,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   ) : super(HomeInitial()) {
     on<LoadUserData>(_onLoadUserData);
     on<ToggleAvailability>(_onToggleAvailability);
+    on<ToggleUrgency>(_onToggleUrgency);
   }
 
   Future<void> _onLoadUserData(LoadUserData event, Emitter<HomeState> emit) async {
@@ -99,18 +107,57 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     if (state is HomeDataLoaded) {
       final currentState = state as HomeDataLoaded;
       
+      final bool newAvailable = event.isAvailable;
+      final bool newEmergency = newAvailable ? currentState.user.isEmergency : false;
+
       // Emit the optimistic state first
-      final optimisticUser = currentState.user.copyWith(isAvailable: event.isAvailable);
+      final optimisticUser = currentState.user.copyWith(
+        isAvailable: newAvailable,
+        isEmergency: newEmergency,
+      );
       emit(HomeDataLoaded(optimisticUser, currentState.recentRequests));
 
-      final result = await updateAvailabilityUseCase(event.isAvailable);
+      final result = await updateAvailabilityUseCase(UpdateAvailabilityParams(
+        isAvailable: newAvailable,
+        isEmergency: newEmergency,
+      ));
       result.fold(
         (failure) {
-          // If the network call failed, snapback to original value
           emit(HomeDataLoaded(currentState.user, currentState.recentRequests));
         },
         (updatedUser) {
-          // State is already updated, but we ensure we hold the correct server-returned object
+          emit(HomeDataLoaded(updatedUser, currentState.recentRequests));
+        },
+      );
+    }
+  }
+
+  Future<void> _onToggleUrgency(
+    ToggleUrgency event,
+    Emitter<HomeState> emit,
+  ) async {
+    if (state is HomeDataLoaded) {
+      final currentState = state as HomeDataLoaded;
+      
+      final bool newEmergency = event.isEmergency;
+      final bool newAvailable = newEmergency ? true : currentState.user.isAvailable;
+
+      // Emit the optimistic state first
+      final optimisticUser = currentState.user.copyWith(
+        isAvailable: newAvailable,
+        isEmergency: newEmergency,
+      );
+      emit(HomeDataLoaded(optimisticUser, currentState.recentRequests));
+
+      final result = await updateAvailabilityUseCase(UpdateAvailabilityParams(
+        isAvailable: newAvailable,
+        isEmergency: newEmergency,
+      ));
+      result.fold(
+        (failure) {
+          emit(HomeDataLoaded(currentState.user, currentState.recentRequests));
+        },
+        (updatedUser) {
           emit(HomeDataLoaded(updatedUser, currentState.recentRequests));
         },
       );
