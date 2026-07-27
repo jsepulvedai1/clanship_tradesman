@@ -24,12 +24,15 @@ abstract class AuthRemoteDataSource {
     List<String>? specialtyIds,
     List<String>? tagIds,
     List<String>? subtagIds,
+    String? bio,
+    List<String>? workPhotoPaths,
   });
   Future<UserModel> getCurrentUser();
   Future<void> logout();
   Future<void> requestPasswordReset(String email);
   Future<void> sendPasswordResetEmail(String email);
   Future<List<Map<String, dynamic>>> getAvailableTags();
+  Future<Map<String, bool>> checkUserExistence({String? email, String? phoneNumber});
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -45,8 +48,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     await storage.delete(key: 'jwt_token');
 
     const String loginMutation = r'''
-      mutation TokenAuth($username: String!, $password: String!) {
-        tokenAuth(username: $username, password: $password) {
+      mutation TokenAuth($username: String!, $password: String!, $appType: String) {
+        tokenAuth(username: $username, password: $password, appType: $appType) {
           token
           refreshToken
         }
@@ -70,11 +73,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     ''';
 
+    final cleanEmail = email.trim().toLowerCase();
+
     final MutationOptions options = MutationOptions(
       document: gql(loginMutation),
       variables: {
-        'username': email,
+        'username': cleanEmail,
         'password': password,
+        'appType': 'TRADESMAN',
       },
       fetchPolicy: FetchPolicy.networkOnly,
     );
@@ -136,6 +142,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     List<String>? specialtyIds,
     List<String>? tagIds,
     List<String>? subtagIds,
+    String? bio,
+    List<String>? workPhotoPaths,
   }) async {
     // Clear any existing token to prevent AuthLink from sending an invalid/expired token
     // which causes 'Error decoding signature' on the server.
@@ -160,10 +168,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     ''';
 
+    final cleanEmail = email.trim().toLowerCase();
+
     final MutationOptions options = MutationOptions(
       document: gql(registerMutation),
       variables: {
-        'email': email,
+        'email': cleanEmail,
         'password': password,
         'firstName': firstName,
         'lastName': lastName,
@@ -184,7 +194,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
 
     // After successful registration, we login the user
-    final userModel = await login(email, password);
+    final userModel = await login(cleanEmail, password);
 
     UserModel finalUserModel = userModel;
     if (avatarPath != null && avatarPath.isNotEmpty) {
@@ -329,14 +339,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     }
       
-    // Update specialties, tags, and subtags if provided
+    // Update specialties, tags, subtags, and bio if provided
     if ((specialtyIds != null && specialtyIds.isNotEmpty) || 
         (tagIds != null && tagIds.isNotEmpty) || 
-        (subtagIds != null && subtagIds.isNotEmpty)) {
+        (subtagIds != null && subtagIds.isNotEmpty) ||
+        (bio != null && bio.isNotEmpty)) {
       uploadFutures.add(() async {
         const String updateTagsMutation = r'''
-          mutation UpdateProfessionalProfile($specialtyIds: [ID!], $tagIds: [ID!], $subtagIds: [ID!]) {
-            updateProfessionalProfile(specialtyIds: $specialtyIds, tagIds: $tagIds, subtagIds: $subtagIds) {
+          mutation UpdateProfessionalProfile($specialtyIds: [ID!], $tagIds: [ID!], $subtagIds: [ID!], $bio: String) {
+            updateProfessionalProfile(specialtyIds: $specialtyIds, tagIds: $tagIds, subtagIds: $subtagIds, bio: $bio) {
               success
             }
           }
@@ -348,6 +359,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
             'specialtyIds': specialtyIds,
             'tagIds': tagIds,
             'subtagIds': subtagIds,
+            'bio': bio,
           },
           fetchPolicy: FetchPolicy.networkOnly,
         );
@@ -355,9 +367,42 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         try {
           await client.mutate(updateTagsOptions);
         } catch (e) {
-          print('Error updating professional tags: $e');
+          print('Error updating professional profile info: $e');
         }
       }());
+    }
+
+    // Upload portfolio work photos if provided
+    if (workPhotoPaths != null && workPhotoPaths.isNotEmpty) {
+      for (final path in workPhotoPaths) {
+        uploadFutures.add(() async {
+          try {
+            final file = File(path);
+            if (await file.exists()) {
+              final bytes = await file.readAsBytes();
+              final base64Image = base64Encode(bytes);
+
+              const String addPortfolioMutation = r'''
+                mutation AddPortfolioPhoto($imageBase64: String!) {
+                  addPortfolioPhoto(imageBase64: $imageBase64) {
+                    success
+                  }
+                }
+              ''';
+
+              final MutationOptions options = MutationOptions(
+                document: gql(addPortfolioMutation),
+                variables: {'imageBase64': base64Image},
+                fetchPolicy: FetchPolicy.networkOnly,
+              );
+
+              await client.mutate(options);
+            }
+          } catch (e) {
+            print('Error uploading portfolio photo $path: $e');
+          }
+        }());
+      }
     }
 
     // Await all parallel uploads
@@ -457,10 +502,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     await requestPasswordReset(email);
   }
 
+  static int maxSpecialtiesLimit = 6;
+
   @override
   Future<List<Map<String, dynamic>>> getAvailableTags() async {
     const String query = r'''
       query GetSpecialties {
+        maxSpecialtiesPerTradesman
         specialties {
           id
           name
@@ -488,10 +536,48 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw Exception(result.exception.toString());
     }
 
+    final maxLimit = result.data?['maxSpecialtiesPerTradesman'] as int?;
+    if (maxLimit != null) {
+      maxSpecialtiesLimit = maxLimit;
+    }
+
     final specialtiesList = result.data?['specialties'] as List?;
     if (specialtiesList == null) {
       return [];
     }
     return specialtiesList.map((s) => s as Map<String, dynamic>).toList();
+  }
+
+  @override
+  Future<Map<String, bool>> checkUserExistence({String? email, String? phoneNumber}) async {
+    const String query = r'''
+      query CheckUserExistence($email: String, $phoneNumber: String) {
+        checkUserExistence(email: $email, phoneNumber: $phoneNumber) {
+          emailExists
+          phoneExists
+        }
+      }
+    ''';
+
+    final QueryOptions options = QueryOptions(
+      document: gql(query),
+      variables: {
+        'email': email,
+        'phoneNumber': phoneNumber,
+      },
+      fetchPolicy: FetchPolicy.networkOnly,
+    );
+
+    final QueryResult result = await client.query(options);
+
+    if (result.hasException) {
+      return {'emailExists': false, 'phoneExists': false};
+    }
+
+    final data = result.data?['checkUserExistence'] as Map<String, dynamic>?;
+    return {
+      'emailExists': data?['emailExists'] as bool? ?? false,
+      'phoneExists': data?['phoneExists'] as bool? ?? false,
+    };
   }
 }

@@ -18,6 +18,7 @@ import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/
 import 'package:clanship_mobile_tradesman/features/requests/presentation/pages/completed_requests_page.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/pages/rejected_requests_page.dart';
 import 'package:clanship_mobile_tradesman/features/home/presentation/widgets/home_skeleton.dart';
+import 'package:clanship_mobile_tradesman/features/profile/domain/repositories/profile_repository.dart';
 import 'package:clanship_mobile_tradesman/features/profile/domain/usecases/update_profile_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
@@ -749,16 +750,11 @@ class _LocationWidgetState extends State<_LocationWidget> {
         throw 'No se pudo obtener la ubicación actual.';
       }
 
-      final updateUseCase = di.sl<UpdateProfileUseCase>();
-      final result = await updateUseCase(
-        UpdateProfileParams(
-          firstName: widget.user.firstName,
-          lastName: widget.user.lastName,
-          email: widget.user.email,
-          address: 'Ubicación GPS actual',
-          latitude: position.latitude,
-          longitude: position.longitude,
-        ),
+      final profileRepo = di.sl<ProfileRepository>();
+      final result = await profileRepo.updateProfessionalProfile(
+        address: 'Ubicación GPS actual',
+        latitude: position.latitude,
+        longitude: position.longitude,
       );
 
       result.fold((failure) => _showError(failure.message), (_) {
@@ -790,16 +786,11 @@ class _LocationWidgetState extends State<_LocationWidget> {
     });
 
     try {
-      final updateUseCase = di.sl<UpdateProfileUseCase>();
-      final result = await updateUseCase(
-        UpdateProfileParams(
-          firstName: widget.user.firstName,
-          lastName: widget.user.lastName,
-          email: widget.user.email,
-          address: address.trim(),
-          latitude: latitude,
-          longitude: longitude,
-        ),
+      final profileRepo = di.sl<ProfileRepository>();
+      final result = await profileRepo.updateProfessionalProfile(
+        address: address.trim(),
+        latitude: latitude,
+        longitude: longitude,
       );
 
       result.fold((failure) => _showError(failure.message), (_) {

@@ -25,6 +25,9 @@ class UpdateProfessionalProfileEvent extends ProfileEvent {
   final String? facebookUrl;
   final String? instagramUrl;
   final String? tiktokUrl;
+  final String? address;
+  final double? latitude;
+  final double? longitude;
   final List<String>? tagIds;
   final String? specialtyId;
   final List<String>? specialtyIds;
@@ -37,6 +40,9 @@ class UpdateProfessionalProfileEvent extends ProfileEvent {
     this.facebookUrl,
     this.instagramUrl,
     this.tiktokUrl,
+    this.address,
+    this.latitude,
+    this.longitude,
     this.tagIds,
     this.specialtyId,
     this.specialtyIds,
@@ -51,6 +57,9 @@ class UpdateProfessionalProfileEvent extends ProfileEvent {
         facebookUrl,
         instagramUrl,
         tiktokUrl,
+        address,
+        latitude,
+        longitude,
         tagIds,
         specialtyId,
         specialtyIds,

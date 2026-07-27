@@ -65,6 +65,8 @@ class RegisterRequested extends AuthEvent {
   final List<String>? specialtyIds;
   final List<String>? tagIds;
   final List<String>? subtagIds;
+  final String? bio;
+  final List<String>? workPhotoPaths;
 
   const RegisterRequested({
     required this.email,
@@ -83,6 +85,8 @@ class RegisterRequested extends AuthEvent {
     this.specialtyIds,
     this.tagIds,
     this.subtagIds,
+    this.bio,
+    this.workPhotoPaths,
   });
 
   @override
@@ -102,6 +106,8 @@ class RegisterRequested extends AuthEvent {
         specialtyIds ?? [],
         tagIds ?? [],
         subtagIds ?? [],
+        bio ?? '',
+        workPhotoPaths ?? [],
       ];
 }
 

@@ -20,9 +20,12 @@ abstract class AuthRepository {
     List<String>? specialtyIds,
     List<String>? tagIds,
     List<String>? subtagIds,
+    String? bio,
+    List<String>? workPhotoPaths,
   });
   Future<Either<Failure, void>> logout();
   Future<Either<Failure, User>> getCurrentUser();
   Future<Either<Failure, void>> requestPasswordReset(String email);
   Future<Either<Failure, List<Map<String, dynamic>>>> getAvailableTags();
+  Future<Either<Failure, Map<String, bool>>> checkUserExistence({String? email, String? phoneNumber});
 }

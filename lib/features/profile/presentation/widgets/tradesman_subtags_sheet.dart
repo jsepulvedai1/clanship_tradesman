@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
+import 'package:clanship_mobile_tradesman/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:clanship_mobile_tradesman/features/settings/presentation/pages/my_plan_page.dart';
 
 class TradesmanSubtagsSheet extends StatefulWidget {
   final List<Map<String, dynamic>> specialties;
   final Set<String> initialSelectedSpecialtyIds;
   final Set<String> initialSelectedTagIds;
   final Set<String> initialSelectedSubtagIds;
+  final int maxSpecialtiesPerTradesman;
   final Function(Set<String> selectedSpecialtyIds, Set<String> selectedTagIds, Set<String> selectedSubtagIds) onSave;
 
-  const TradesmanSubtagsSheet({
+  TradesmanSubtagsSheet({
     super.key,
     required this.specialties,
     required this.initialSelectedSpecialtyIds,
     required this.initialSelectedTagIds,
     required this.initialSelectedSubtagIds,
+    int? maxSpecialtiesPerTradesman,
     required this.onSave,
-  });
+  }) : maxSpecialtiesPerTradesman = maxSpecialtiesPerTradesman ?? AuthRemoteDataSourceImpl.maxSpecialtiesLimit;
 
   @override
   State<TradesmanSubtagsSheet> createState() => _TradesmanSubtagsSheetState();
@@ -43,9 +47,241 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
     _selectedSpecialtyIds = Set<String>.from(widget.initialSelectedSpecialtyIds);
     _selectedTagIds = Set<String>.from(widget.initialSelectedTagIds);
     _selectedSubtagIds = Set<String>.from(widget.initialSelectedSubtagIds);
+    _syncParentIds();
   }
 
-  int get _totalCount => _selectedSpecialtyIds.length + _selectedTagIds.length + _selectedSubtagIds.length;
+  int get _maxLimit => widget.maxSpecialtiesPerTradesman;
+
+  // Extract all leaf service items (subtags or standalone tags) for a specialty
+  List<Map<String, String>> _getSpecialtyLeafItems(Map<String, dynamic> specialty) {
+    final List<Map<String, String>> items = [];
+    final specId = specialty['id']?.toString() ?? '';
+    final tags = specialty['tags'] as List<dynamic>? ?? [];
+    for (final tag in tags) {
+      final tagId = tag['id']?.toString() ?? '';
+      final subtags = tag['subtags'] as List<dynamic>? ?? [];
+      if (subtags.isEmpty) {
+        if (tagId.isNotEmpty) {
+          items.add({'type': 'tag', 'id': tagId, 'specialtyId': specId});
+        }
+      } else {
+        for (final subtag in subtags) {
+          final subtagId = subtag['id']?.toString() ?? '';
+          if (subtagId.isNotEmpty) {
+            items.add({'type': 'subtag', 'id': subtagId, 'tagId': tagId, 'specialtyId': specId});
+          }
+        }
+      }
+    }
+    return items;
+  }
+
+  // Extract all leaf service items for a tag
+  List<Map<String, String>> _getTagLeafItems(Map<String, dynamic> tag, String specId) {
+    final List<Map<String, String>> items = [];
+    final tagId = tag['id']?.toString() ?? '';
+    final subtags = tag['subtags'] as List<dynamic>? ?? [];
+    if (subtags.isEmpty) {
+      if (tagId.isNotEmpty) {
+        items.add({'type': 'tag', 'id': tagId, 'specialtyId': specId});
+      }
+    } else {
+      for (final subtag in subtags) {
+        final subtagId = subtag['id']?.toString() ?? '';
+        if (subtagId.isNotEmpty) {
+          items.add({'type': 'subtag', 'id': subtagId, 'tagId': tagId, 'specialtyId': specId});
+        }
+      }
+    }
+    return items;
+  }
+
+  // Count of selected leaf services (subtags + standalone tags)
+  int get _totalCount {
+    int count = _selectedSubtagIds.length;
+    for (final spec in widget.specialties) {
+      final tags = spec['tags'] as List<dynamic>? ?? [];
+      for (final tag in tags) {
+        final tagId = tag['id']?.toString() ?? '';
+        final subtags = tag['subtags'] as List<dynamic>? ?? [];
+        if (subtags.isEmpty && _selectedTagIds.contains(tagId)) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+
+  // Check if a specialty is fully selected
+  bool _isSpecialtyFullySelected(Map<String, dynamic> specialty) {
+    final leafItems = _getSpecialtyLeafItems(specialty);
+    if (leafItems.isEmpty) return false;
+    for (final item in leafItems) {
+      if (item['type'] == 'subtag') {
+        if (!_selectedSubtagIds.contains(item['id'])) return false;
+      } else {
+        if (!_selectedTagIds.contains(item['id'])) return false;
+      }
+    }
+    return true;
+  }
+
+  // Check if a tag is fully selected
+  bool _isTagFullySelected(Map<String, dynamic> tag, String specId) {
+    final leafItems = _getTagLeafItems(tag, specId);
+    if (leafItems.isEmpty) return false;
+    for (final item in leafItems) {
+      if (item['type'] == 'subtag') {
+        if (!_selectedSubtagIds.contains(item['id'])) return false;
+      } else {
+        if (!_selectedTagIds.contains(item['id'])) return false;
+      }
+    }
+    return true;
+  }
+
+  // Synchronize parent tag and specialty IDs based on selected leaf items
+  void _syncParentIds() {
+    for (final spec in widget.specialties) {
+      final specId = spec['id']?.toString() ?? '';
+      bool specHasAny = false;
+
+      final tags = spec['tags'] as List<dynamic>? ?? [];
+      for (final tag in tags) {
+        final tagId = tag['id']?.toString() ?? '';
+        final subtags = tag['subtags'] as List<dynamic>? ?? [];
+
+        if (subtags.isEmpty) {
+          if (_selectedTagIds.contains(tagId)) {
+            specHasAny = true;
+          }
+        } else {
+          bool tagHasAny = false;
+          for (final subtag in subtags) {
+            final subtagId = subtag['id']?.toString() ?? '';
+            if (_selectedSubtagIds.contains(subtagId)) {
+              tagHasAny = true;
+              specHasAny = true;
+            }
+          }
+          if (tagHasAny) {
+            _selectedTagIds.add(tagId);
+          } else {
+            _selectedTagIds.remove(tagId);
+          }
+        }
+      }
+
+      if (specHasAny) {
+        _selectedSpecialtyIds.add(specId);
+      } else {
+        _selectedSpecialtyIds.remove(specId);
+      }
+    }
+  }
+
+  // Toggle selection for an entire specialty
+  void _toggleSpecialty(Map<String, dynamic> specialty) {
+    final leafItems = _getSpecialtyLeafItems(specialty);
+    if (leafItems.isEmpty) return;
+
+    final isFullySelected = _isSpecialtyFullySelected(specialty);
+
+    setState(() {
+      if (isFullySelected) {
+        for (final item in leafItems) {
+          if (item['type'] == 'subtag') {
+            _selectedSubtagIds.remove(item['id']);
+          } else {
+            _selectedTagIds.remove(item['id']);
+          }
+        }
+        _syncParentIds();
+      } else {
+        final unselectedItems = leafItems.where((item) {
+          if (item['type'] == 'subtag') {
+            return !_selectedSubtagIds.contains(item['id']);
+          } else {
+            return !_selectedTagIds.contains(item['id']);
+          }
+        }).toList();
+
+        if (_totalCount + unselectedItems.length > _maxLimit) {
+          _showLimitWarning();
+          return;
+        }
+
+        for (final item in unselectedItems) {
+          if (item['type'] == 'subtag') {
+            _selectedSubtagIds.add(item['id']!);
+          } else {
+            _selectedTagIds.add(item['id']!);
+          }
+        }
+        _syncParentIds();
+      }
+    });
+  }
+
+  // Toggle selection for an entire tag
+  void _toggleTag(Map<String, dynamic> tag, String specId) {
+    final leafItems = _getTagLeafItems(tag, specId);
+    if (leafItems.isEmpty) return;
+
+    final isFullySelected = _isTagFullySelected(tag, specId);
+
+    setState(() {
+      if (isFullySelected) {
+        for (final item in leafItems) {
+          if (item['type'] == 'subtag') {
+            _selectedSubtagIds.remove(item['id']);
+          } else {
+            _selectedTagIds.remove(item['id']);
+          }
+        }
+        _syncParentIds();
+      } else {
+        final unselectedItems = leafItems.where((item) {
+          if (item['type'] == 'subtag') {
+            return !_selectedSubtagIds.contains(item['id']);
+          } else {
+            return !_selectedTagIds.contains(item['id']);
+          }
+        }).toList();
+
+        if (_totalCount + unselectedItems.length > _maxLimit) {
+          _showLimitWarning();
+          return;
+        }
+
+        for (final item in unselectedItems) {
+          if (item['type'] == 'subtag') {
+            _selectedSubtagIds.add(item['id']!);
+          } else {
+            _selectedTagIds.add(item['id']!);
+          }
+        }
+        _syncParentIds();
+      }
+    });
+  }
+
+  // Toggle selection for an individual subtag
+  void _toggleSubtag(String subtagId) {
+    setState(() {
+      if (_selectedSubtagIds.contains(subtagId)) {
+        _selectedSubtagIds.remove(subtagId);
+        _syncParentIds();
+      } else {
+        if (_totalCount >= _maxLimit) {
+          _showLimitWarning();
+          return;
+        }
+        _selectedSubtagIds.add(subtagId);
+        _syncParentIds();
+      }
+    });
+  }
 
   // Count active selections for a Specialty
   int _getSpecialtySelectedCount(Map<String, dynamic> specialty) {
@@ -149,10 +385,24 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
   }
 
   void _showLimitWarning() {
+    final remaining = _maxLimit - _totalCount;
+    final String message = remaining <= 0
+        ? 'Has alcanzado el límite de $_maxLimit categorías/servicios de tu plan.'
+        : 'Solo te quedan $remaining cupo(s) disponible(s).';
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Solo puedes seleccionar un máximo de 6 especializaciones.'),
-        backgroundColor: Colors.orange,
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.deepOrange,
+        action: SnackBarAction(
+          label: 'Mejorar Plan',
+          textColor: Colors.white,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MyPlanPage()),
+            );
+          },
+        ),
       ),
     );
   }
@@ -360,7 +610,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Selecciona las especializaciones que manejas. Máximo 6 en total.',
+              'Selecciona las especializaciones que manejas. Máximo $_maxLimit en total.',
               style: TextStyle(
                 fontSize: 12,
                 color: theme.colorScheme.onSurface.withOpacity(0.6),
@@ -382,6 +632,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
         final name = spec['name'] as String;
         final tags = spec['tags'] as List<dynamic>? ?? [];
         final selectedCount = _getSpecialtySelectedCount(spec);
+        final isFullySelected = _isSpecialtyFullySelected(spec);
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -405,24 +656,13 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
               child: Row(
                 children: [
                   Checkbox(
-                    value: _selectedSpecialtyIds.contains(spec['id']?.toString() ?? ''),
+                    value: isFullySelected,
                     activeColor: AppColors.primaryBlue,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
                     ),
                     onChanged: (val) {
-                      final specId = spec['id']?.toString() ?? '';
-                      setState(() {
-                        if (val == true) {
-                          if (_totalCount >= 6) {
-                            _showLimitWarning();
-                          } else {
-                            _selectedSpecialtyIds.add(specId);
-                          }
-                        } else {
-                          _selectedSpecialtyIds.remove(specId);
-                        }
-                      });
+                      _toggleSpecialty(spec);
                     },
                   ),
                   const SizedBox(width: 8),
@@ -500,6 +740,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
   // SCREEN 2: Subcategories View
   Widget _buildSubcategoriesView(ThemeData theme) {
     final tags = _activeSpecialty!['tags'] as List<dynamic>? ?? [];
+    final specId = _activeSpecialty!['id']?.toString() ?? '';
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -507,9 +748,9 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
       itemBuilder: (context, index) {
         final tag = tags[index];
         final name = tag['name'] as String;
-        final tagId = tag['id']?.toString() ?? '';
         final subtags = tag['subtags'] as List<dynamic>? ?? [];
         final selectedCount = _getTagSelectedCount(tag);
+        final isFullySelected = _isTagFullySelected(tag, specId);
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -521,17 +762,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                   _currentView = 2;
                 });
               } else {
-                setState(() {
-                  if (_selectedTagIds.contains(tagId)) {
-                    _selectedTagIds.remove(tagId);
-                  } else {
-                    if (_totalCount >= 6) {
-                      _showLimitWarning();
-                    } else {
-                      _selectedTagIds.add(tagId);
-                    }
-                  }
-                });
+                _toggleTag(tag, specId);
               }
             },
             borderRadius: BorderRadius.circular(16),
@@ -547,23 +778,13 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
               child: Row(
                 children: [
                   Checkbox(
-                    value: _selectedTagIds.contains(tagId),
+                    value: isFullySelected,
                     activeColor: AppColors.primaryBlue,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
                     ),
                     onChanged: (val) {
-                      setState(() {
-                        if (val == true) {
-                          if (_totalCount >= 6) {
-                            _showLimitWarning();
-                          } else {
-                            _selectedTagIds.add(tagId);
-                          }
-                        } else {
-                          _selectedTagIds.remove(tagId);
-                        }
-                      });
+                      _toggleTag(tag, specId);
                     },
                   ),
                   const SizedBox(width: 8),
@@ -657,17 +878,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
           padding: const EdgeInsets.only(bottom: 12),
           child: InkWell(
             onTap: () {
-              setState(() {
-                if (isSelected) {
-                  _selectedSubtagIds.remove(subtagId);
-                } else {
-                  if (_totalCount >= 6) {
-                    _showLimitWarning();
-                  } else {
-                    _selectedSubtagIds.add(subtagId);
-                  }
-                }
-              });
+              _toggleSubtag(subtagId);
             },
             borderRadius: BorderRadius.circular(16),
             child: Container(
@@ -691,17 +902,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     onChanged: (val) {
-                      setState(() {
-                        if (val == true) {
-                          if (_totalCount >= 6) {
-                            _showLimitWarning();
-                          } else {
-                            _selectedSubtagIds.add(subtagId);
-                          }
-                        } else {
-                          _selectedSubtagIds.remove(subtagId);
-                        }
-                      });
+                      _toggleSubtag(subtagId);
                     },
                   ),
                   const SizedBox(width: 12),
@@ -733,7 +934,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
     required String cancelText,
     String? selectedCountText,
   }) {
-    final countText = selectedCountText ?? '$_totalCount de 6 especialidades seleccionadas';
+    final countText = selectedCountText ?? '$_totalCount de $_maxLimit especialidades seleccionadas';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),

@@ -24,28 +24,19 @@ class GraphQLService {
       },
     );
 
-    // If using websockets for subscriptions, configure WebSocketLink here
-    final WebSocketLink websocketLink = WebSocketLink(
-      EnvConfig.instance.websocketUrl,
-      config: SocketClientConfig(
-        autoReconnect: true,
-        inactivityTimeout: null,
-        initialPayload: () async {
-          final token = await storage.read(key: 'jwt_token');
-          return {
-            'Authorization': token != null ? 'JWT $token' : '',
-          };
-        },
-      ),
+    final ErrorLink errorLink = ErrorLink(
+      onGraphQLError: (request, forward, response) {
+        for (final error in response.errors ?? []) {
+          if (error.message.contains('SESSION_INVALIDATED')) {
+            storage.delete(key: 'jwt_token');
+          }
+        }
+        return forward(request);
+      },
     );
 
-    // Combine links: Auth -> HTTP
-    // For subscriptions, split based on operation type
-    final Link link = Link.split(
-      (request) => request.isSubscription,
-      websocketLink,
-      authLink.concat(httpLink),
-    );
+    // Combine links: Auth -> Error -> HTTP
+    final Link link = Link.from([authLink, errorLink, httpLink]);
 
     client = GraphQLClient(
       cache: GraphQLCache(store: HiveStore()),

@@ -5,6 +5,7 @@ import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
+import 'package:clanship_mobile_tradesman/features/profile/domain/repositories/profile_repository.dart';
 import 'package:clanship_mobile_tradesman/features/profile/domain/usecases/update_profile_usecase.dart';
 
 class PersonalInfoPage extends StatefulWidget {
@@ -65,15 +66,21 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
       if (authState is AuthAuthenticated) {
         final currentUser = authState.user;
         final updateUseCase = di.sl<UpdateProfileUseCase>();
+        final profileRepo = di.sl<ProfileRepository>();
 
         final result = await updateUseCase(
           UpdateProfileParams(
             firstName: _firstNameController.text.trim(),
             lastName: _lastNameController.text.trim(),
             email: _emailController.text.trim(),
-            address: _addressController.text.trim(),
           ),
         );
+
+        if (_addressController.text.trim().isNotEmpty) {
+          await profileRepo.updateProfessionalProfile(
+            address: _addressController.text.trim(),
+          );
+        }
 
         result.fold(
           (failure) {

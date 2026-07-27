@@ -185,6 +185,7 @@ class _ProfilePageState extends State<ProfilePage> {
           initialSelectedSpecialtyIds: initialSpecialtyIds,
           initialSelectedTagIds: initialTagIds,
           initialSelectedSubtagIds: initialSubtagIds,
+          maxSpecialtiesPerTradesman: user.subscriptionPlan?.serviceCategories ?? 999,
           onSave: (selectedSpecialtyIds, selectedTagIds, selectedSubtagIds) {
             context.read<ProfileBloc>().add(
               UpdateProfessionalProfileEvent(

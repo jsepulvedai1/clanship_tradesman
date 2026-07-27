@@ -310,6 +310,50 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
     );
   }
 
+  Widget _buildFeatureRow(String label, String value, bool isDark, {bool isWhiteText = false}) {
+    final bool isDisabled = value == '—' || value.isEmpty;
+    final Color iconColor = isDisabled
+        ? (isWhiteText ? Colors.white38 : (isDark ? Colors.white24 : Colors.grey.shade400))
+        : (isWhiteText ? Colors.white : AppColors.primaryAzure);
+    final Color textColor = isWhiteText
+        ? Colors.white.withOpacity(0.9)
+        : (isDark ? Colors.white70 : AppColors.textDark.withOpacity(0.8));
+    final Color valColor = isWhiteText
+        ? Colors.white
+        : (isDark ? Colors.white : AppColors.primaryBlue);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            isDisabled ? Icons.remove_circle_outline_rounded : Icons.check_circle_rounded,
+            size: 16,
+            color: iconColor,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: textColor,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: valColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPlanOptionCard({
     required BuildContext context,
     required SubscriptionPlanEntity plan,
@@ -431,6 +475,18 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                 ),
             ],
           ),
+          const SizedBox(height: 16),
+          Divider(color: isDark ? Colors.white12 : Colors.grey.shade200, height: 1),
+          const SizedBox(height: 12),
+          _buildFeatureRow('Solicitudes mensuales', plan.monthlyRequests == null ? 'Ilimitadas' : '${plan.monthlyRequests}', isDark),
+          _buildFeatureRow('Solicitudes urgentes', plan.urgentRequests == null ? 'Ilimitadas' : '${plan.urgentRequests}', isDark),
+          _buildFeatureRow('Categorías de servicio', plan.serviceCategories == null ? 'Ilimitadas' : '${plan.serviceCategories}', isDark),
+          _buildFeatureRow('Posición en búsquedas', plan.searchPosition, isDark),
+          _buildFeatureRow('Insignia destacada', plan.featuredBadge ?? '—', isDark),
+          _buildFeatureRow('Aparición campañas RRSS', plan.rrssCampaigns ?? '—', isDark),
+          _buildFeatureRow('Difusión radial', plan.radioBroadcast ?? '—', isDark),
+          _buildFeatureRow('Estadísticas del perfil', plan.profileStatistics, isDark),
+          _buildFeatureRow('Soporte', plan.supportLevel, isDark),
         ],
       ),
     );

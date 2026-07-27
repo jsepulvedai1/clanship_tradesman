@@ -1,5 +1,6 @@
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:clanship_mobile_tradesman/features/home/domain/entities/user_entity.dart';
+import 'package:clanship_mobile_tradesman/features/auth/data/datasources/auth_remote_data_source.dart';
 
 abstract class ProfileRemoteDataSource {
   Future<UserEntity> getMyProfile();
@@ -20,6 +21,9 @@ abstract class ProfileRemoteDataSource {
     String? facebookUrl,
     String? instagramUrl,
     String? tiktokUrl,
+    String? address,
+    double? latitude,
+    double? longitude,
     List<String>? tagIds,
     String? specialtyId,
     List<String>? specialtyIds,
@@ -86,6 +90,15 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         description
         price
         durationDays
+        monthlyRequests
+        urgentRequests
+        serviceCategories
+        searchPosition
+        featuredBadge
+        rrssCampaigns
+        radioBroadcast
+        profileStatistics
+        supportLevel
       }
       specialty {
         id
@@ -142,6 +155,15 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
             description: planData['description']?.toString() ?? '',
             price: double.tryParse(planData['price']?.toString() ?? '0') ?? 0.0,
             durationDays: int.tryParse(planData['durationDays']?.toString() ?? '30') ?? 30,
+            monthlyRequests: planData['monthlyRequests'] != null ? int.tryParse(planData['monthlyRequests'].toString()) : null,
+            urgentRequests: planData['urgentRequests'] != null ? int.tryParse(planData['urgentRequests'].toString()) : null,
+            serviceCategories: planData['serviceCategories'] != null ? int.tryParse(planData['serviceCategories'].toString()) : null,
+            searchPosition: planData['searchPosition']?.toString() ?? 'Estándar',
+            featuredBadge: planData['featuredBadge']?.toString(),
+            rrssCampaigns: planData['rrssCampaigns']?.toString(),
+            radioBroadcast: planData['radioBroadcast']?.toString(),
+            profileStatistics: planData['profileStatistics']?.toString() ?? 'Básicas',
+            supportLevel: planData['supportLevel']?.toString() ?? 'Estándar',
           )
         : null;
 
@@ -186,9 +208,9 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
                 rejectionReason: d['rejectionReason']?.toString(),
               ))
           .toList() ?? const [],
-      address: data['address'],
-      latitude: double.tryParse(data['latitude']?.toString() ?? ''),
-      longitude: double.tryParse(data['longitude']?.toString() ?? ''),
+      address: profProfile?['address'] ?? data['address'],
+      latitude: double.tryParse(profProfile?['latitude']?.toString() ?? data['latitude']?.toString() ?? ''),
+      longitude: double.tryParse(profProfile?['longitude']?.toString() ?? data['longitude']?.toString() ?? ''),
       serviceRadius: double.tryParse(profProfile?['serviceRadius']?.toString() ?? '10.0') ?? 10.0,
       facebookUrl: profProfile?['facebookUrl'] ?? '',
       instagramUrl: profProfile?['instagramUrl'] ?? '',
@@ -358,6 +380,9 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     String? facebookUrl,
     String? instagramUrl,
     String? tiktokUrl,
+    String? address,
+    double? latitude,
+    double? longitude,
     List<String>? tagIds,
     String? specialtyId,
     List<String>? specialtyIds,
@@ -371,6 +396,9 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         $facebookUrl: String,
         $instagramUrl: String,
         $tiktokUrl: String,
+        $address: String,
+        $latitude: Float,
+        $longitude: Float,
         $tagIds: [ID],
         $specialtyId: Int,
         $specialtyIds: [ID],
@@ -383,6 +411,9 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
           facebookUrl: $facebookUrl,
           instagramUrl: $instagramUrl,
           tiktokUrl: $tiktokUrl,
+          address: $address,
+          latitude: $latitude,
+          longitude: $longitude,
           tagIds: $tagIds,
           specialtyId: $specialtyId,
           specialtyIds: $specialtyIds,
@@ -456,6 +487,9 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         if (facebookUrl != null) 'facebookUrl': facebookUrl,
         if (instagramUrl != null) 'instagramUrl': instagramUrl,
         if (tiktokUrl != null) 'tiktokUrl': tiktokUrl,
+        if (address != null) 'address': address,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
         if (tagIds != null) 'tagIds': tagIds,
         if (specialtyId != null) 'specialtyId': int.tryParse(specialtyId),
         if (specialtyIds != null) 'specialtyIds': specialtyIds,
@@ -931,6 +965,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   Future<List<Map<String, dynamic>>> getSpecialties() async {
     const String query = r'''
       query GetSpecialties {
+        maxSpecialtiesPerTradesman
         specialties {
           id
           name
@@ -958,6 +993,11 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       throw Exception(result.exception.toString());
     }
 
+    final maxLimit = result.data?['maxSpecialtiesPerTradesman'] as int?;
+    if (maxLimit != null) {
+      AuthRemoteDataSourceImpl.maxSpecialtiesLimit = maxLimit;
+    }
+
     final List<dynamic> list = result.data?['specialties'] ?? [];
     return list.map((s) => s as Map<String, dynamic>).toList();
   }
@@ -972,6 +1012,15 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
           description
           price
           durationDays
+          monthlyRequests
+          urgentRequests
+          serviceCategories
+          searchPosition
+          featuredBadge
+          rrssCampaigns
+          radioBroadcast
+          profileStatistics
+          supportLevel
         }
       }
     ''';
@@ -998,6 +1047,15 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       description: p['description']?.toString() ?? '',
       price: double.tryParse(p['price']?.toString() ?? '0') ?? 0.0,
       durationDays: int.tryParse(p['durationDays']?.toString() ?? '30') ?? 30,
+      monthlyRequests: p['monthlyRequests'] != null ? int.tryParse(p['monthlyRequests'].toString()) : null,
+      urgentRequests: p['urgentRequests'] != null ? int.tryParse(p['urgentRequests'].toString()) : null,
+      serviceCategories: p['serviceCategories'] != null ? int.tryParse(p['serviceCategories'].toString()) : null,
+      searchPosition: p['searchPosition']?.toString() ?? 'Estándar',
+      featuredBadge: p['featuredBadge']?.toString(),
+      rrssCampaigns: p['rrssCampaigns']?.toString(),
+      radioBroadcast: p['radioBroadcast']?.toString(),
+      profileStatistics: p['profileStatistics']?.toString() ?? 'Básicas',
+      supportLevel: p['supportLevel']?.toString() ?? 'Estándar',
     )).toList();
   }
 

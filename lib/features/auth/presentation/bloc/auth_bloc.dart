@@ -83,6 +83,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         specialtyIds: event.specialtyIds,
         tagIds: event.tagIds,
         subtagIds: event.subtagIds,
+        bio: event.bio,
+        workPhotoPaths: event.workPhotoPaths,
       ),
     );
 

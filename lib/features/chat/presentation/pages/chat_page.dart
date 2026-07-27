@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
+import 'package:clanship_mobile_tradesman/features/chat/domain/entities/chat_message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -726,7 +727,9 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
                         final message = messages[index];
-                        final isLatest = latestProposalMsg != null && message.id == latestProposalMsg.id;
+                        final isLatest =
+                            latestProposalMsg != null &&
+                            message.id == latestProposalMsg.id;
 
                         return ChatBubble(
                           message: message,

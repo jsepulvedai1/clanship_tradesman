@@ -27,6 +27,8 @@ class RegisterUseCase implements UseCase<User, RegisterParams> {
       specialtyIds: params.specialtyIds,
       tagIds: params.tagIds,
       subtagIds: params.subtagIds,
+      bio: params.bio,
+      workPhotoPaths: params.workPhotoPaths,
     );
   }
 }
@@ -47,6 +49,8 @@ class RegisterParams {
   final List<String>? specialtyIds;
   final List<String>? tagIds;
   final List<String>? subtagIds;
+  final String? bio;
+  final List<String>? workPhotoPaths;
 
   RegisterParams({
     required this.email,
@@ -64,5 +68,7 @@ class RegisterParams {
     this.specialtyIds,
     this.tagIds,
     this.subtagIds,
+    this.bio,
+    this.workPhotoPaths,
   });
 }

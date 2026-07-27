@@ -49,9 +49,16 @@ class _RegisterPageState extends State<RegisterPage> {
   double? _longitude;
   final _phoneController = TextEditingController();
   bool _acceptedTerms = false;
+  bool _isCheckingStep0 = false;
+  bool _isCheckingStep1 = false;
 
-  // Step 2 Fields (Foto de Perfil)
+  // Step 2 Fields (Biografía y Experiencia)
+  final _bioController = TextEditingController();
+
+  // Step 3 Fields (Foto de Perfil y Trabajos)
   String? _avatarPath;
+  final List<String> _workPhotoPaths = [];
+  final List<String> _selectedSubtagNames = [];
 
   // Tags
   List<Map<String, dynamic>> _availableTags = [];
@@ -107,6 +114,7 @@ class _RegisterPageState extends State<RegisterPage> {
     _birthdateController.dispose();
     _addressController.dispose();
     _phoneController.dispose();
+    _bioController.dispose();
     super.dispose();
   }
 
@@ -254,6 +262,7 @@ class _RegisterPageState extends State<RegisterPage> {
               _selectedSpecialtyIds = selectedSpecialtyIds.toList();
               _selectedTagIds = selectedTagIds.toList();
               _selectedSubtagIds = selectedSubtagIds.toList();
+              _updateSelectedSubtagNames();
             });
           },
         );
@@ -340,10 +349,11 @@ class _RegisterPageState extends State<RegisterPage> {
                       },
                       children: [
                         _buildStep0(), // Correo, Contraseña, Nombre, Fecha Nacimiento
-                        _buildStep1(), // Dirección, Teléfono, Términos
-                        _buildStep2(), // Foto de Perfil
+                        _buildStep1(), // Dirección, Teléfono, Especialidades, Términos
+                        _buildStep2Bio(), // Biografía & Experiencia Profesional
+                        _buildStep3WorkPhotos(), // Foto de Perfil & Fotos de Trabajos Realizados
                         _buildStep3New(), // Documentos (Cédula de Identidad, Certificados)
-                        _buildStep3(), // Bienvenida & Submit
+                        _buildStep3(), // Resumen Perfil & Submit
                       ],
                     ),
                   ),
@@ -356,13 +366,29 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  void _updateSelectedSubtagNames() {
+    _selectedSubtagNames.clear();
+    for (final spec in _availableTags) {
+      final tags = spec['tags'] as List<dynamic>? ?? [];
+      for (final tag in tags) {
+        final subtags = tag['subtags'] as List<dynamic>? ?? [];
+        for (final subtag in subtags) {
+          final subtagId = subtag['id'].toString();
+          if (_selectedSubtagIds.contains(subtagId)) {
+            _selectedSubtagNames.add(subtag['name'].toString());
+          }
+        }
+      }
+    }
+  }
+
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 2.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _currentStep < 4
+          _currentStep < 5
               ? IconButton(
                   icon: const Icon(
                     Icons.arrow_back_ios_rounded,
@@ -379,11 +405,11 @@ class _RegisterPageState extends State<RegisterPage> {
               : const SizedBox(width: 48, height: 48),
           // Page indicator dots
           Row(
-            children: List.generate(5, (index) {
+            children: List.generate(6, (index) {
               return Container(
                 width: 8,
                 height: 8,
-                margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                margin: const EdgeInsets.symmetric(horizontal: 3.0),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: _currentStep == index
@@ -539,11 +565,34 @@ class _RegisterPageState extends State<RegisterPage> {
             width: 280,
             height: 48,
             child: ElevatedButton(
-              onPressed: () {
-                if (_validateStep0()) {
-                  _nextPage();
-                }
-              },
+              onPressed: _isCheckingStep0
+                  ? null
+                  : () async {
+                      if (_validateStep0()) {
+                        setState(() {
+                          _isCheckingStep0 = true;
+                        });
+                        final email = _emailController.text.trim();
+                        final res = await di.sl<AuthRepository>().checkUserExistence(email: email);
+                        if (mounted) {
+                          setState(() {
+                            _isCheckingStep0 = false;
+                          });
+                          res.fold(
+                            (failure) {
+                              _nextPage();
+                            },
+                            (data) {
+                              if (data['emailExists'] == true) {
+                                _showError('El correo electrónico ya se encuentra registrado. Por favor inicia sesión o utiliza otro correo.');
+                              } else {
+                                _nextPage();
+                              }
+                            },
+                          );
+                        }
+                      }
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0D2B45),
                 foregroundColor: Colors.white,
@@ -552,17 +601,26 @@ class _RegisterPageState extends State<RegisterPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Siguiente',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_ios, size: 14),
-                ],
-              ),
+              child: _isCheckingStep0
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Siguiente',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(Icons.arrow_forward_ios, size: 14),
+                      ],
+                    ),
             ),
           ),
           const SizedBox(height: 10),
@@ -725,7 +783,32 @@ class _RegisterPageState extends State<RegisterPage> {
             width: 180,
             height: 48,
             child: ElevatedButton(
-              onPressed: isValid ? _nextPage : null,
+              onPressed: (isValid && !_isCheckingStep1)
+                  ? () async {
+                      setState(() {
+                        _isCheckingStep1 = true;
+                      });
+                      final phone = '+569${_phoneController.text.trim()}';
+                      final res = await di.sl<AuthRepository>().checkUserExistence(phoneNumber: phone);
+                      if (mounted) {
+                        setState(() {
+                          _isCheckingStep1 = false;
+                        });
+                        res.fold(
+                          (failure) {
+                            _nextPage();
+                          },
+                          (data) {
+                            if (data['phoneExists'] == true) {
+                              _showError('El número de teléfono ya está registrado por otro usuario. Por favor utiliza otro número.');
+                            } else {
+                              _nextPage();
+                            }
+                          },
+                        );
+                      }
+                    }
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0D2B45),
                 foregroundColor: Colors.white,
@@ -738,17 +821,26 @@ class _RegisterPageState extends State<RegisterPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Siguiente',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_ios, size: 14),
-                ],
-              ),
+              child: _isCheckingStep1
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Siguiente',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(Icons.arrow_forward_ios, size: 14),
+                      ],
+                    ),
             ),
           ),
         ],
@@ -756,132 +848,7 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // STEP 2: FOTO DE PERFIL
-  Widget _buildStep2() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const SizedBox(height: 20),
-          const Text(
-            'Elige tu Foto de Perfil',
-            style: TextStyle(
-              color: Color(0xFF0D2B45),
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Una buena foto genera mayor confianza con tus clientes',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF2E3135), fontSize: 14),
-          ),
-          const SizedBox(height: 32),
-          Container(
-            width: 180,
-            height: 240,
-            decoration: BoxDecoration(
-              color: const Color(0xFF0D2B45).withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(90),
-              border: Border.all(
-                color: const Color(0xFF0D2B45).withValues(alpha: 0.2),
-                width: 2,
-              ),
-              image: _avatarPath != null
-                  ? DecorationImage(
-                      image: FileImage(File(_avatarPath!)),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-            ),
-            child: _avatarPath == null
-                ? Icon(
-                    Icons.person_rounded,
-                    size: 100,
-                    color: const Color(0xFF0D2B45).withValues(alpha: 0.3),
-                  )
-                : null,
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: () => _pickImage(ImageSource.camera),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF0D2B45),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt_outlined,
-                    size: 28,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 24),
-              Flexible(
-                child: SizedBox(
-                  height: 48,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _pickImage(ImageSource.gallery),
-                    icon: const Icon(Icons.image_outlined, size: 20),
-                    label: const Text(
-                      'Elegir en galería',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF0D2B45),
-                      elevation: 0,
-                      side: const BorderSide(
-                        color: Color(0xFF0D2B45),
-                        width: 1.5,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          SizedBox(
-            width: 180,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: _nextPage,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0D2B45),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                _avatarPath == null ? 'Omitir' : 'Siguiente',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
+
 
   // STEP 3 (NEW): DOCUMENTOS (Cédula y Certificados)
   Widget _buildStep3New() {
@@ -1074,40 +1041,535 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // STEP 4: BIENVENIDA & SUBMIT
-  Widget _buildStep3() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+  // STEP 2: BIOGRAFÍA Y EXPERIENCIA PROFESIONAL
+  Widget _buildStep2Bio() {
+    return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.verified_user_rounded,
-            size: 100,
-            color: Color(0xFF0B6E4F),
-          ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 10),
           const Text(
-            '¡Bienvenido\na ClanShip!',
+            'Tu Experiencia Profesional',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFF0D2B45),
-              fontSize: 32,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
-              height: 1.2,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
           const Text(
-            'Tu cuenta ha sido creada exitosamente. Prepárate para descubrir y ofrecer los mejores servicios técnicos y de confianza cerca de ti.',
+            'Cuéntale a tus futuros clientes sobre tu trayectoria, especialidad y años en el oficio para destacar tu perfil.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFF2E3135),
-              fontSize: 15,
-              height: 1.5,
+              fontSize: 14,
+              height: 1.4,
             ),
           ),
-          const SizedBox(height: 60),
+          const SizedBox(height: 24),
+
+          // Suggestion Chips
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Plantillas rápidas de sugerencia:',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ActionChip(
+                label: const Text('💡 Electricista Certificado', style: TextStyle(fontSize: 12)),
+                onPressed: () {
+                  setState(() {
+                    _bioController.text =
+                        'Maestro electricista con más de 5 años de experiencia en instalaciones residenciales, tableros y reparaciones de urgencia garantizadas.';
+                  });
+                },
+              ),
+              ActionChip(
+                label: const Text('🔧 Gasfitería 24/7', style: TextStyle(fontSize: 12)),
+                onPressed: () {
+                  setState(() {
+                    _bioController.text =
+                        'Especialista en instalaciones de agua, filtraciones, calefón y destapes. Atención rápida y trabajos garantizados.';
+                  });
+                },
+              ),
+              ActionChip(
+                label: const Text('🎨 Pintura y Remodelación', style: TextStyle(fontSize: 12)),
+                onPressed: () {
+                  setState(() {
+                    _bioController.text =
+                        'Técnico en pintura de interiores, fachadas y acabados finos. Compromiso con la limpieza y la puntualidad.';
+                  });
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: TextField(
+              controller: _bioController,
+              maxLines: 5,
+              maxLength: 400,
+              decoration: const InputDecoration(
+                hintText:
+                    'Ejemplo: Llevo 8 años ofreciendo servicios de reparación e instalaciones. Me caracterizo por la puntualidad, transparencia en presupuestos y garantía por trabajo realizado...',
+                contentPadding: EdgeInsets.all(16),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          SizedBox(
+            width: 180,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _nextPage,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0D2B45),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Siguiente',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_ios, size: 14),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  // STEP 3: FOTO DE PERFIL Y FOTOS DE TRABAJOS ANTERIORES
+  Widget _buildStep3WorkPhotos() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 10),
+          const Text(
+            'Muestra tu Trabajo',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFF0D2B45),
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Sube tu foto de perfil y fotos de trabajos realizados para generar confianza en tus clientes.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFF2E3135),
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Avatar Section
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 32,
+                  backgroundColor: const Color(0xFF0D2B45).withValues(alpha: 0.1),
+                  backgroundImage: _avatarPath != null ? FileImage(File(_avatarPath!)) : null,
+                  child: _avatarPath == null
+                      ? const Icon(Icons.person, color: Color(0xFF0D2B45), size: 36)
+                      : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Foto de Perfil',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _avatarPath != null ? 'Foto cargada ✓' : 'Añade una foto profesional tuya',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    _avatarPath != null ? Icons.edit_outlined : Icons.add_a_photo_outlined,
+                    color: const Color(0xFF0D2B45),
+                  ),
+                  onPressed: () => _pickImage(ImageSource.gallery),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+          
+          // Work Gallery Photos Section
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Galería de Trabajos Realizados',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0D2B45),
+                  ),
+                ),
+                Text(
+                  '${_workPhotoPaths.length}/6 fotos',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1,
+            ),
+            itemCount: _workPhotoPaths.length < 6 ? _workPhotoPaths.length + 1 : 6,
+            itemBuilder: (context, index) {
+              if (index == _workPhotoPaths.length && _workPhotoPaths.length < 6) {
+                return InkWell(
+                  onTap: _pickWorkPhoto,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF0D2B45), width: 1.5),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.add_photo_alternate_outlined, color: Color(0xFF0D2B45), size: 28),
+                        SizedBox(height: 4),
+                        Text(
+                          'Añadir',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0D2B45),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              final photoPath = _workPhotoPaths[index];
+              return Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      File(photoPath),
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _workPhotoPaths.removeAt(index);
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close, color: Colors.white, size: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+
+          const SizedBox(height: 32),
+
+          SizedBox(
+            width: 180,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _nextPage,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0D2B45),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Siguiente',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_ios, size: 14),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickWorkPhoto() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1200,
+        maxHeight: 1200,
+        imageQuality: 75,
+      );
+      if (image != null) {
+        setState(() {
+          _workPhotoPaths.add(image.path);
+        });
+      }
+    } catch (e) {
+      _showError('No se pudo cargar la imagen del trabajo.');
+    }
+  }
+
+  // STEP 5: RESUMEN Y CONFIRMAR REGISTRO
+  Widget _buildStep3() {
+    final bool hasCedula = _cedulaFrontPath != null && _cedulaBackPath != null;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.verified_user_rounded,
+            size: 64,
+            color: Color(0xFF0B6E4F),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            '¡Tu Perfil está listo!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFF0D2B45),
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Revisa el resumen de tu registro antes de activar tu perfil profesional en ClanShip.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFF2E3135),
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Profile Summary Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: const Color(0xFF0D2B45).withValues(alpha: 0.1),
+                      backgroundImage: _avatarPath != null ? FileImage(File(_avatarPath!)) : null,
+                      child: _avatarPath == null
+                          ? const Icon(Icons.person, color: Color(0xFF0D2B45), size: 32)
+                          : null,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}',
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0D2B45),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _emailController.text.trim(),
+                            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 24),
+
+                // Especialidades
+                const Text(
+                  'Especialidades seleccionadas:',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+                ),
+                const SizedBox(height: 6),
+                _selectedSubtagNames.isNotEmpty
+                    ? Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: _selectedSubtagNames.map((name) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0D2B45).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF0D2B45),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      )
+                    : const Text('Especialidades seleccionadas ✓', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0D2B45))),
+
+                const SizedBox(height: 16),
+
+                // Biografía
+                const Text(
+                  'Biografía / Experiencia:',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _bioController.text.trim().isNotEmpty
+                      ? _bioController.text.trim()
+                      : 'Sin biografía redactada',
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF2E3135)),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+
+                const SizedBox(height: 16),
+
+                // Metadatos adicionales
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '📷 Fotos de trabajos: ${_workPhotoPaths.length}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      '📄 Cédula: ${hasCedula ? "Cargada ✓" : "Pendiente"}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: hasCedula ? AppColors.successGreen : Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
           BlocBuilder<AuthBloc, AuthState>(
             builder: (context, state) {
               if (state is AuthLoading) {
@@ -1117,8 +1579,8 @@ class _RegisterPageState extends State<RegisterPage> {
               }
 
               return SizedBox(
-                width: 200,
-                height: 48,
+                width: double.infinity,
+                height: 52,
                 child: ElevatedButton(
                   onPressed: () {
                     context.read<AuthBloc>().add(
@@ -1139,6 +1601,8 @@ class _RegisterPageState extends State<RegisterPage> {
                         specialtyIds: _selectedSpecialtyIds,
                         tagIds: _selectedTagIds,
                         subtagIds: _selectedSubtagIds,
+                        bio: _bioController.text.trim(),
+                        workPhotoPaths: _workPhotoPaths,
                       ),
                     );
                   },
@@ -1147,17 +1611,18 @@ class _RegisterPageState extends State<RegisterPage> {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: const Text(
-                    'Registrarme',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    'Completar Registro',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
                 ),
               );
             },
           ),
+          const SizedBox(height: 20),
         ],
       ),
     );

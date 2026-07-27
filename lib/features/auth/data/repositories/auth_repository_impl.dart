@@ -37,6 +37,8 @@ class AuthRepositoryImpl implements AuthRepository {
     List<String>? specialtyIds,
     List<String>? tagIds,
     List<String>? subtagIds,
+    String? bio,
+    List<String>? workPhotoPaths,
   }) async {
     try {
       final userModel = await remoteDataSource.register(
@@ -55,6 +57,8 @@ class AuthRepositoryImpl implements AuthRepository {
         specialtyIds: specialtyIds,
         tagIds: tagIds,
         subtagIds: subtagIds,
+        bio: bio,
+        workPhotoPaths: workPhotoPaths,
       );
       return Right(UserMapper.toEntity(userModel));
     } catch (e) {
@@ -97,6 +101,16 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await remoteDataSource.requestPasswordReset(email);
       return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, bool>>> checkUserExistence({String? email, String? phoneNumber}) async {
+    try {
+      final res = await remoteDataSource.checkUserExistence(email: email, phoneNumber: phoneNumber);
+      return Right(res);
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }

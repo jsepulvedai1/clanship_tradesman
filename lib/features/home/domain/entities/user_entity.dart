@@ -41,16 +41,51 @@ class SubscriptionPlanEntity extends Equatable {
   final double price;
   final int durationDays;
 
+  // Benefits & Features
+  final int? monthlyRequests;
+  final int? urgentRequests;
+  final int? serviceCategories;
+  final String searchPosition;
+  final String? featuredBadge;
+  final String? rrssCampaigns;
+  final String? radioBroadcast;
+  final String profileStatistics;
+  final String supportLevel;
+
   const SubscriptionPlanEntity({
     required this.id,
     required this.name,
     required this.description,
     required this.price,
     required this.durationDays,
+    this.monthlyRequests,
+    this.urgentRequests,
+    this.serviceCategories,
+    this.searchPosition = 'Estándar',
+    this.featuredBadge,
+    this.rrssCampaigns,
+    this.radioBroadcast,
+    this.profileStatistics = 'Básicas',
+    this.supportLevel = 'Estándar',
   });
 
   @override
-  List<Object?> get props => [id, name, description, price, durationDays];
+  List<Object?> get props => [
+        id,
+        name,
+        description,
+        price,
+        durationDays,
+        monthlyRequests,
+        urgentRequests,
+        serviceCategories,
+        searchPosition,
+        featuredBadge,
+        rrssCampaigns,
+        radioBroadcast,
+        profileStatistics,
+        supportLevel,
+      ];
 }
 
 class UserEntity extends Equatable {

@@ -139,7 +139,7 @@ class AvailabilityWidget extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: SvgPicture.asset(
-                    'assets/icon/icons_F28C28/alert.svg', // Cambia el ícono según sea necesario
+                    'assets/icon/icons_ F28C28/alert.svg', // Cambia el ícono según sea necesario
                     width: isSmallScreen ? 16 : 20,
                     height: isSmallScreen ? 16 : 20,
                     colorFilter: ColorFilter.mode(
@@ -198,7 +198,7 @@ class AvailabilityWidget extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: SvgPicture.asset(
-        'assets/icon/icons_F28C28/dialog.svg',
+        'assets/icon/icons_ F28C28/dialog.svg',
         width: isSmall ? 16 : 20,
         height: isSmall ? 16 : 20,
         colorFilter: ColorFilter.mode(
