@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:clanship_mobile_tradesman/core/config/environment_config.dart';
+import 'package:clanship_mobile_tradesman/core/utils/lower_case_text_formatter.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -62,7 +64,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   Future<void> _sendOtp() async {
-    final email = _emailController.text.trim();
+    final email = _emailController.text.trim().toLowerCase();
     if (email.isEmpty) {
       _showError('Por favor, ingresa tu correo electrónico.');
       return;
@@ -87,20 +89,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       );
 
       final success = data?['requestPasswordReset']?['success'] as bool? ?? false;
-      final msg = data?['requestPasswordReset']?['message'] as String? ?? 'Código enviado.';
+      final msg = data?['requestPasswordReset']?['message'] as String? ?? '';
 
       if (success) {
         setState(() {
           _currentStep = 2;
           _isLoading = false;
         });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg), backgroundColor: const Color(0xFF0B6E4F)),
-          );
-        }
       } else {
-        _showError(msg);
+        _showError(msg.isNotEmpty ? msg : 'No se pudo enviar el correo.');
       }
     } catch (e) {
       _showError('No se pudo conectar con el servidor. Verifica tu conexión.');
@@ -108,7 +105,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   Future<void> _verifyOtp() async {
-    final email = _emailController.text.trim();
+    final email = _emailController.text.trim().toLowerCase();
     final otp = _otpController.text.trim();
     if (otp.length != 6) {
       _showError('Por favor, ingresa el código de 6 dígitos.');
@@ -153,7 +150,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   Future<void> _resetPassword() async {
-    final email = _emailController.text.trim();
+    final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
@@ -316,6 +313,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
+          textCapitalization: TextCapitalization.none,
+          inputFormatters: [LowerCaseTextFormatter()],
           style: const TextStyle(color: Color(0xFF2E3135), fontSize: 14),
           decoration: const InputDecoration(
             labelText: 'Correo electrónico',

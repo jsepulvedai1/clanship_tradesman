@@ -14,6 +14,11 @@ class UserMapper {
       address: model.address,
       latitude: model.latitude,
       longitude: model.longitude,
+      professionalAddress: model.professionalAddress,
+      professionalLatitude: model.professionalLatitude,
+      professionalLongitude: model.professionalLongitude,
+      isValidated: model.isValidated,
+      requiresPlanUpgrade: model.requiresPlanUpgrade,
     );
   }
 
@@ -22,12 +27,18 @@ class UserMapper {
       id: entity.id,
       email: entity.email,
       name: entity.name,
+      avatarPath: entity.avatarPath,
       firstName: entity.firstName,
       lastName: entity.lastName,
       phoneNumber: entity.phoneNumber,
       address: entity.address,
       latitude: entity.latitude,
       longitude: entity.longitude,
+      professionalAddress: entity.professionalAddress,
+      professionalLatitude: entity.professionalLatitude,
+      professionalLongitude: entity.professionalLongitude,
+      isValidated: entity.isValidated,
+      requiresPlanUpgrade: entity.requiresPlanUpgrade,
     );
   }
 }

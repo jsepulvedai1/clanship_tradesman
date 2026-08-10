@@ -16,14 +16,36 @@ import '../widgets/reminder_box.dart';
 import '../widgets/action_buttons_section.dart';
 import '../../domain/entities/active_request_detail_entity.dart';
 import 'package:clanship_mobile_tradesman/features/chat/presentation/pages/chat_page.dart';
+import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
+import 'package:clanship_mobile_tradesman/core/usecases/usecase.dart';
+import 'package:clanship_mobile_tradesman/features/auth/domain/usecases/get_current_user_usecase.dart';
 
-class ActiveRequestDetailPage extends StatelessWidget {
+class ActiveRequestDetailPage extends StatefulWidget {
   final ActiveRequestDetailEntity request;
 
   const ActiveRequestDetailPage({super.key, required this.request});
 
   @override
+  State<ActiveRequestDetailPage> createState() =>
+      _ActiveRequestDetailPageState();
+}
+
+class _ActiveRequestDetailPageState extends State<ActiveRequestDetailPage> {
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.request.isRead) {
+      final intId = int.tryParse(widget.request.id) ?? 0;
+      if (intId > 0) {
+        di.sl<RequestsBloc>().add(MarkRequestAsReadEvent(jobId: intId));
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final request = widget.request;
     final l10n = AppLocalizations.of(context)!;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -80,6 +102,15 @@ class ActiveRequestDetailPage extends StatelessWidget {
                     content: Text('Estado de trabajo actualizado con éxito'),
                   ),
                 );
+                // REFRESCO SILENCIOSO DE SESION PARA DETECTAR BLOQUEO
+                di.sl<GetCurrentUserUseCase>()(NoParams()).then((res) {
+                  res.fold((l) => null, (user) {
+                    if (context.mounted) {
+                      context.read<AuthBloc>().add(UserAuthenticated(user));
+                    }
+                  });
+                });
+
                 Navigator.pop(context); // Close detail page
               } else if (state is RequestsError) {
                 Navigator.pop(context); // Close loading dialog
@@ -119,39 +150,6 @@ class ActiveRequestDetailPage extends StatelessWidget {
                     const SizedBox(height: 20),
 
                     // Category & Instruction Section
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.cardDark
-                            : AppColors.lightGrey.withAlpha(150),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            request.category,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white70 : Colors.black54,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            request.instruction,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: isDark ? Colors.white54 : Colors.black45,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
                     const SizedBox(height: 32),
 
                     // Informacion del Cliente Title
@@ -349,8 +347,8 @@ class ActiveRequestDetailPage extends StatelessWidget {
 
   Widget _buildStatusActions(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final status = request.status;
-    final jobIdInt = int.tryParse(request.id) ?? 0;
+    final status = widget.request.status;
+    final jobIdInt = int.tryParse(widget.request.id) ?? 0;
 
     if (jobIdInt == 0) return const SizedBox();
 
@@ -364,14 +362,7 @@ class ActiveRequestDetailPage extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () {
-                        context.read<RequestsBloc>().add(
-                          UpdateJobStatusEvent(
-                            jobId: jobIdInt,
-                            newStatus: 'CANCELLED',
-                          ),
-                        );
-                      },
+                      onPressed: () => _showRejectionDialog(context, jobIdInt),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(
                           color: AppColors.errorRed,
@@ -702,8 +693,14 @@ class ActiveRequestDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildRejectionCard(BuildContext context, ActiveRequestDetailEntity request, bool isDark) {
-    final byWho = request.cancelledByUserName != null && request.cancelledByUserName!.isNotEmpty
+  Widget _buildRejectionCard(
+    BuildContext context,
+    ActiveRequestDetailEntity request,
+    bool isDark,
+  ) {
+    final byWho =
+        request.cancelledByUserName != null &&
+            request.cancelledByUserName!.isNotEmpty
         ? 'Rechazado por: ${request.cancelledByUserName}'
         : 'Trabajo Rechazado / Cancelado';
 
@@ -734,7 +731,8 @@ class ActiveRequestDetailPage extends StatelessWidget {
               ),
             ],
           ),
-          if (request.cancellationReason != null && request.cancellationReason!.isNotEmpty) ...[
+          if (request.cancellationReason != null &&
+              request.cancellationReason!.isNotEmpty) ...[
             const SizedBox(height: 10),
             Text(
               'Motivo de rechazo:',
@@ -749,7 +747,9 @@ class ActiveRequestDetailPage extends StatelessWidget {
               request.cancellationReason!,
               style: TextStyle(
                 fontSize: 14,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.85),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withOpacity(0.85),
               ),
             ),
           ],
@@ -764,13 +764,13 @@ class ActiveRequestDetailPage extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Cancelar / Rechazar Trabajo'),
+        title: const Text('Confirmar Rechazo de Solicitud'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '¿Deseas indicar la razón del rechazo? (Opcional)',
+              '¿Estás seguro de que deseas rechazar esta solicitud? Puedes ingresar el motivo del rechazo:',
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
             const SizedBox(height: 12),
@@ -778,7 +778,7 @@ class ActiveRequestDetailPage extends StatelessWidget {
               controller: reasonController,
               maxLines: 3,
               decoration: InputDecoration(
-                hintText: 'Escribe tu razón aquí...',
+                hintText: 'Escribe el motivo aquí...',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -790,7 +790,7 @@ class ActiveRequestDetailPage extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Volver'),
+            child: const Text('Cancelar'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(

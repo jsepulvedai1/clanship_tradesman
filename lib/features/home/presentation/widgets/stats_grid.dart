@@ -8,6 +8,7 @@ class StatsGrid extends StatelessWidget {
   final int rejected;
   final int scheduled;
   final bool hasUnread;
+  final bool hasScheduledUnread;
   final VoidCallback? onActiveTap;
   final VoidCallback? onCompletedTap;
   final VoidCallback? onScheduledTap;
@@ -20,6 +21,7 @@ class StatsGrid extends StatelessWidget {
     required this.rejected,
     required this.scheduled,
     this.hasUnread = false,
+    this.hasScheduledUnread = false,
     this.onActiveTap,
     this.onCompletedTap,
     this.onScheduledTap,
@@ -76,11 +78,12 @@ class StatsGrid extends StatelessWidget {
           StatCard(
             value: scheduled.toString(),
             label: l10n.homeStatsScheduled,
-            valueColor: const Color(0xFFF28C28), // Naranjo activo
+            valueColor: hasScheduledUnread ? const Color(0xFFEF4444) : const Color(0xFFF28C28),
             onTap: onScheduledTap,
-            iconColor: const Color(0xFFF28C28),
+            hasHighlight: hasScheduledUnread,
+            iconColor: hasScheduledUnread ? const Color(0xFFEF4444) : const Color(0xFFF28C28),
             showChevron: true,
-            chevronColor: const Color(0xFFF28C28),
+            chevronColor: hasScheduledUnread ? const Color(0xFFEF4444) : const Color(0xFFF28C28),
             svgIconPath: 'assets/icon/icons_ F28C28/document-add.svg',
           ),
         ],

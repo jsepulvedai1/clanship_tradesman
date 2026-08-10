@@ -46,4 +46,14 @@ class MessageReceived extends ChatMessagesEvent {
   List<Object?> get props => [message];
 }
 
+class JobStatusUpdatedEvent extends ChatMessagesEvent {
+  final String newStatus;
+  final String? cancellationReason;
+
+  const JobStatusUpdatedEvent({required this.newStatus, this.cancellationReason});
+
+  @override
+  List<Object?> get props => [newStatus, cancellationReason];
+}
+
 class CloseChatConnection extends ChatMessagesEvent {}

@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
-import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
-import 'package:clanship_mobile_tradesman/features/profile/domain/repositories/profile_repository.dart';
-import 'package:clanship_mobile_tradesman/features/profile/domain/usecases/update_profile_usecase.dart';
 
 class PersonalInfoPage extends StatefulWidget {
   const PersonalInfoPage({super.key});
@@ -16,12 +12,11 @@ class PersonalInfoPage extends StatefulWidget {
 }
 
 class _PersonalInfoPageState extends State<PersonalInfoPage> {
-  final _formKey = GlobalKey<FormState>();
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
   late TextEditingController _emailController;
+  late TextEditingController _phoneController;
   late TextEditingController _addressController;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -30,18 +25,21 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     String firstName = '';
     String lastName = '';
     String email = '';
+    String phone = '';
     String address = '';
 
     if (authState is AuthAuthenticated) {
       firstName = authState.user.firstName ?? '';
       lastName = authState.user.lastName ?? '';
       email = authState.user.email;
+      phone = authState.user.phoneNumber ?? '';
       address = authState.user.address ?? '';
     }
 
     _firstNameController = TextEditingController(text: firstName);
     _lastNameController = TextEditingController(text: lastName);
     _emailController = TextEditingController(text: email);
+    _phoneController = TextEditingController(text: phone);
     _addressController = TextEditingController(text: address);
   }
 
@@ -50,87 +48,53 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _addressController.dispose();
     super.dispose();
   }
 
-  Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final authState = context.read<AuthBloc>().state;
-      if (authState is AuthAuthenticated) {
-        final currentUser = authState.user;
-        final updateUseCase = di.sl<UpdateProfileUseCase>();
-        final profileRepo = di.sl<ProfileRepository>();
-
-        final result = await updateUseCase(
-          UpdateProfileParams(
-            firstName: _firstNameController.text.trim(),
-            lastName: _lastNameController.text.trim(),
-            email: _emailController.text.trim(),
+  Widget _buildReadOnlyField({
+    required BuildContext context,
+    required String label,
+    required TextEditingController controller,
+    required IconData prefixIcon,
+    required bool isDark,
+    String? hintText,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: controller,
+          readOnly: true,
+          style: TextStyle(
+            color: isDark ? Colors.white70 : Colors.black87,
+            fontWeight: FontWeight.w500,
           ),
-        );
-
-        if (_addressController.text.trim().isNotEmpty) {
-          await profileRepo.updateProfessionalProfile(
-            address: _addressController.text.trim(),
-          );
-        }
-
-        result.fold(
-          (failure) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Lo sentimos, no se pudo guardar los datos.'),
-                  backgroundColor: Colors.redAccent,
-                ),
-              );
-            }
-          },
-          (updatedUserEntity) {
-            if (mounted) {
-              // Actualizar AuthBloc global
-              final updatedUser = currentUser.copyWith(
-                firstName: updatedUserEntity.firstName,
-                lastName: updatedUserEntity.lastName,
-                email: updatedUserEntity.email,
-                address: updatedUserEntity.address,
-              );
-              context.read<AuthBloc>().add(ProfileUpdated(updatedUser));
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Información personal guardada con éxito'),
-                  backgroundColor: AppColors.successGreen,
-                ),
-              );
-              Navigator.pop(context);
-            }
-          },
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lo sentimos, hubo un error inesperado.'),
-            backgroundColor: Colors.redAccent,
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: Icon(prefixIcon, color: AppColors.primaryBlue),
+            hintText: hintText,
+            filled: true,
+            fillColor: (isDark ? Colors.white : Colors.black).withOpacity(0.04),
+            suffixIcon: const Tooltip(
+              message: 'Este campo no puede ser modificado',
+              child: Icon(Icons.lock_outline_rounded, size: 18, color: Colors.grey),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: isDark ? Colors.white10 : Colors.black12,
+              ),
+            ),
           ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
+        ),
+      ],
+    );
   }
 
   @override
@@ -158,157 +122,117 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-              child: Form(
-                key: _formKey,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 10),
+              Text(
+                'Consulta tus datos personales como profesional registrado. Todos los campos están bloqueados por seguridad.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white54 : Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Inputs Container Card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.cardDark : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    if (!isDark)
+                      BoxShadow(
+                        color: Colors.black.withAlpha(10),
+                        blurRadius: 15,
+                        offset: const Offset(0, 4),
+                      ),
+                  ],
+                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 10),
-                    Text(
-                      'Mantén tus datos actualizados para que los clientes de ClanShip puedan contactarte fácilmente.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isDark ? Colors.white54 : Colors.black54,
-                      ),
+                    _buildReadOnlyField(
+                      context: context,
+                      label: 'Nombre',
+                      controller: _firstNameController,
+                      prefixIcon: Icons.person_outline_rounded,
+                      isDark: isDark,
                     ),
-                    const SizedBox(height: 30),
-                    
-                    // Inputs Container Card
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.cardDark : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          if (!isDark)
-                            BoxShadow(
-                              color: Colors.black.withAlpha(10),
-                              blurRadius: 15,
-                              offset: const Offset(0, 4),
-                            ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          // Nombre (solo lectura)
-                          TextFormField(
-                            controller: _firstNameController,
-                            readOnly: true,
-                            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-                            decoration: InputDecoration(
-                              labelText: 'Nombre',
-                              prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primaryBlue),
-                              filled: true,
-                              fillColor: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
-                              suffixIcon: const Tooltip(
-                                message: 'El nombre no puede ser modificado',
-                                child: Icon(Icons.lock_outline, size: 16, color: Colors.grey),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          
-                          // Apellido (solo lectura)
-                          TextFormField(
-                            controller: _lastNameController,
-                            readOnly: true,
-                            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-                            decoration: InputDecoration(
-                              labelText: 'Apellido',
-                              prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.primaryBlue),
-                              filled: true,
-                              fillColor: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
-                              suffixIcon: const Tooltip(
-                                message: 'El apellido no puede ser modificado',
-                                child: Icon(Icons.lock_outline, size: 16, color: Colors.grey),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          
-                          // Correo electrónico (solo lectura)
-                          TextFormField(
-                            controller: _emailController,
-                            readOnly: true,
-                            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: InputDecoration(
-                              labelText: 'Correo Electrónico',
-                              prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primaryBlue),
-                              filled: true,
-                              fillColor: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
-                              suffixIcon: const Tooltip(
-                                message: 'El correo no puede ser modificado',
-                                child: Icon(Icons.lock_outline, size: 16, color: Colors.grey),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          
-                          // Dirección
-                          TextFormField(
-                            controller: _addressController,
-                            style: TextStyle(color: isDark ? Colors.white : AppColors.trueBlack),
-                            decoration: const InputDecoration(
-                              labelText: 'Dirección',
-                              prefixIcon: Icon(Icons.location_on_outlined, color: AppColors.primaryBlue),
-                            ),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 18),
+                    _buildReadOnlyField(
+                      context: context,
+                      label: 'Apellido',
+                      controller: _lastNameController,
+                      prefixIcon: Icons.person_outline_rounded,
+                      isDark: isDark,
                     ),
-                    const SizedBox(height: 40),
-                    
-                    // Save Button
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryBlue,
-                        disabledBackgroundColor: AppColors.primaryBlue.withAlpha(153),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Text(
-                              'Guardar cambios',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
+                    const SizedBox(height: 18),
+                    _buildReadOnlyField(
+                      context: context,
+                      label: 'Correo Electrónico',
+                      controller: _emailController,
+                      prefixIcon: Icons.email_outlined,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 18),
+                    _buildReadOnlyField(
+                      context: context,
+                      label: 'Número de Teléfono',
+                      controller: _phoneController,
+                      prefixIcon: Icons.phone_outlined,
+                      isDark: isDark,
+                      hintText: 'No registrado',
+                    ),
+                    const SizedBox(height: 18),
+                    _buildReadOnlyField(
+                      context: context,
+                      label: 'Dirección',
+                      controller: _addressController,
+                      prefixIcon: Icons.location_on_outlined,
+                      isDark: isDark,
+                      hintText: 'No registrada',
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
-          if (_isLoading)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black26,
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.primaryBlue,
+              const SizedBox(height: 28),
+
+              // Security Info Notice Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryBlue.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.primaryBlue.withOpacity(0.2),
                   ),
                 ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.lock_rounded, color: AppColors.primaryBlue, size: 24),
+                    SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        'Tus datos personales no pueden ser editados directamente. Si necesitas cambiar algún dato, por favor contacta al equipo de soporte.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-        ],
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 import 'package:clanship_mobile_tradesman/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:clanship_mobile_tradesman/features/settings/presentation/pages/my_plan_page.dart';
@@ -47,6 +48,24 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
     _selectedSpecialtyIds = Set<String>.from(widget.initialSelectedSpecialtyIds);
     _selectedTagIds = Set<String>.from(widget.initialSelectedTagIds);
     _selectedSubtagIds = Set<String>.from(widget.initialSelectedSubtagIds);
+
+    // Backward compatibility for legacy tags (no subtags selected)
+    for (final spec in widget.specialties) {
+      final tags = spec['tags'] as List<dynamic>? ?? [];
+      for (final tag in tags) {
+        final tagId = tag['id']?.toString() ?? '';
+        final subtags = tag['subtags'] as List<dynamic>? ?? [];
+        if (subtags.isNotEmpty && _selectedTagIds.contains(tagId)) {
+          bool hasAny = subtags.any((s) => _selectedSubtagIds.contains(s['id']?.toString() ?? ''));
+          if (!hasAny) {
+            for (final s in subtags) {
+              _selectedSubtagIds.add(s['id']?.toString() ?? '');
+            }
+          }
+        }
+      }
+    }
+
     _syncParentIds();
   }
 
@@ -337,7 +356,56 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
     return Icons.work_outline_rounded;
   }
 
-  Color _getSpecialtyColor(String name) {
+  Color _parseHexColor(String? colorHex, {Color defaultColor = AppColors.primaryBlue}) {
+    if (colorHex == null || colorHex.trim().isEmpty) return defaultColor;
+    try {
+      final hex = colorHex.trim().replaceAll('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } catch (_) {
+      return defaultColor;
+    }
+  }
+
+  Widget _buildSpecialtyIconWidget(String name, String? iconUrl, {String? colorHex, double size = 22}) {
+    final fallbackIcon = Icon(
+      _getSpecialtyIcon(name),
+      color: _getSpecialtyIconColor(name, colorHex),
+      size: size,
+    );
+
+    if (iconUrl != null && iconUrl.trim().isNotEmpty) {
+      final cleanUrl = iconUrl.trim();
+      final isSvg = cleanUrl.toLowerCase().endsWith('.svg');
+      if (isSvg) {
+        return SvgPicture.network(
+          cleanUrl,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          placeholderBuilder: (_) => fallbackIcon,
+        );
+      } else {
+        return Image.network(
+          cleanUrl,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => fallbackIcon,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return fallbackIcon;
+          },
+        );
+      }
+    }
+    return fallbackIcon;
+  }
+
+  Color _getSpecialtyColor(String name, String? colorHex) {
+    if (colorHex != null && colorHex.trim().isNotEmpty) {
+      final base = _parseHexColor(colorHex);
+      return base.withOpacity(0.12);
+    }
     final n = name.toLowerCase();
     if (n.contains('elec')) return const Color(0xFFE2FBE9);
     if (n.contains('const') || n.contains('remod')) return const Color(0xFFE3F2FD);
@@ -350,7 +418,10 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
     return const Color(0xFFF5F5F5);
   }
 
-  Color _getSpecialtyIconColor(String name) {
+  Color _getSpecialtyIconColor(String name, String? colorHex) {
+    if (colorHex != null && colorHex.trim().isNotEmpty) {
+      return _parseHexColor(colorHex);
+    }
     final n = name.toLowerCase();
     if (n.contains('elec')) return const Color(0xFF0F973D);
     if (n.contains('const') || n.contains('remod')) return const Color(0xFF1565C0);
@@ -361,6 +432,41 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
     if (n.contains('carp')) return const Color(0xFF00695C);
     if (n.contains('clim')) return const Color(0xFF37474F);
     return const Color(0xFF616161);
+  }
+
+  Widget _buildTagIconWidget(String name, String? iconUrl, {double size = 22}) {
+    final fallbackIcon = Icon(
+      _getTagIcon(name),
+      color: AppColors.primaryBlue,
+      size: size,
+    );
+
+    if (iconUrl != null && iconUrl.trim().isNotEmpty) {
+      final cleanUrl = iconUrl.trim();
+      final isSvg = cleanUrl.toLowerCase().endsWith('.svg');
+      if (isSvg) {
+        return SvgPicture.network(
+          cleanUrl,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          placeholderBuilder: (_) => fallbackIcon,
+        );
+      } else {
+        return Image.network(
+          cleanUrl,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => fallbackIcon,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return fallbackIcon;
+          },
+        );
+      }
+    }
+    return fallbackIcon;
   }
 
   IconData _getTagIcon(String name) {
@@ -630,6 +736,8 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
       itemBuilder: (context, index) {
         final spec = widget.specialties[index];
         final name = spec['name'] as String;
+        final iconUrl = spec['iconUrl'] as String?;
+        final specColorHex = spec['color'] as String?;
         final tags = spec['tags'] as List<dynamic>? ?? [];
         final selectedCount = _getSpecialtySelectedCount(spec);
         final isFullySelected = _isSpecialtyFullySelected(spec);
@@ -670,13 +778,11 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: _getSpecialtyColor(name),
+                      color: _getSpecialtyColor(name, specColorHex),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      _getSpecialtyIcon(name),
-                      color: _getSpecialtyIconColor(name),
-                      size: 22,
+                    child: Center(
+                      child: _buildSpecialtyIconWidget(name, iconUrl, colorHex: specColorHex, size: 22),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -748,6 +854,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
       itemBuilder: (context, index) {
         final tag = tags[index];
         final name = tag['name'] as String;
+        final iconUrl = tag['iconUrl'] as String?;
         final subtags = tag['subtags'] as List<dynamic>? ?? [];
         final selectedCount = _getTagSelectedCount(tag);
         final isFullySelected = _isTagFullySelected(tag, specId);
@@ -795,10 +902,8 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                       color: AppColors.primaryBlue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      _getTagIcon(name),
-                      color: AppColors.primaryBlue,
-                      size: 22,
+                    child: Center(
+                      child: _buildTagIconWidget(name, iconUrl, size: 22),
                     ),
                   ),
                   const SizedBox(width: 16),

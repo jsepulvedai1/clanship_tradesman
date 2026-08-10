@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+// import 'main_dev.dart' as dev;
+import 'main_prod.dart' as dev;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
@@ -13,7 +15,6 @@ import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/re
 
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 
-
 class AntiGravityApp extends StatelessWidget {
   const AntiGravityApp({super.key});
 
@@ -21,24 +22,12 @@ class AntiGravityApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (_) => di.sl<SplashBloc>()..add(AppStarted()),
-        ),
-        BlocProvider(
-          create: (_) => di.sl<NavigationBloc>(),
-        ),
-        BlocProvider(
-          create: (_) => di.sl<ThemeBloc>()..add(LoadTheme()),
-        ),
-        BlocProvider(
-          create: (_) => di.sl<LanguageBloc>()..add(LoadLanguage()),
-        ),
-        BlocProvider(
-          create: (_) => di.sl<AuthBloc>(),
-        ),
-        BlocProvider(
-          create: (_) => di.sl<RequestsBloc>(),
-        ),
+        BlocProvider(create: (_) => di.sl<SplashBloc>()..add(AppStarted())),
+        BlocProvider(create: (_) => di.sl<NavigationBloc>()),
+        BlocProvider(create: (_) => di.sl<ThemeBloc>()..add(LoadTheme())),
+        BlocProvider(create: (_) => di.sl<LanguageBloc>()..add(LoadLanguage())),
+        BlocProvider(create: (_) => di.sl<AuthBloc>()),
+        BlocProvider(create: (_) => di.sl<RequestsBloc>()),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(
         builder: (context, themeState) {
@@ -66,4 +55,9 @@ class AntiGravityApp extends StatelessWidget {
       ),
     );
   }
+}
+
+// Default entry point for Xcode and flutter run without arguments
+void main() {
+  dev.main();
 }

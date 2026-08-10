@@ -44,6 +44,50 @@ class ActiveRequestDetailEntity extends Equatable {
     this.cancelledByUserName,
   });
 
+  ActiveRequestDetailEntity copyWith({
+    String? id,
+    String? category,
+    String? instruction,
+    String? clientName,
+    String? clientPhone,
+    String? clientAddress,
+    bool? isUrgent,
+    int? customerId,
+    String? status,
+    bool? isRead,
+    bool? hasUnreadMessages,
+    String? scheduledDate,
+    String? scheduledTime,
+    double? agreedPrice,
+    String? enrichedDetails,
+    String? additionalPhotoUrl,
+    int? notificationLeadMinutes,
+    String? cancellationReason,
+    String? cancelledByUserName,
+  }) {
+    return ActiveRequestDetailEntity(
+      id: id ?? this.id,
+      category: category ?? this.category,
+      instruction: instruction ?? this.instruction,
+      clientName: clientName ?? this.clientName,
+      clientPhone: clientPhone ?? this.clientPhone,
+      clientAddress: clientAddress ?? this.clientAddress,
+      customerId: customerId ?? this.customerId,
+      status: status ?? this.status,
+      isUrgent: isUrgent ?? this.isUrgent,
+      isRead: isRead ?? this.isRead,
+      hasUnreadMessages: hasUnreadMessages ?? this.hasUnreadMessages,
+      scheduledDate: scheduledDate ?? this.scheduledDate,
+      scheduledTime: scheduledTime ?? this.scheduledTime,
+      agreedPrice: agreedPrice ?? this.agreedPrice,
+      enrichedDetails: enrichedDetails ?? this.enrichedDetails,
+      additionalPhotoUrl: additionalPhotoUrl ?? this.additionalPhotoUrl,
+      notificationLeadMinutes: notificationLeadMinutes ?? this.notificationLeadMinutes,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
+      cancelledByUserName: cancelledByUserName ?? this.cancelledByUserName,
+    );
+  }
+
   @override
   List<Object?> get props => [
         id,

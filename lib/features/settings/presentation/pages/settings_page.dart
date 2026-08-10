@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/documents_page.dart';
@@ -16,6 +18,7 @@ import 'package:clanship_mobile_tradesman/core/theme/bloc/language_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/bloc/profile_bloc.dart';
 import 'personal_info_page.dart';
 import 'my_plan_page.dart';
+import 'support_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -27,6 +30,26 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   bool _isDarkMode = false;
   bool _isAvatarLoading = false;
+  String _appVersion = '1.0.3';
+  String _buildNumber = '8';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPackageInfo();
+  }
+
+  Future<void> _loadPackageInfo() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = info.version;
+          _buildNumber = info.buildNumber;
+        });
+      }
+    } catch (_) {}
+  }
 
   Future<void> _pickAvatar() async {
     if (_isAvatarLoading) return;
@@ -194,7 +217,48 @@ class _SettingsPageState extends State<SettingsPage> {
                 _SettingsItem(
                   icon: Icons.verified_user_outlined,
                   title: l10n.settingsVerificationStatus,
-                  onTap: () {},
+                  trailing: BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, authState) {
+                      bool isValidated = false;
+                      if (authState is AuthAuthenticated) {
+                        isValidated = authState.user.isValidated;
+                      }
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isValidated ? Colors.green.shade100 : Colors.amber.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              isValidated ? '✓ Validado' : '⌛ En proceso',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isValidated ? Colors.green.shade800 : Colors.amber.shade900,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 14,
+                            color: (isDark ? Colors.white : AppColors.textDark).withOpacity(0.24),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  onTap: () {
+                    final authState = context.read<AuthBloc>().state;
+                    bool isValidated = false;
+                    if (authState is AuthAuthenticated) {
+                      isValidated = authState.user.isValidated;
+                    }
+                    _showValidationStatusModal(context, isValidated);
+                  },
                 ),
                 _SettingsItem(
                   icon: Icons.language_rounded,
@@ -248,7 +312,27 @@ class _SettingsPageState extends State<SettingsPage> {
                 _SettingsItem(
                   icon: Icons.support_agent_rounded,
                   title: l10n.settingsSupport,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SupportPage(),
+                      ),
+                    );
+                  },
+                ),
+                _SettingsItem(
+                  icon: Icons.info_outline_rounded,
+                  title: 'Versión de la app',
+                  iconColor: AppColors.primaryAzure,
+                  trailing: Text(
+                    'v$_appVersion ($_buildNumber)',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: (isDark ? Colors.white : AppColors.textDark).withOpacity(0.6),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
                 _SettingsItem(
                   icon: Icons.logout_rounded,
@@ -265,9 +349,14 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
             TextButton(
-              onPressed: () {},
+              onPressed: () async {
+                final Uri url = Uri.parse('https://clanship.cl/terminos-y-condiciones');
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                }
+              },
               child: Text(
                 l10n.settingsTerms,
                 style: const TextStyle(
@@ -276,7 +365,15 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 8),
+            Text(
+              'Clanship Profesional v$_appVersion (Build $_buildNumber)',
+              style: TextStyle(
+                fontSize: 12,
+                color: (isDark ? Colors.white : AppColors.textDark).withOpacity(0.4),
+              ),
+            ),
+            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -399,6 +496,92 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ],
           ],
+        );
+      },
+    );
+  }
+
+  void _showValidationStatusModal(BuildContext context, bool isValidated) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isValidated ? Colors.green.shade100 : Colors.amber.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isValidated ? Icons.verified_rounded : Icons.hourglass_top_rounded,
+                      size: 48,
+                      color: isValidated ? Colors.green.shade700 : const Color(0xFFD97706),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  isValidated ? 'Perfil Aprobado y Validado' : 'En Proceso de Validación',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isValidated ? Colors.green.shade900 : const Color(0xFF92400E),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  isValidated
+                      ? '¡Felicidades! Tu perfil profesional ha sido verificado. Cuentas con acceso completo para estar activo, recibir solicitudes directas de clientes y cotizar en la bolsa de requerimientos específicos.'
+                      : 'Tus antecedentes y documentos están en proceso de revisión por nuestro equipo administrativo. El proceso toma entre 24 a 48 horas laborables. Durante este periodo tu disponibilidad y acceso a cotizaciones permanecerán restringidos.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryAzure,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const DocumentsPage()),
+                    );
+                  },
+                  icon: const Icon(Icons.folder_open_rounded),
+                  label: Text(
+                    isValidated ? 'Ver mis Documentos' : 'Gestionar Mis Documentos',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
@@ -17,6 +18,7 @@ import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
 import 'package:clanship_mobile_tradesman/core/utils/image_cropper_helper.dart';
 import 'package:clanship_mobile_tradesman/features/auth/domain/repositories/auth_repository.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/widgets/tradesman_subtags_sheet.dart';
+import 'package:clanship_mobile_tradesman/core/utils/lower_case_text_formatter.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -187,8 +189,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // Step 0 Validation
   bool _validateStep0() {
-    final email = _emailController.text.trim();
-    final repeatEmail = _repeatEmailController.text.trim();
+    final email = _emailController.text.trim().toLowerCase();
+    final repeatEmail = _repeatEmailController.text.trim().toLowerCase();
     final password = _passwordController.text;
     final repeatPassword = _repeatPasswordController.text;
     final firstName = _firstNameController.text.trim();
@@ -482,6 +484,8 @@ class _RegisterPageState extends State<RegisterPage> {
             hint: 'Correo electrónico',
             keyboardType: TextInputType.emailAddress,
             icon: Icons.mail_outline,
+            textCapitalization: TextCapitalization.none,
+            inputFormatters: [LowerCaseTextFormatter()],
           ),
           const SizedBox(height: 12),
           _buildTextField(
@@ -489,6 +493,8 @@ class _RegisterPageState extends State<RegisterPage> {
             hint: 'Repite el correo',
             keyboardType: TextInputType.emailAddress,
             icon: Icons.mail_outline,
+            textCapitalization: TextCapitalization.none,
+            inputFormatters: [LowerCaseTextFormatter()],
           ),
           const SizedBox(height: 12),
           _buildTextField(
@@ -572,7 +578,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         setState(() {
                           _isCheckingStep0 = true;
                         });
-                        final email = _emailController.text.trim();
+                        final email = _emailController.text.trim().toLowerCase();
                         final res = await di.sl<AuthRepository>().checkUserExistence(email: email);
                         if (mounted) {
                           setState(() {
@@ -660,9 +666,27 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  int _calculateSelectedCategoriesCount() {
+    int count = _selectedSubtagIds.length;
+    final userTagIds = _selectedTagIds.toSet();
+    
+    for (final spec in _availableTags) {
+      final tags = spec['tags'] as List<dynamic>? ?? [];
+      for (final tag in tags) {
+        final tagId = tag['id']?.toString() ?? '';
+        final subtags = tag['subtags'] as List<dynamic>? ?? [];
+        if (subtags.isEmpty && userTagIds.contains(tagId)) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+
   // STEP 1: UBICACIÓN Y CONTACTO
   Widget _buildStep1() {
     final bool isValid = _isStep1FormValid();
+    final int realCount = _calculateSelectedCategoriesCount();
 
     return SingleChildScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -721,13 +745,13 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  (_selectedSpecialtyIds.isEmpty && _selectedTagIds.isEmpty && _selectedSubtagIds.isEmpty) 
+                  realCount == 0 
                       ? 'No has seleccionado ninguna especialidad. Selecciona al menos una para continuar.' 
-                      : '${_selectedSpecialtyIds.length + _selectedTagIds.length + _selectedSubtagIds.length} especialidades seleccionadas.',
+                      : '$realCount especialidades seleccionadas.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: (_selectedSpecialtyIds.isEmpty && _selectedTagIds.isEmpty && _selectedSubtagIds.isEmpty) ? Colors.red : Colors.green,
+                    color: realCount == 0 ? Colors.red : Colors.green,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1229,14 +1253,32 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Foto de Perfil',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      Row(
+                        children: [
+                          const Text(
+                            'Foto de Perfil ',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                          Text(
+                            '* (Obligatoria)',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Colors.red.shade700,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _avatarPath != null ? 'Foto cargada ✓' : 'Añade una foto profesional tuya',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        _avatarPath != null
+                            ? 'Foto cargada ✓'
+                            : 'Sube una foto clara donde se aprecie bien tu rostro (será evaluada para la validación de tu perfil).',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _avatarPath != null ? Colors.green.shade700 : Colors.red.shade700,
+                          fontWeight: _avatarPath == null ? FontWeight.w500 : FontWeight.normal,
+                        ),
                       ),
                     ],
                   ),
@@ -1362,7 +1404,13 @@ class _RegisterPageState extends State<RegisterPage> {
             width: 180,
             height: 48,
             child: ElevatedButton(
-              onPressed: _nextPage,
+              onPressed: () {
+                if (_avatarPath == null || _avatarPath!.isEmpty) {
+                  _showError('Debes subir una foto de perfil clara de tu rostro. Es obligatoria para la validación de tu perfil.');
+                  return;
+                }
+                _nextPage();
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0D2B45),
                 foregroundColor: Colors.white,
@@ -1487,7 +1535,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            _emailController.text.trim(),
+                            _emailController.text.trim().toLowerCase(),
                             style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                           ),
                         ],
@@ -1583,9 +1631,13 @@ class _RegisterPageState extends State<RegisterPage> {
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
+                    if (_avatarPath == null || _avatarPath!.isEmpty) {
+                      _showError('Debes subir una foto de perfil clara de tu rostro. Es obligatoria para la validación de tu perfil.');
+                      return;
+                    }
                     context.read<AuthBloc>().add(
                       RegisterRequested(
-                        email: _emailController.text.trim(),
+                        email: _emailController.text.trim().toLowerCase(),
                         password: _passwordController.text,
                         firstName: _firstNameController.text.trim(),
                         lastName: _lastNameController.text.trim(),
@@ -1638,6 +1690,7 @@ class _RegisterPageState extends State<RegisterPage> {
     void Function(String)? onChanged,
     Widget? suffixIcon,
     List<TextInputFormatter>? inputFormatters,
+    TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1655,6 +1708,7 @@ class _RegisterPageState extends State<RegisterPage> {
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
+        textCapitalization: textCapitalization,
         onChanged: onChanged,
         inputFormatters: inputFormatters,
         style: const TextStyle(color: Color(0xFF2E3135), fontSize: 14),
@@ -2000,7 +2054,13 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  void _showTermsDialog() {
+  void _showTermsDialog() async {
+    final Uri url = Uri.parse('https://clanship.cl/terminos-y-condiciones');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (context) {

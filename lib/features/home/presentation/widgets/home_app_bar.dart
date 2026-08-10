@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
+import 'package:clanship_mobile_tradesman/features/home/presentation/pages/help_webview_page.dart';
 import '../../domain/entities/user_entity.dart';
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -47,33 +48,62 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // LADO IZQUIERDO: Saludo
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                l10n.homeWelcomePrefix,
-                style: TextStyle(
-                  color: textColor.withValues(alpha: 0.8),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  l10n.homeWelcomePrefix,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textColor.withValues(alpha: 0.8),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '${_toTitleCase(user.name)}!',
-                style: TextStyle(
-                  color: nameColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 2),
+                Text(
+                  '${_toTitleCase(user.name)}!',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: nameColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          // LADO DERECHO: Notificaciones (dialog.svg) & Foto Perfil
+          const SizedBox(width: 8),
+          // LADO DERECHO: Ayuda Maestro, Notificaciones & Foto Perfil
           Row(
             children: [
-              // Icono Notificación (dialog.svg) con punto verde
+              // Icono de Ayuda / Guía Maestro (WebView)
+              GestureDetector(
+                onTap: () => HelpWebViewPage.show(context),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    border: Border.all(
+                      color: const Color(0xFFE2E8F0),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.help_outline_rounded,
+                    color: Color(0xFF0D2B45),
+                    size: 22,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Icono Notificación con punto verde
               GestureDetector(
                 onTap: onSyncTap,
                 child: Container(

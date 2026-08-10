@@ -10,6 +10,7 @@ abstract class ChatRemoteDataSource {
   Future<String> getOrCreateChatRoomWithCustomer(int customerId, {int? jobId});
   Future<List<MessageModel>> getChatHistory(String roomId);
   Stream<MessageModel> getMessagesStream(String roomId);
+  Stream<Map<String, dynamic>> getJobStatusStream(String roomId);
   Future<void> sendMessage(
     String roomId, 
     String text, {
@@ -25,6 +26,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   final storage = const FlutterSecureStorage();
   WebSocketChannel? _channel;
   StreamController<MessageModel>? _streamController;
+  StreamController<Map<String, dynamic>>? _jobStatusController;
 
   ChatRemoteDataSourceImpl(this.client);
 
@@ -117,10 +119,17 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Stream<MessageModel> getMessagesStream(String roomId) {
     _streamController ??= StreamController<MessageModel>.broadcast();
+    _jobStatusController ??= StreamController<Map<String, dynamic>>.broadcast();
     
     _connectWebSocket(roomId);
 
     return _streamController!.stream;
+  }
+
+  @override
+  Stream<Map<String, dynamic>> getJobStatusStream(String roomId) {
+    _jobStatusController ??= StreamController<Map<String, dynamic>>.broadcast();
+    return _jobStatusController!.stream;
   }
 
   Future<void> _connectWebSocket(String roomId) async {
@@ -134,9 +143,16 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
     _channel!.stream.listen(
       (data) {
-        final Map<String, dynamic> jsonData = jsonDecode(data);
-        final message = MessageModel.fromJsonWebSocket(jsonData);
-        _streamController?.add(message);
+        try {
+          final Map<String, dynamic> jsonData = jsonDecode(data);
+          final type = jsonData['event'] ?? jsonData['type'];
+          if (type == 'JOB_STATUS_CHANGED' || type == 'job_status_changed') {
+            _jobStatusController?.add(jsonData);
+          } else {
+            final message = MessageModel.fromJsonWebSocket(jsonData);
+            _streamController?.add(message);
+          }
+        } catch (_) {}
       },
       onError: (error) {
         _streamController?.addError(error);
@@ -173,5 +189,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     _channel = null;
     _streamController?.close();
     _streamController = null;
+    _jobStatusController?.close();
+    _jobStatusController = null;
   }
 }

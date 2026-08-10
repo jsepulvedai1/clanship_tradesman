@@ -8,6 +8,14 @@ abstract class RequestsRemoteDataSource {
   Future<void> updateJobStatus(int jobId, String newStatus, {String? cancellationReason});
   Future<void> markJobAsRead(int jobId);
   Future<void> scheduleJobVisit(int jobId, String scheduledDate, String scheduledTime, int notificationLeadMinutes, {double? agreedPrice});
+  Future<List<Map<String, dynamic>>> getOpenPublicJobRequests();
+  Future<bool> submitJobProposal({
+    required int publicRequestId,
+    required double estimatedPrice,
+    required String scheduledDate,
+    required String scheduledTime,
+    String? message,
+  });
 }
 
 class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
@@ -69,6 +77,7 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
           customer {
             id
             firstName
+            lastName
             email
             phoneNumber
           }
@@ -117,6 +126,10 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
             firstName
             email
             phoneNumber
+          }
+          review {
+            rating
+            comment
           }
           createdAt
         }
@@ -252,5 +265,99 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
     if (result.hasException) {
       throw Exception(result.exception.toString());
     }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getOpenPublicJobRequests() async {
+    const String query = r'''
+      query OpenPublicJobRequests($specialtyId: Int) {
+        openPublicJobRequests(specialtyId: $specialtyId) {
+          id
+          title
+          description
+          address
+          budget
+          isUrgent
+          status
+          createdAt
+          customerName
+          specialtyName
+          proposalsCount
+          hasSubmittedProposal
+          myProposal {
+            id
+            estimatedPrice
+            scheduledDate
+            scheduledTime
+            message
+            status
+          }
+        }
+      }
+    ''';
+
+    final QueryOptions options = QueryOptions(
+      document: gql(query),
+      fetchPolicy: FetchPolicy.networkOnly,
+    );
+
+    final QueryResult result = await client.query(options);
+    if (result.hasException) {
+      return [];
+    }
+
+    final List list = result.data?['openPublicJobRequests'] ?? [];
+    return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  @override
+  Future<bool> submitJobProposal({
+    required int publicRequestId,
+    required double estimatedPrice,
+    required String scheduledDate,
+    required String scheduledTime,
+    String? message,
+  }) async {
+    const String mutation = r'''
+      mutation SubmitJobProposal(
+        $publicRequestId: Int!,
+        $estimatedPrice: Float!,
+        $scheduledDate: Date!,
+        $scheduledTime: Time!,
+        $message: String
+      ) {
+        submitJobProposal(
+          publicRequestId: $publicRequestId,
+          estimatedPrice: $estimatedPrice,
+          scheduledDate: $scheduledDate,
+          scheduledTime: $scheduledTime,
+          message: $message
+        ) {
+          success
+          proposal {
+            id
+            status
+          }
+        }
+      }
+    ''';
+
+    final MutationOptions options = MutationOptions(
+      document: gql(mutation),
+      variables: {
+        'publicRequestId': publicRequestId,
+        'estimatedPrice': estimatedPrice,
+        'scheduledDate': scheduledDate,
+        'scheduledTime': scheduledTime,
+        'message': message,
+      },
+    );
+
+    final QueryResult result = await client.mutate(options);
+    if (result.hasException) {
+      throw Exception(result.exception.toString());
+    }
+
+    return result.data?['submitJobProposal']?['success'] ?? false;
   }
 }

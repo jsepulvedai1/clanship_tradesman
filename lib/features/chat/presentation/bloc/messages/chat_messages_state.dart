@@ -14,11 +14,13 @@ class ChatMessagesLoading extends ChatMessagesState {}
 
 class ChatMessagesLoaded extends ChatMessagesState {
   final List<ChatMessage> messages;
+  final String? jobStatus;
+  final String? cancellationReason;
 
-  const ChatMessagesLoaded(this.messages);
+  const ChatMessagesLoaded(this.messages, {this.jobStatus, this.cancellationReason});
 
   @override
-  List<Object?> get props => [messages];
+  List<Object?> get props => [messages, jobStatus, cancellationReason];
 }
 
 class ChatMessagesError extends ChatMessagesState {

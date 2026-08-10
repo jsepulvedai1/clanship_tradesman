@@ -70,7 +70,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _onLoadUserData(LoadUserData event, Emitter<HomeState> emit) async {
-    emit(HomeLoading());
+    if (state is! HomeDataLoaded) {
+      emit(HomeLoading());
+    }
     
     final result = await getMyProfileUseCase(NoParams());
     

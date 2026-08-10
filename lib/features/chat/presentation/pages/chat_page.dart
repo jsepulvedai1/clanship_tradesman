@@ -20,6 +20,12 @@ import 'package:clanship_mobile_tradesman/features/chat/presentation/bloc/messag
 import 'package:clanship_mobile_tradesman/features/chat/presentation/bloc/messages/chat_messages_state.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
+import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
+import 'package:clanship_mobile_tradesman/core/usecases/usecase.dart';
+import 'dart:async';
+import 'package:clanship_mobile_tradesman/core/network/jobs_websocket_service.dart';
+import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/navigation_bloc.dart';
+import 'package:clanship_mobile_tradesman/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_state.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_event.dart';
@@ -79,6 +85,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
   final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecording = false;
   String? _recordPath;
+  StreamSubscription? _socketSubscription;
 
   @override
   void initState() {
@@ -87,6 +94,32 @@ class _ChatPageContentState extends State<_ChatPageContent> {
     _loadMessages();
     _controller.addListener(() {
       if (mounted) setState(() {});
+    });
+
+    final socketService = sl<JobsWebSocketService>();
+    _socketSubscription = socketService.stream.listen((event) {
+      final eventType = event['event']?.toString() ?? event['type']?.toString() ?? '';
+      if (eventType == 'job_updated' || eventType == 'JOB_STATUS_CHANGED') {
+        final jobId = event['job_id']?.toString() ?? event['jobId']?.toString();
+        final status = event['status']?.toString() ?? event['new_status']?.toString();
+        if (widget.jobId != null && jobId == widget.jobId.toString() && status == 'CANCELLED') {
+          if (mounted) {
+            final reason = event['cancellation_reason'] ?? event['reason'];
+            final messageText = reason != null && reason.toString().isNotEmpty
+                ? 'La solicitud ha sido cancelada. Motivo: $reason'
+                : 'La solicitud ha sido cancelada por el cliente.';
+            context.read<NavigationBloc>().add(const TabChanged(0));
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(messageText),
+                backgroundColor: Colors.redAccent,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      }
     });
   }
 
@@ -563,41 +596,78 @@ class _ChatPageContentState extends State<_ChatPageContent> {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return BlocListener<RequestsBloc, RequestsState>(
-      listener: (context, state) {
-        if (state is RequestsLoaded && _pendingStatusChange != null) {
-          final updatedStatus = _pendingStatusChange;
-          _pendingStatusChange = null;
-          if (updatedStatus == 'CANCELLED') {
-            setState(() {
-              _currentStatus = 'CANCELLED';
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Solicitud rechazada con éxito.')),
-            );
-          } else if (updatedStatus == 'AGREED') {
-            setState(() {
-              _currentStatus = 'AGREED';
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Solicitud aceptada con éxito.')),
-            );
-          } else if (updatedStatus == 'SCHEDULED') {
-            setState(() {
-              _currentStatus = 'SCHEDULED';
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Propuesta de agenda enviada con éxito.'),
-              ),
-            );
-          }
-        } else if (state is RequestsError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error: ${state.message}')));
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<RequestsBloc, RequestsState>(
+          listener: (context, state) {
+            if (state is RequestsLoaded && _pendingStatusChange != null) {
+              final updatedStatus = _pendingStatusChange;
+              _pendingStatusChange = null;
+              if (updatedStatus == 'CANCELLED') {
+                setState(() {
+                  _currentStatus = 'CANCELLED';
+                });
+                context.read<NavigationBloc>().add(const TabChanged(0));
+                Navigator.of(context).popUntil((route) => route.isFirst);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Solicitud rechazada con éxito.')),
+                );
+              } else if (updatedStatus == 'AGREED') {
+                setState(() {
+                  _currentStatus = 'AGREED';
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Solicitud aceptada con éxito.')),
+                );
+              } else if (updatedStatus == 'SCHEDULED') {
+                setState(() {
+                  _currentStatus = 'SCHEDULED';
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Propuesta de agenda enviada con éxito.'),
+                  ),
+                );
+              } else if (updatedStatus == 'FINISHED') {
+                setState(() {
+                  _currentStatus = 'FINISHED';
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Trabajo finalizado con éxito.'),
+                  ),
+                );
+                // REFRESCO SILENCIOSO DE SESION PARA DETECTAR BLOQUEO
+                sl<GetCurrentUserUseCase>()(NoParams()).then((res) {
+                  res.fold(
+                    (l) => null,
+                    (user) {
+                      if (context.mounted) {
+                        context.read<AuthBloc>().add(UserAuthenticated(user));
+                      }
+                    },
+                  );
+                });
+              }
+            } else if (state is RequestsError) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('Error: ${state.message}')));
+            }
+          },
+        ),
+        BlocListener<ChatMessagesBloc, ChatMessagesState>(
+          listener: (context, state) {
+            if (state is ChatMessagesLoaded && state.jobStatus != null) {
+              if (state.jobStatus != _currentStatus) {
+                setState(() {
+                  _currentStatus = state.jobStatus;
+                });
+              }
+            }
+          },
+        ),
+      ],
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
@@ -647,19 +717,21 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                         ? const Icon(Icons.person, color: Colors.white)
                         : null,
                   ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        name,
-                        style: TextStyle(
-                          color: isDark ? Colors.white : AppColors.trueBlack,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isDark ? Colors.white : AppColors.trueBlack,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
                       Row(
                         children: [
                           Container(
@@ -682,8 +754,9 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                       ),
                     ],
                   ),
-                ],
-              );
+                ),
+              ],
+            );
             },
           ),
         ),
@@ -710,12 +783,14 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                     }
 
                     ChatMessage? latestProposalMsg;
-                    try {
-                      latestProposalMsg = state.messages.lastWhere(
-                        (m) => m.type == ChatMessageType.appointment,
-                      );
-                    } catch (_) {
-                      latestProposalMsg = null;
+                    if (_currentStatus == 'SCHEDULED') {
+                      try {
+                        latestProposalMsg = state.messages.lastWhere(
+                          (m) => m.type == ChatMessageType.appointment,
+                        );
+                      } catch (_) {
+                        latestProposalMsg = null;
+                      }
                     }
 
                     return ListView.builder(
@@ -749,6 +824,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                 final isLoading = requestsState is RequestsLoading;
 
                 if (_currentStatus == 'AGREED' ||
+                    _currentStatus == 'SCHEDULED' ||
                     _currentStatus == 'IN_VISIT' ||
                     _currentStatus == 'FINISHED' ||
                     _currentStatus == 'CANCELLED') {
@@ -757,24 +833,6 @@ class _ChatPageContentState extends State<_ChatPageContent> {
 
                 return ChatActionButtons(
                   onSchedule: isLoading ? () {} : _onScheduleTap,
-                  onBack: () => Navigator.pop(context),
-                  onReject: isLoading
-                      ? () {}
-                      : () => _showRejectionDialog(context),
-                  onAccept:
-                      (widget.jobId != null &&
-                          _currentStatus == 'REQUESTED' &&
-                          !isLoading)
-                      ? () {
-                          _pendingStatusChange = 'AGREED';
-                          context.read<RequestsBloc>().add(
-                            UpdateJobStatusEvent(
-                              jobId: widget.jobId!,
-                              newStatus: 'AGREED',
-                            ),
-                          );
-                        }
-                      : null,
                 );
               },
             ),

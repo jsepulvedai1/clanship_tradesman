@@ -25,6 +25,7 @@ class ProfileLoaded extends ProfileState {
   final List<Map<String, dynamic>> availableTags;
   final List<Map<String, dynamic>> availableSpecialties;
   final List<SubscriptionPlanEntity> availablePlans;
+  final String? errorMessage;
 
   const ProfileLoaded({
     required this.user,
@@ -39,6 +40,7 @@ class ProfileLoaded extends ProfileState {
     this.availableTags = const [],
     this.availableSpecialties = const [],
     this.availablePlans = const [],
+    this.errorMessage,
   });
 
   ProfileLoaded copyWith({
@@ -54,6 +56,7 @@ class ProfileLoaded extends ProfileState {
     List<Map<String, dynamic>>? availableTags,
     List<Map<String, dynamic>>? availableSpecialties,
     List<SubscriptionPlanEntity>? availablePlans,
+    String? errorMessage,
   }) {
     return ProfileLoaded(
       user: user ?? this.user,
@@ -68,6 +71,7 @@ class ProfileLoaded extends ProfileState {
       availableTags: availableTags ?? this.availableTags,
       availableSpecialties: availableSpecialties ?? this.availableSpecialties,
       availablePlans: availablePlans ?? this.availablePlans,
+      errorMessage: errorMessage, // We don't default to this.errorMessage to allow clearing it
     );
   }
 
@@ -85,6 +89,7 @@ class ProfileLoaded extends ProfileState {
         availableTags,
         availableSpecialties,
         availablePlans,
+        errorMessage,
       ];
 }
 

@@ -202,6 +202,58 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
     }
   }
 
+  void _showGpsInfoDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.my_location, color: AppColors.primaryAzure),
+            SizedBox(width: 10),
+            Text('GPS Actual', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: const Text(
+          'Esta función utiliza el sensor GPS de tu dispositivo para obtener tu ubicación geográfica en tiempo real, centrar el mapa en tus coordenadas exactas y autocompletar la dirección.',
+          style: TextStyle(fontSize: 14, height: 1.4, color: Colors.black87),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Entendido', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showConfirmAddressInfoDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.pin_drop, color: AppColors.primaryAzure),
+            SizedBox(width: 10),
+            Text('Fijar Dirección', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: const Text(
+          'Confirma y guarda el punto exacto seleccionado en el mapa como tu dirección registrada o punto base de atención.',
+          style: TextStyle(fontSize: 14, height: 1.4, color: Colors.black87),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Entendido', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -211,30 +263,32 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
           GoogleMap(
             initialCameraPosition: CameraPosition(
               target: _currentCenter,
-              zoom: 15,
+              zoom: 16,
             ),
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-            onMapCreated: (GoogleMapController controller) {
-              _mapController.complete(controller);
+            onMapCreated: (controller) {
+              if (!_mapController.isCompleted) {
+                _mapController.complete(controller);
+              }
             },
-            onCameraMove: (CameraPosition position) {
+            onCameraMove: (position) {
               _currentCenter = position.target;
             },
             onCameraIdle: () {
               _reverseGeocode(_currentCenter);
             },
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
           ),
 
           // Central Static Pin Indicator
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 38), // Offset to align point of pin
-              child: const Icon(
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 35),
+              child: Icon(
                 Icons.location_on,
-                size: 48,
-                color: Colors.redAccent,
+                size: 45,
+                color: AppColors.primaryAzure,
               ),
             ),
           ),
@@ -242,7 +296,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
           // Top Header & Search Bar Overlay
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
                   Row(
@@ -250,13 +304,14 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                       CircleAvatar(
                         backgroundColor: Colors.white,
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: AppColors.primaryBlue),
+                          icon: const Icon(Icons.arrow_back, color: Colors.black87),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(30),
@@ -338,11 +393,40 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
           Positioned(
             right: 16,
             bottom: 150,
-            child: FloatingActionButton(
-              mini: true,
-              backgroundColor: Colors.white,
-              onPressed: _initializeLocation,
-              child: const Icon(Icons.my_location, color: AppColors.primaryBlue),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: _showGpsInfoDialog,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 6,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.info_outline_rounded,
+                      size: 20,
+                      color: AppColors.primaryAzure,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FloatingActionButton(
+                  mini: true,
+                  backgroundColor: Colors.white,
+                  onPressed: _initializeLocation,
+                  tooltip: 'GPS Actual',
+                  child: const Icon(Icons.my_location, color: AppColors.primaryBlue),
+                ),
+              ],
             ),
           ),
 
@@ -385,6 +469,15 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.info_outline_rounded,
+                          color: AppColors.primaryAzure,
+                          size: 22,
+                        ),
+                        onPressed: _showConfirmAddressInfoDialog,
+                        tooltip: 'Información sobre Fijar Dirección',
                       ),
                     ],
                   ),

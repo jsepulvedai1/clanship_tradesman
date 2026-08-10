@@ -8,6 +8,8 @@ import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_e
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:clanship_mobile_tradesman/core/network/local_notification_service.dart';
+
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginUseCase loginUseCase;
   final RegisterUseCase registerUseCase;
@@ -29,14 +31,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await loginUseCase(
       LoginParams(email: event.email, password: event.password),
     );
-    result.fold(
-      (failure) => emit(AuthFailure(failure.message)),
-      (user) => emit(AuthAuthenticated(user)),
+    await result.fold(
+      (failure) async => emit(AuthFailure(failure.message)),
+      (user) async {
+        await LocalNotificationService.clearAll();
+        emit(AuthAuthenticated(user));
+      },
     );
   }
 
   Future<void> _onLogoutRequested(LogoutRequested event, Emitter<AuthState> emit) async {
     await logoutUseCase(NoParams());
+    await LocalNotificationService.clearAll();
     emit(AuthUnauthenticated());
   }
 
@@ -88,9 +94,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ),
     );
 
-    result.fold(
-      (failure) => emit(AuthFailure(failure.message)),
-      (user) => emit(AuthAuthenticated(user)),
+    await result.fold(
+      (failure) async => emit(AuthFailure(failure.message)),
+      (user) async {
+        await LocalNotificationService.clearAll();
+        emit(AuthAuthenticated(user));
+      },
     );
   }
 

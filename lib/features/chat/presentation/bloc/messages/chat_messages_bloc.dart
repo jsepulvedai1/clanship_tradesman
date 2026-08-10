@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:clanship_mobile_tradesman/core/utils/error_parser.dart';
+import 'package:clanship_mobile_tradesman/features/chat/domain/entities/chat_message.dart';
 import 'package:clanship_mobile_tradesman/features/chat/domain/usecases/get_chat_history_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/chat/domain/usecases/stream_chat_messages_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/chat/domain/usecases/send_chat_message_usecase.dart';
@@ -16,6 +17,7 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
   final ChatRepository repository;
 
   StreamSubscription? _messagesSubscription;
+  StreamSubscription? _jobStatusSubscription;
 
   ChatMessagesBloc({
     required this.getChatHistory,
@@ -25,6 +27,7 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
   }) : super(ChatMessagesInitial()) {
     on<LoadChatMessages>(_onLoadChatMessages);
     on<MessageReceived>(_onMessageReceived);
+    on<JobStatusUpdatedEvent>(_onJobStatusUpdated);
     on<SendMessage>(_onSendMessage);
     on<CloseChatConnection>(_onCloseChatConnection);
   }
@@ -38,23 +41,35 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
       // 1. Fetch History
       final history = await getChatHistory(event.roomId, event.currentUserId);
       
-      // Sort history to show older messages first, assuming createdAt from backend.
-      // Usually ListView builder without reverse expects older at top.
+      // Sort history to show older messages first
       history.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
       emit(ChatMessagesLoaded(history));
 
-      // 2. Subscribe to WebSocket Stream
+      // 2. Subscribe to WebSocket Stream for messages
       _messagesSubscription?.cancel();
       _messagesSubscription = streamChatMessages(event.roomId, event.currentUserId)
           .listen(
         (message) {
           add(MessageReceived(message));
         },
-        onError: (error) {
-          // Handle socket error gracefully
-          // For now, we keep the loaded state but we could show a disconnected banner
+        onError: (error) {},
+      );
+
+      // 3. Subscribe to Job Status events
+      _jobStatusSubscription?.cancel();
+      _jobStatusSubscription = repository.getJobStatusStream(event.roomId).listen(
+        (eventData) {
+          final newStatus = eventData['new_status']?.toString();
+          final cancellationReason = eventData['cancellation_reason']?.toString();
+          if (newStatus != null && newStatus.isNotEmpty) {
+            add(JobStatusUpdatedEvent(
+              newStatus: newStatus,
+              cancellationReason: cancellationReason,
+            ));
+          }
         },
+        onError: (_) {},
       );
     } catch (e) {
       emit(ChatMessagesError(sanitizeErrorForUser(e)));
@@ -68,11 +83,39 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
     if (state is ChatMessagesLoaded) {
       final currentState = state as ChatMessagesLoaded;
       
-      // Check if message already exists (sometimes backend might send duplicates or we might insert locally first)
       if (!currentState.messages.any((m) => m.id == event.message.id)) {
         final updatedMessages = List.of(currentState.messages)..add(event.message);
-        emit(ChatMessagesLoaded(updatedMessages));
+
+        String? newStatus = currentState.jobStatus;
+        if (event.message.text.contains('aceptada por el cliente')) {
+          newStatus = 'AGREED';
+        } else if (event.message.text.contains('rechazada por el cliente') ||
+                   event.message.text.contains('cancelada por el cliente')) {
+          newStatus = 'CANCELLED';
+        } else if (event.message.type == ChatMessageType.appointment && newStatus == null) {
+          newStatus = 'SCHEDULED';
+        }
+
+        emit(ChatMessagesLoaded(
+          updatedMessages,
+          jobStatus: newStatus,
+          cancellationReason: currentState.cancellationReason,
+        ));
       }
+    }
+  }
+
+  void _onJobStatusUpdated(
+    JobStatusUpdatedEvent event,
+    Emitter<ChatMessagesState> emit,
+  ) {
+    if (state is ChatMessagesLoaded) {
+      final currentState = state as ChatMessagesLoaded;
+      emit(ChatMessagesLoaded(
+        currentState.messages,
+        jobStatus: event.newStatus,
+        cancellationReason: event.cancellationReason,
+      ));
     }
   }
 
@@ -98,12 +141,14 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
     Emitter<ChatMessagesState> emit,
   ) {
     _messagesSubscription?.cancel();
+    _jobStatusSubscription?.cancel();
     repository.closeChat();
   }
 
   @override
   Future<void> close() {
     _messagesSubscription?.cancel();
+    _jobStatusSubscription?.cancel();
     repository.closeChat();
     return super.close();
   }

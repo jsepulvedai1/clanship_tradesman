@@ -59,17 +59,45 @@ class _HomePageState extends State<HomePage> {
 
       try {
         final Map<String, dynamic> data = event;
-        if (data['event'] == 'new_message') {
-          final String msgText = data['message'] ?? 'Tienes un nuevo mensaje';
-          LocalNotificationService.saveNotification('Mensaje Nuevo', msgText);
+        if (data['event'] == 'new_message' ||
+            data['event'] == 'job_created' ||
+            data['event'] == 'job_updated') {
+          final String title = data['event'] == 'job_created'
+              ? 'Nueva Solicitud'
+              : (data['event'] == 'job_updated' ? 'Trabajo Actualizado' : 'Mensaje Nuevo');
+          final String msgText = data['message'] ?? 'Tienes una actualización de trabajo';
+          LocalNotificationService.saveNotification(title, msgText);
 
           try {
             di.sl<RequestsBloc>().add(LoadPendingRequests());
           } catch (_) {}
         }
+        if (data['event'] == 'profile_validated' ||
+            data['event'] == 'profile_unvalidated') {
+          final isVal =
+              data['event'] == 'profile_validated' ||
+              data['is_validated'] == true;
+          final authState = context.read<AuthBloc>().state;
+          if (authState is AuthAuthenticated) {
+            final updatedUser = authState.user.copyWith(isValidated: isVal);
+            context.read<AuthBloc>().add(ProfileUpdated(updatedUser));
+          }
+          /*
+          if (isVal && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  '🎉 ¡Tu perfil profesional ha sido validado! Ya puedes activarte y cotizar.',
+                ),
+                backgroundColor: AppColors.successGreen,
+                duration: Duration(seconds: 4),
+              ),
+            );
+          }
+          */
+        }
       } catch (_) {}
 
-      // Recargar datos al recibir cualquier evento
       _homeBloc.add(LoadUserData());
     });
 
@@ -409,7 +437,19 @@ class _HomePageState extends State<HomePage> {
           hasNotifications: _localNotifications.isNotEmpty,
           onNotificationsTap: _showLocalNotificationsBottomSheet,
         ),
-        body: BlocBuilder<HomeBloc, HomeState>(
+        body: BlocConsumer<HomeBloc, HomeState>(
+          listener: (context, state) {
+            if (state is HomeDataLoaded) {
+              final authState = context.read<AuthBloc>().state;
+              if (authState is AuthAuthenticated &&
+                  authState.user.isValidated != state.user.isValidated) {
+                final updatedUser = authState.user.copyWith(
+                  isValidated: state.user.isValidated,
+                );
+                context.read<AuthBloc>().add(ProfileUpdated(updatedUser));
+              }
+            }
+          },
           builder: (context, state) {
             if (state is HomeDataLoaded) {
               final double screenHeight = MediaQuery.of(context).size.height;
@@ -432,7 +472,7 @@ class _HomePageState extends State<HomePage> {
                       reviewsCount: state.user.reviewsCount,
                       onServicesTap: () {
                         context.read<NavigationBloc>().add(
-                          const TabChanged(2, scrollToServices: false),
+                          const TabChanged(3, scrollToServices: false),
                         );
                       },
                     ),
@@ -445,6 +485,13 @@ class _HomePageState extends State<HomePage> {
                       scheduled: state.user.scheduledJobs,
                       hasUnread: state.recentRequests.any(
                         (r) => !r.isRead && r.status == 'REQUESTED',
+                      ),
+                      hasScheduledUnread: state.recentRequests.any(
+                        (r) =>
+                            !r.isRead &&
+                            (r.status == 'AGREED' ||
+                                r.status == 'SCHEDULED' ||
+                                r.status == 'IN_VISIT'),
                       ),
                       onActiveTap: () {
                         context.read<NavigationBloc>().add(
@@ -477,6 +524,7 @@ class _HomePageState extends State<HomePage> {
                     AvailabilityWidget(
                       isAvailable: state.user.isAvailable,
                       isUrgencyModeActive: state.user.isEmergency,
+                      isValidated: state.user.isValidated,
                       onToggleAvailability: (bool value) {
                         _homeBloc.add(ToggleAvailability(value));
                       },
@@ -808,6 +856,113 @@ class _LocationWidgetState extends State<_LocationWidget> {
     }
   }
 
+  void _showGpsActualInfoDialog(BuildContext context, HomeBloc homeBloc) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.gps_fixed, color: Color(0xFF0D2B45)),
+            SizedBox(width: 10),
+            Text(
+              'GPS Actual',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Esta opción utiliza el sensor GPS en tiempo real de tu dispositivo para detectar tu ubicación geográfica exacta en este momento. Es ideal si te encuentras en terreno y deseas recibir trabajos cercanos a tu posición física actual.',
+          style: TextStyle(fontSize: 14, height: 1.4, color: Color(0xFF2E3135)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0D2B45),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _updateLocationWithGPS(context, homeBloc);
+            },
+            child: const Text('Usar mi GPS'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFijarDireccionInfoDialog(BuildContext context, HomeBloc homeBloc) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.pin_drop_rounded, color: Color(0xFF0B6E4F)),
+            SizedBox(width: 10),
+            Text(
+              'Fijar Dirección',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Esta opción te permite seleccionar y fijar una dirección estática en el mapa como tu punto base de trabajo (por ejemplo tu hogar o taller). Así recibirás solicitudes en ese sector sin depender de tu ubicación GPS.',
+          style: TextStyle(fontSize: 14, height: 1.4, color: Color(0xFF2E3135)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0B6E4F),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              final result = await Navigator.push<Map<String, dynamic>?>(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddressPickerPage(
+                    initialAddress: widget.user.address == 'Ubicación GPS actual'
+                        ? ''
+                        : widget.user.address,
+                  ),
+                ),
+              );
+              if (result != null && mounted) {
+                final address = result['address'] as String;
+                final lat = result['latitude'] as double;
+                final lng = result['longitude'] as double;
+                _updateLocationManual(
+                  context,
+                  homeBloc,
+                  address,
+                  lat,
+                  lng,
+                );
+              }
+            },
+            child: const Text('Seleccionar en Mapa'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final homeBloc = context.read<HomeBloc>();
@@ -815,7 +970,9 @@ class _LocationWidgetState extends State<_LocationWidget> {
     final double screenHeight = MediaQuery.of(context).size.height;
     final bool isSmallScreen = screenHeight < 750;
     final String currentAddress =
-        widget.user.address ?? 'Sin dirección configurada';
+        (widget.user.address != null && widget.user.address!.trim().isNotEmpty)
+        ? widget.user.address!.trim()
+        : 'Sin dirección configurada';
     final hasCoordinates =
         widget.user.latitude != null && widget.user.longitude != null;
 
@@ -848,13 +1005,66 @@ class _LocationWidgetState extends State<_LocationWidget> {
                 ),
               ),
               const SizedBox(width: 10),
-              Text(
-                'Mi Área de Servicio / Ubicación',
-                style: TextStyle(
-                  fontSize: isSmallScreen ? 14 : 16,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF2E3135),
+              Expanded(
+                child: Text(
+                  'Mi Área de Servicio / Ubicación',
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 14 : 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF2E3135),
+                  ),
                 ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.info_outline_rounded,
+                  color: Color(0xFF0D2B45),
+                  size: 20,
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      title: const Row(
+                        children: [
+                          Icon(Icons.map_rounded, color: Color(0xFF0D2B45)),
+                          SizedBox(width: 10),
+                          Text(
+                            'Área de Servicio',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      content: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '• GPS Actual: Utiliza tu ubicación en vivo por GPS para recibir solicitudes cerca de donde te encuentres físicamente.',
+                            style: TextStyle(fontSize: 13, height: 1.4),
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            '• Fijar Dirección: Define un punto fijo o taller en el mapa para recibir solicitudes en ese sector de forma permanente.',
+                            style: TextStyle(fontSize: 13, height: 1.4),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Entendido'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -891,7 +1101,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _updateLocationWithGPS(context, homeBloc),
+                    onPressed: () => _showGpsActualInfoDialog(context, homeBloc),
                     icon: SvgPicture.asset(
                       'assets/icon/icons_ F28C28/dialog.svg',
                       width: isSmallScreen ? 14 : 16,
@@ -923,33 +1133,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
                 SizedBox(width: isSmallScreen ? 8 : 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () async {
-                      final result =
-                          await Navigator.push<Map<String, dynamic>?>(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddressPickerPage(
-                                initialAddress:
-                                    widget.user.address ==
-                                        'Ubicación GPS actual'
-                                    ? ''
-                                    : widget.user.address,
-                              ),
-                            ),
-                          );
-                      if (result != null && mounted) {
-                        final address = result['address'] as String;
-                        final lat = result['latitude'] as double;
-                        final lng = result['longitude'] as double;
-                        _updateLocationManual(
-                          context,
-                          homeBloc,
-                          address,
-                          lat,
-                          lng,
-                        );
-                      }
-                    },
+                    onPressed: () => _showFijarDireccionInfoDialog(context, homeBloc),
                     icon: SvgPicture.asset(
                       'assets/icon/icons_ F28C28/dialog.svg',
                       width: isSmallScreen ? 14 : 16,

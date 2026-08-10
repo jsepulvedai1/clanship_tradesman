@@ -51,6 +51,8 @@ class SubscriptionPlanEntity extends Equatable {
   final String? radioBroadcast;
   final String profileStatistics;
   final String supportLevel;
+  final bool isComingSoon;
+  final int displayOrder;
 
   const SubscriptionPlanEntity({
     required this.id,
@@ -67,6 +69,8 @@ class SubscriptionPlanEntity extends Equatable {
     this.radioBroadcast,
     this.profileStatistics = 'Básicas',
     this.supportLevel = 'Estándar',
+    this.isComingSoon = false,
+    this.displayOrder = 0,
   });
 
   @override
@@ -85,6 +89,8 @@ class SubscriptionPlanEntity extends Equatable {
         radioBroadcast,
         profileStatistics,
         supportLevel,
+        isComingSoon,
+        displayOrder,
       ];
 }
 
@@ -123,7 +129,10 @@ class UserEntity extends Equatable {
   final String? specialtyName;
   final String? specialtyIconUrl;
   final List<Map<String, dynamic>> specialties;
+  final List<Map<String, dynamic>> tags;
   final List<Map<String, dynamic>> subtags;
+  final bool isValidated;
+  final bool requiresPlanUpgrade;
 
   const UserEntity({
     required this.id,
@@ -160,7 +169,10 @@ class UserEntity extends Equatable {
     this.specialtyName,
     this.specialtyIconUrl,
     this.specialties = const [],
+    this.tags = const [],
     this.subtags = const [],
+    this.isValidated = false,
+    this.requiresPlanUpgrade = false,
   });
 
   UserEntity copyWith({
@@ -198,7 +210,10 @@ class UserEntity extends Equatable {
     String? specialtyName,
     String? specialtyIconUrl,
     List<Map<String, dynamic>>? specialties,
+    List<Map<String, dynamic>>? tags,
     List<Map<String, dynamic>>? subtags,
+    bool? isValidated,
+    bool? requiresPlanUpgrade,
   }) {
     return UserEntity(
       id: id ?? this.id,
@@ -235,7 +250,10 @@ class UserEntity extends Equatable {
       specialtyName: specialtyName ?? this.specialtyName,
       specialtyIconUrl: specialtyIconUrl ?? this.specialtyIconUrl,
       specialties: specialties ?? this.specialties,
+      tags: tags ?? this.tags,
       subtags: subtags ?? this.subtags,
+      isValidated: isValidated ?? this.isValidated,
+      requiresPlanUpgrade: requiresPlanUpgrade ?? this.requiresPlanUpgrade,
     );
   }
 
@@ -275,6 +293,9 @@ class UserEntity extends Equatable {
         specialtyName,
         specialtyIconUrl,
         specialties,
+        tags,
         subtags,
+        isValidated,
+        requiresPlanUpgrade,
       ];
 }

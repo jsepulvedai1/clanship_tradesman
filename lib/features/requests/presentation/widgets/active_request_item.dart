@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../domain/entities/active_request_detail_entity.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 
@@ -14,183 +15,311 @@ class ActiveRequestItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isUrgent = request.isUrgent;
-    final bool isUnread = !request.isRead && request.status == 'REQUESTED';
+    final bool isUnread = !request.isRead || request.hasUnreadMessages;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    Color cardColor;
-    if (isUrgent) {
-      cardColor = const Color(0xFFFF4B6E);
-    } else if (isUnread) {
-      cardColor = isDark
-          ? AppColors.primaryBlue.withAlpha(55)
-          : AppColors.primaryBlue.withAlpha(25);
-    } else {
-      cardColor = Theme.of(context).cardColor;
-    }
+    final currencyFormatter = NumberFormat.currency(
+      locale: 'es_CL',
+      symbol: '\$',
+      decimalDigits: 0,
+    );
+
+    final amountStr = request.agreedPrice != null && request.agreedPrice! > 0
+        ? currencyFormatter.format(request.agreedPrice!)
+        : null;
+
+    final bool isScheduled =
+        request.status == 'SCHEDULED' ||
+        request.status == 'AGREED' ||
+        request.status == 'IN_VISIT';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: isUnread
-            ? Border.all(color: AppColors.primaryBlue.withAlpha(150), width: 1.5)
-            : null,
+        color: isDark ? AppColors.cardDark : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isUnread
+              ? const Color(0xFFEF4444)
+              : (isDark ? Colors.white10 : Colors.black12),
+          width: isUnread ? 2.0 : 1.0,
+        ),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(isUrgent ? 40 : (isUnread ? 25 : 10)),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+          if (isUnread)
+            BoxShadow(
+              color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          else if (!isDark)
+            BoxShadow(
+              color: Colors.black.withAlpha(10),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
         ],
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: isUrgent
-              ? Colors.white.withAlpha(50)
-              : (isUnread
-                  ? AppColors.primaryBlue.withAlpha(60)
-                  : AppColors.primaryBlue.withAlpha(30)),
-          child: Icon(
-            _getCategoryIcon(request.category),
-            color: isUrgent ? Colors.white : AppColors.primaryBlue,
-          ),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                request.category,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isUrgent ? Colors.white : Theme.of(context).textTheme.titleLarge?.color,
-                ),
-              ),
-            ),
-            if (isUnread)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.statsOrange,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'NUEVA',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              request.clientName,
-              style: TextStyle(
-                color: isUrgent ? Colors.white70 : Theme.of(context).textTheme.bodyMedium?.color?.withAlpha(180),
-              ),
-            ),
-            if (request.status == 'AGREED' || request.status == 'SCHEDULED' || request.status == 'IN_VISIT') ...[
-              const SizedBox(height: 6),
-              if (request.status == 'SCHEDULED') ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  margin: const EdgeInsets.only(bottom: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.orange.shade200),
-                  ),
-                  child: Text(
-                    'Por confirmar por cliente',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange.shade900,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Row: Status Badge & Chat / Arrow indicator
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isScheduled
+                                  ? Colors.green.withAlpha(25)
+                                  : Colors.orange.withAlpha(25),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isScheduled
+                                    ? Colors.green.withAlpha(70)
+                                    : Colors.orange.withAlpha(70),
+                              ),
+                            ),
+                            child: Text(
+                              request.category,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: isScheduled
+                                    ? Colors.green.shade800
+                                    : Colors.orange.shade900,
+                              ),
+                            ),
+                          ),
+                          if (request.status == 'SCHEDULED') ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.withAlpha(30),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.amber.shade700,
+                                ),
+                              ),
+                              child: Text(
+                                'Por confirmar cliente',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.amber.shade900,
+                                ),
+                              ),
+                            ),
+                          ],
+                          if (isUnread) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444),
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFFEF4444,
+                                    ).withValues(alpha: 0.4),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                isScheduled ? '¡NUEVO AGENDADO!' : 'NUEVA',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
-              if (request.scheduledDate != null && request.scheduledDate!.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today_rounded,
-                        size: 12,
-                        color: isUrgent ? Colors.white70 : Colors.grey,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${request.scheduledDate} ${request.scheduledTime ?? ''}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isUrgent ? Colors.white70 : Colors.grey[600],
+                    Row(
+                      children: [
+                        if (request.hasUnreadMessages) ...[
+                          const Icon(
+                            Icons.chat_bubble_rounded,
+                            color: Color(0xFFEF4444),
+                            size: 18,
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 16,
+                          color: Colors.grey,
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 ),
-              if (request.agreedPrice != null && request.agreedPrice! > 0)
+                const SizedBox(height: 14),
+
+                // Client Name Row
                 Row(
                   children: [
-                    Icon(
-                      Icons.sell_outlined,
-                      size: 12,
-                      color: isUrgent ? Colors.white70 : AppColors.primaryBlue,
+                    CircleAvatar(
+                      radius: 14,
+                      backgroundColor: AppColors.primaryBlue.withAlpha(25),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        color: AppColors.primaryBlue,
+                        size: 16,
+                      ),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Precio acordado: \$${request.agreedPrice!.toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isUrgent ? Colors.white : AppColors.primaryBlue,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        request.clientName,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
                 ),
-            ],
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (request.hasUnreadMessages) ...[
-              const Icon(
-                Icons.chat_bubble_rounded,
-                color: Color(0xFFEF4444),
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-            ],
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: isUrgent ? Colors.white : Colors.grey,
+
+                // Client Address Row (if available)
+                if (request.clientAddress.trim().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          request.clientAddress,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? Colors.white70 : Colors.black54,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                // Instruction / Work Description (if available and not generic)
+                if (request.instruction.trim().isNotEmpty &&
+                    request.instruction != 'Nueva solicitud de servicio') ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    request.instruction,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+
+                const SizedBox(height: 12),
+
+                // Footer Row: Scheduled Date/Time & Price Tag
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (request.scheduledDate != null &&
+                        request.scheduledDate!.isNotEmpty) ...[
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_today_rounded,
+                              size: 14,
+                              color: AppColors.primaryBlue,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                '${request.scheduledDate} ${request.scheduledTime ?? ''}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.black87,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ] else
+                      const SizedBox.shrink(),
+                    if (amountStr != null) ...[
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withAlpha(25),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Colors.green.withAlpha(80),
+                            ),
+                          ),
+                          child: Text(
+                            'Valor: $amountStr',
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-        onTap: onTap,
       ),
     );
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'fontanería':
-        return Icons.plumbing;
-      case 'electricidad':
-        return Icons.electrical_services;
-      default:
-        return Icons.assignment_outlined;
-    }
   }
 }

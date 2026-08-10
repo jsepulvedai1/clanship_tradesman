@@ -36,6 +36,122 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final ScrollController _scrollController = ScrollController();
+  bool _showAllServices = false;
+
+  Widget _buildServicesWrap(UserEntity user) {
+    final List<Widget> allChips = [
+      ...user.specialties.map((spec) {
+        final specName = spec['name'] ?? '';
+        return Chip(
+          label: Text(specName),
+          backgroundColor: AppColors.primaryBlue.withOpacity(0.12),
+          side: const BorderSide(
+            color: AppColors.primaryBlue,
+            width: 1.5,
+          ),
+        );
+      }),
+      ...user.serviceTags
+          .where((name) {
+            return !user.specialties.any((s) => s['name'] == name);
+          })
+          .map((tagName) {
+            return Chip(
+              label: Text(tagName),
+              backgroundColor: Colors.grey.withOpacity(0.1),
+              side: BorderSide(
+                color: Colors.grey.shade300,
+              ),
+            );
+          }),
+      ...user.subtags.map((subtag) {
+        final subtagName = subtag['name'] ?? '';
+        final tagName = subtag['tag']?['name'] ?? '';
+        return Chip(
+          label: Text(
+            tagName.isNotEmpty ? '$tagName > $subtagName' : subtagName,
+          ),
+          backgroundColor: AppColors.primaryBlue.withOpacity(0.08),
+          side: const BorderSide(
+            color: AppColors.primaryBlue,
+          ),
+        );
+      }),
+    ];
+
+    if (allChips.isEmpty) {
+      return const Text(
+        'No has seleccionado especialidades.',
+        style: TextStyle(
+          color: Colors.grey,
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
+
+    if (allChips.length <= 4) {
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: allChips,
+      );
+    }
+
+    List<Widget> visibleChips;
+    if (!_showAllServices) {
+      visibleChips = allChips.take(4).toList();
+      final remaining = allChips.length - 4;
+      visibleChips.add(
+        ActionChip(
+          label: Text(
+            '+$remaining más',
+            style: const TextStyle(
+              color: AppColors.primaryBlue,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          backgroundColor: AppColors.primaryBlue.withOpacity(0.15),
+          side: const BorderSide(
+            color: AppColors.primaryBlue,
+            width: 1.5,
+          ),
+          onPressed: () {
+            setState(() {
+              _showAllServices = true;
+            });
+          },
+        ),
+      );
+    } else {
+      visibleChips = List.from(allChips);
+      visibleChips.add(
+        ActionChip(
+          label: const Text(
+            'Ver menos',
+            style: TextStyle(
+              color: Colors.black87,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          backgroundColor: Colors.grey.withOpacity(0.15),
+          side: BorderSide(
+            color: Colors.grey.shade400,
+          ),
+          onPressed: () {
+            setState(() {
+              _showAllServices = false;
+            });
+          },
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: visibleChips,
+    );
+  }
 
   @override
   void dispose() {
@@ -151,23 +267,9 @@ class _ProfilePageState extends State<ProfilePage> {
         .where((id) => id.isNotEmpty)
         .toSet();
 
-    final initialTagIds = user.serviceTags
-        .map((name) {
-          for (final spec in availableSpecialties) {
-            final tags = spec['tags'] as List?;
-            if (tags != null) {
-              for (final tag in tags) {
-                if (tag['name'] == name &&
-                    (tag['subtags'] == null ||
-                        (tag['subtags'] as List).isEmpty)) {
-                  return tag['id']?.toString();
-                }
-              }
-            }
-          }
-          return null;
-        })
-        .whereType<String>()
+    final initialTagIds = user.tags
+        .map((t) => t['id']?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
         .toSet();
 
     final initialSubtagIds = user.subtags
@@ -402,71 +504,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   //   ],
                                   // ),
                                   const SizedBox(height: 8),
-                                  if (user.specialties.isEmpty &&
-                                      user.serviceTags.isEmpty &&
-                                      user.subtags.isEmpty)
-                                    const Text(
-                                      'No has seleccionado especialidades.',
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    )
-                                  else
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: [
-                                        ...user.specialties.map((spec) {
-                                          final specName = spec['name'] ?? '';
-                                          return Chip(
-                                            label: Text(specName),
-                                            backgroundColor: AppColors
-                                                .primaryBlue
-                                                .withOpacity(0.12),
-                                            side: const BorderSide(
-                                              color: AppColors.primaryBlue,
-                                              width: 1.5,
-                                            ),
-                                          );
-                                        }),
-                                        ...user.serviceTags
-                                            .where((name) {
-                                              return !user.specialties.any(
-                                                (s) => s['name'] == name,
-                                              );
-                                            })
-                                            .map((tagName) {
-                                              return Chip(
-                                                label: Text(tagName),
-                                                backgroundColor: Colors.grey
-                                                    .withOpacity(0.1),
-                                                side: BorderSide(
-                                                  color: Colors.grey.shade300,
-                                                ),
-                                              );
-                                            }),
-                                        ...user.subtags.map((subtag) {
-                                          final subtagName =
-                                              subtag['name'] ?? '';
-                                          final tagName =
-                                              subtag['tag']?['name'] ?? '';
-                                          return Chip(
-                                            label: Text(
-                                              tagName.isNotEmpty
-                                                  ? '$tagName > $subtagName'
-                                                  : subtagName,
-                                            ),
-                                            backgroundColor: AppColors
-                                                .primaryBlue
-                                                .withOpacity(0.08),
-                                            side: const BorderSide(
-                                              color: AppColors.primaryBlue,
-                                            ),
-                                          );
-                                        }),
-                                      ],
-                                    ),
+                                  _buildServicesWrap(user),
                                   const SizedBox(height: 20),
                                 ],
                               ),

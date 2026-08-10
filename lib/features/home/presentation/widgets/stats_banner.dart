@@ -76,13 +76,13 @@ class StatsBanner extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      '($reviewsCount ${l10n.homeReviewsText})',
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(200),
-                        fontSize: isSmallScreen ? 11 : 13,
-                      ),
-                    ),
+                    // Text(
+                    //   '($reviewsCount ${l10n.homeReviewsText})',
+                    //   style: TextStyle(
+                    //     color: Colors.white.withAlpha(200),
+                    //     fontSize: isSmallScreen ? 11 : 13,
+                    //   ),
+                    // ),
                   ],
                 ),
               ],

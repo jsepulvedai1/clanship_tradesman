@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:clanship_mobile_tradesman/core/config/environment_config.dart';
 import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
 import 'package:clanship_mobile_tradesman/main.dart';
+import 'package:clanship_mobile_tradesman/core/network/firebase_notification_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FirebaseNotificationHelper.initialize();
 
   // Instantiate Dev Environment
   EnvConfig.instantiate(

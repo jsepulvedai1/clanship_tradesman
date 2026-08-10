@@ -45,10 +45,12 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Necesitamos tu ubicación para coordinar los servicios en tiempo real y mejorar la navegación en la app.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Necesitamos acceso a tu ubicación para geolocalizarte en el mapa y que puedas recibir ofertas de trabajo cercanas.</string>
+	<string>Necesitamos tu ubicación para coordinar los servicios en tiempo real y mejorar la navegación en la app.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Necesitamos acceso continuo a tu ubicación para poder notificarte de trabajos en tu área de servicio.</string>
+	<string>Necesitamos tu ubicación para coordinar los servicios en tiempo real y mejorar la navegación en la app.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Necesitamos acceso a tu cámara para que puedas tomar una foto de perfil o evidencia de tu trabajo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -58,6 +60,12 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Necesitamos acceso a la red local para depurar la aplicación en desarrollo.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_dartobservatory._tcp</string>
 	</array>
 </dict>
 </plist>

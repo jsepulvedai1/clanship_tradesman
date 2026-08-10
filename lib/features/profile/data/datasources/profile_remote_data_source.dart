@@ -61,6 +61,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     id
     username
     email
+    isValidated
     phoneNumber
     firstName
     lastName
@@ -77,6 +78,11 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     latitude
     longitude
     professionalProfile {
+      requiresPlanUpgrade
+      isVerified
+      address
+      latitude
+      longitude
       bio
       rating
       hourlyRate
@@ -219,22 +225,30 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       specialtyName: profProfile?['specialty']?['name']?.toString(),
       specialtyIconUrl: profProfile?['specialty']?['iconUrl']?.toString(),
       specialties: (profProfile?['specialties'] as List?)
-          ?.map((s) => {
+          ?.map((s) => <String, dynamic>{
                 'id': s['id']?.toString() ?? '',
                 'name': s['name']?.toString() ?? '',
                 'iconUrl': s['iconUrl']?.toString() ?? '',
               })
           .toList() ?? const [],
+      tags: (profProfile?['tags'] as List?)
+          ?.map((t) => <String, dynamic>{
+                'id': t['id']?.toString() ?? '',
+                'name': t['name']?.toString() ?? '',
+              })
+          .toList() ?? const [],
       subtags: (profProfile?['subtags'] as List?)
-          ?.map((s) => {
+          ?.map((s) => <String, dynamic>{
                 'id': s['id']?.toString() ?? '',
                 'name': s['name']?.toString() ?? '',
-                'tag': {
+                'tag': <String, dynamic>{
                   'id': s['tag']?['id']?.toString() ?? '',
                   'name': s['tag']?['name']?.toString() ?? '',
                 },
               })
           .toList() ?? const [],
+      isValidated: data['isValidated'] == true || profProfile?['isVerified'] == true,
+      requiresPlanUpgrade: profProfile?['requiresPlanUpgrade'] == true,
       subscriptionPlan: subscriptionPlan,
       planName: subscriptionPlan?.name ?? 'Plan Base',
     );
@@ -439,6 +453,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
             latitude
             longitude
             professionalProfile {
+              requiresPlanUpgrade
               bio
               rating
               hourlyRate
@@ -542,6 +557,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
             latitude
             longitude
             professionalProfile {
+              requiresPlanUpgrade
               bio
               rating
               hourlyRate
@@ -618,6 +634,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
             latitude
             longitude
             professionalProfile {
+              requiresPlanUpgrade
               bio
               rating
               hourlyRate
@@ -727,6 +744,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
             latitude
             longitude
             professionalProfile {
+              requiresPlanUpgrade
               bio
               rating
               hourlyRate
@@ -815,6 +833,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
             latitude
             longitude
             professionalProfile {
+              requiresPlanUpgrade
               bio
               rating
               hourlyRate
@@ -902,6 +921,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
             latitude
             longitude
             professionalProfile {
+              requiresPlanUpgrade
               bio
               rating
               hourlyRate
@@ -970,12 +990,16 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
           id
           name
           iconUrl
+          color
           tags {
             id
             name
+            iconUrl
+            color
             subtags {
               id
               name
+              color
             }
           }
         }
@@ -1021,6 +1045,8 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
           radioBroadcast
           profileStatistics
           supportLevel
+          isComingSoon
+          displayOrder
         }
       }
     ''';
@@ -1041,7 +1067,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       return [];
     }
 
-    return plansList.map((p) => SubscriptionPlanEntity(
+    final entities = plansList.map((p) => SubscriptionPlanEntity(
       id: p['id']?.toString() ?? '',
       name: p['name']?.toString() ?? '',
       description: p['description']?.toString() ?? '',
@@ -1056,7 +1082,19 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       radioBroadcast: p['radioBroadcast']?.toString(),
       profileStatistics: p['profileStatistics']?.toString() ?? 'Básicas',
       supportLevel: p['supportLevel']?.toString() ?? 'Estándar',
+      isComingSoon: p['isComingSoon'] == true,
+      displayOrder: int.tryParse(p['displayOrder']?.toString() ?? '0') ?? 0,
     )).toList();
+
+    entities.sort((a, b) {
+      final orderCmp = a.displayOrder.compareTo(b.displayOrder);
+      if (orderCmp != 0) return orderCmp;
+      final idA = int.tryParse(a.id) ?? 0;
+      final idB = int.tryParse(b.id) ?? 0;
+      return idA.compareTo(idB);
+    });
+
+    return entities;
   }
 
   @override

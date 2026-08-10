@@ -62,6 +62,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           id
           username
           email
+          isValidated
           phoneNumber
           firstName
           lastName
@@ -69,6 +70,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           latitude
           longitude
           avatarUrl
+          professionalProfile {
+            requiresPlanUpgrade
+            isVerified
+            address
+            latitude
+            longitude
+            serviceRadius
+          }
         }
       }
     ''';
@@ -419,6 +428,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           id
           username
           email
+          isValidated
           phoneNumber
           firstName
           lastName
@@ -426,6 +436,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           latitude
           longitude
           avatarUrl
+          professionalProfile {
+            requiresPlanUpgrade
+            isVerified
+            address
+            latitude
+            longitude
+            serviceRadius
+          }
         }
       }
     ''';
@@ -448,6 +466,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
 
     final userData = meResult.data?['me'] as Map<String, dynamic>?;
+    print('DEBUG GQL RESPONSE: ${meResult.data}');
     if (userData == null) {
       throw Exception('Could not fetch user details');
     }
@@ -513,12 +532,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           id
           name
           iconUrl
+          color
           tags {
             id
             name
+            iconUrl
+            color
             subtags {
               id
               name
+              color
             }
           }
         }

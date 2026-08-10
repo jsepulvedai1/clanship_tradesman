@@ -37,6 +37,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         emit(ProfileLoaded(user: user));
         add(LoadTagsEvent());
         add(LoadSpecialtiesEvent());
+        add(LoadSubscriptionPlansEvent());
       },
     );
   }
@@ -149,12 +150,16 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   }
 
   Future<void> _onLoadTags(LoadTagsEvent event, Emitter<ProfileState> emit) async {
-    final currentState = state;
-    if (currentState is ProfileLoaded) {
+    if (state is ProfileLoaded) {
       final result = await profileRepository.getTags();
       result.fold(
         (failure) => null, // ignore error
-        (tags) => emit(currentState.copyWith(availableTags: tags)),
+        (tags) {
+          final current = state;
+          if (current is ProfileLoaded) {
+            emit(current.copyWith(availableTags: tags));
+          }
+        },
       );
     }
   }
@@ -227,24 +232,37 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   }
 
   Future<void> _onLoadSpecialties(LoadSpecialtiesEvent event, Emitter<ProfileState> emit) async {
-    final currentState = state;
-    if (currentState is ProfileLoaded) {
+    if (state is ProfileLoaded) {
       final result = await profileRepository.getSpecialties();
       result.fold(
         (failure) => null, // ignore error
-        (specialties) => emit(currentState.copyWith(availableSpecialties: specialties)),
+        (specialties) {
+          final current = state;
+          if (current is ProfileLoaded) {
+            emit(current.copyWith(availableSpecialties: specialties));
+          }
+        },
       );
     }
   }
 
   Future<void> _onLoadSubscriptionPlans(LoadSubscriptionPlansEvent event, Emitter<ProfileState> emit) async {
-    final currentState = state;
-    if (currentState is ProfileLoaded) {
-      emit(currentState.copyWith(isLoadingPlans: true));
+    if (state is ProfileLoaded) {
+      emit((state as ProfileLoaded).copyWith(isLoadingPlans: true));
       final result = await profileRepository.getSubscriptionPlans();
       result.fold(
-        (failure) => emit(currentState.copyWith(isLoadingPlans: false)),
-        (plans) => emit(currentState.copyWith(availablePlans: plans, isLoadingPlans: false)),
+        (failure) {
+          final current = state;
+          if (current is ProfileLoaded) {
+            emit(current.copyWith(isLoadingPlans: false, errorMessage: failure.message));
+          }
+        },
+        (plans) {
+          final current = state;
+          if (current is ProfileLoaded) {
+            emit(current.copyWith(availablePlans: plans, isLoadingPlans: false, errorMessage: ''));
+          }
+        },
       );
     }
   }
@@ -257,7 +275,12 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       final result = await profileRepository.subscribeToPlan(planId: event.planId);
 
       result.fold(
-        (failure) => emit(currentState.copyWith(isSubscribing: false)),
+        (failure) {
+          emit(currentState.copyWith(
+            isSubscribing: false,
+            errorMessage: failure.message,
+          ));
+        },
         (updatedUser) => emit(currentState.copyWith(
           user: updatedUser,
           isSubscribing: false,

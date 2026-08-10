@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 
@@ -40,16 +39,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class AvailabilityWidget extends StatelessWidget {
   final bool isAvailable;
-  final bool isUrgencyModeActive; // Nuevo estado para el modo urgencia
-  final ValueChanged<bool>
-  onToggleAvailability; // Callback para cambiar disponibilidad
-  final ValueChanged<bool>
-  onToggleUrgencyMode; // Callback para cambiar el modo urgencia
+  final bool isUrgencyModeActive;
+  final bool isValidated;
+  final ValueChanged<bool> onToggleAvailability;
+  final ValueChanged<bool> onToggleUrgencyMode;
 
   const AvailabilityWidget({
     super.key,
     required this.isAvailable,
     required this.isUrgencyModeActive,
+    this.isValidated = true,
     required this.onToggleAvailability,
     required this.onToggleUrgencyMode,
   });
@@ -62,11 +61,75 @@ class AvailabilityWidget extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenHeight < 750;
 
-    // Uso del sistema de colores definido en el proyecto
-    final activeColor =
-        AppColors.availabilityActive; // Sustituye tu color hardcodeado
-    final inactiveColor = AppColors.gray;
-    final urgencyColor = AppColors.errorRed; // Color rojo para modo urgencia
+    final activeColor = AppColors.availabilityActive; // Verde disponible
+    final urgencyColor = AppColors.errorRed; // Rojo urgencia
+    final inactiveBg = theme.brightness == Brightness.dark
+        ? Colors.grey.withAlpha(40)
+        : Colors.grey.withAlpha(25);
+    final inactiveIconColor = theme.brightness == Brightness.dark
+        ? Colors.grey[400]!
+        : Colors.grey[600]!;
+
+    if (!isValidated) {
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16 : 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.amber.shade50,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.amber.shade400, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.amber.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: isSmallScreen ? 14 : 18,
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF59E0B),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.hourglass_top_rounded,
+                  size: 24,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'En proceso de validación',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: Color(0xFF92400E),
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Tu cuenta está siendo revisada por el equipo administrativo. Una vez aprobada podrás activar tu disponibilidad.',
+                      style: TextStyle(fontSize: 12, color: Color(0xFFB45309)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16 : 20),
@@ -85,20 +148,28 @@ class AvailabilityWidget extends StatelessWidget {
         ),
         padding: EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: isSmallScreen ? 10 : 16,
+          vertical: isSmallScreen ? 12 : 16,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Row 1: Disponibilidad General
             Row(
               children: [
-                _buildIcon(
-                  isSmallScreen,
-                  activeColor,
-                  inactiveColor,
-                  colorScheme,
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  padding: EdgeInsets.all(isSmallScreen ? 8 : 10),
+                  decoration: BoxDecoration(
+                    color: isAvailable ? activeColor.withAlpha(35) : inactiveBg,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.power_settings_new_rounded,
+                    size: isSmallScreen ? 20 : 24,
+                    color: isAvailable ? activeColor : inactiveIconColor,
+                  ),
                 ),
-                SizedBox(width: isSmallScreen ? 8 : 12),
+                SizedBox(width: isSmallScreen ? 10 : 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,30 +196,35 @@ class AvailabilityWidget extends StatelessWidget {
                   value: isAvailable,
                   onChanged: onToggleAvailability,
                   activeColor: activeColor,
-                  activeTrackColor: activeColor,
+                  activeTrackColor: activeColor.withAlpha(100),
                 ),
               ],
             ),
-            SizedBox(height: 16), // Espacio entre los switches
+            const SizedBox(height: 16),
+
+            // Row 2: Modo Urgencias
             Row(
               children: [
-                Container(
-                  padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  padding: EdgeInsets.all(isSmallScreen ? 8 : 10),
                   decoration: BoxDecoration(
-                    color: (isUrgencyModeActive ? urgencyColor : inactiveColor),
+                    color: isUrgencyModeActive
+                        ? urgencyColor.withAlpha(35)
+                        : inactiveBg,
                     shape: BoxShape.circle,
                   ),
-                  child: SvgPicture.asset(
-                    'assets/icon/icons_ F28C28/alert.svg', // Cambia el ícono según sea necesario
-                    width: isSmallScreen ? 16 : 20,
-                    height: isSmallScreen ? 16 : 20,
-                    colorFilter: ColorFilter.mode(
-                      isUrgencyModeActive ? urgencyColor : inactiveColor,
-                      BlendMode.srcIn,
-                    ),
+                  child: Icon(
+                    isUrgencyModeActive
+                        ? Icons.bolt_rounded
+                        : Icons.bolt_outlined,
+                    size: isSmallScreen ? 22 : 26,
+                    color: isUrgencyModeActive
+                        ? urgencyColor
+                        : inactiveIconColor,
                   ),
                 ),
-                SizedBox(width: isSmallScreen ? 8 : 12),
+                SizedBox(width: isSmallScreen ? 10 : 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,7 +237,7 @@ class AvailabilityWidget extends StatelessWidget {
                       ),
                       SizedBox(height: isSmallScreen ? 2 : 4),
                       Text(
-                        'Atiende casos urgentes por un valor extra',
+                        'Atiende casos urgentes e ingresa una tarifa superior.',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.6,
@@ -175,35 +251,11 @@ class AvailabilityWidget extends StatelessWidget {
                   value: isUrgencyModeActive,
                   onChanged: onToggleUrgencyMode,
                   activeColor: urgencyColor,
-                  activeTrackColor: urgencyColor,
+                  activeTrackColor: urgencyColor.withAlpha(100),
                 ),
               ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIcon(
-    bool isSmall,
-    Color active,
-    Color inactive,
-    ColorScheme scheme,
-  ) {
-    return Container(
-      padding: EdgeInsets.all(isSmall ? 6 : 8),
-      decoration: BoxDecoration(
-        color: (isAvailable ? active : inactive),
-        shape: BoxShape.circle,
-      ),
-      child: SvgPicture.asset(
-        'assets/icon/icons_ F28C28/dialog.svg',
-        width: isSmall ? 16 : 20,
-        height: isSmall ? 16 : 20,
-        colorFilter: ColorFilter.mode(
-          isAvailable ? active : inactive,
-          BlendMode.srcIn,
         ),
       ),
     );

@@ -16,6 +16,11 @@ class UserModel extends User {
     super.address,
     super.latitude,
     super.longitude,
+    super.professionalAddress,
+    super.professionalLatitude,
+    super.professionalLongitude,
+    super.isValidated = false,
+    super.requiresPlanUpgrade = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -42,7 +47,35 @@ class UserModel extends User {
       data['longitude'] = double.tryParse(data['longitude']);
     }
     
-    return _$UserModelFromJson(data);
+    bool isVal = data['isValidated'] == true || data['isVerified'] == true;
+
+    // Map professionalProfile address and coordinates independently
+    if (data['professionalProfile'] != null &&
+        data['professionalProfile'] is Map) {
+      final prof = data['professionalProfile'] as Map<String, dynamic>;
+      data['professionalAddress'] = prof['address']?.toString();
+      if (prof['latitude'] != null) {
+        data['professionalLatitude'] = double.tryParse(prof['latitude'].toString());
+      }
+      if (prof['longitude'] != null) {
+        data['professionalLongitude'] = double.tryParse(prof['longitude'].toString());
+      }
+      if (prof['isVerified'] == true) {
+        isVal = true;
+      }
+      if (prof['requiresPlanUpgrade'] == true || prof['requiresPlanUpgrade'] == 'true') {
+        data['requiresPlanUpgrade'] = true;
+      }
+      
+      // DEBUG: Almacenamos el valor raw temporalmente en el nombre para verlo en pantalla
+      data['name'] = "DEBUG RAW: ${prof['requiresPlanUpgrade']}";
+    }
+    
+    final user = _$UserModelFromJson(data);
+    return user.copyWith(
+      isValidated: isVal,
+      requiresPlanUpgrade: data['requiresPlanUpgrade'] ?? false,
+    );
   }
 
   Map<String, dynamic> toJson() => _$UserModelToJson(this);
@@ -59,6 +92,11 @@ class UserModel extends User {
     String? address,
     double? latitude,
     double? longitude,
+    String? professionalAddress,
+    double? professionalLatitude,
+    double? professionalLongitude,
+    bool? isValidated,
+    bool? requiresPlanUpgrade,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -71,6 +109,11 @@ class UserModel extends User {
       address: address ?? this.address,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      professionalAddress: professionalAddress ?? this.professionalAddress,
+      professionalLatitude: professionalLatitude ?? this.professionalLatitude,
+      professionalLongitude: professionalLongitude ?? this.professionalLongitude,
+      isValidated: isValidated ?? this.isValidated,
+      requiresPlanUpgrade: requiresPlanUpgrade ?? this.requiresPlanUpgrade,
     );
   }
 }

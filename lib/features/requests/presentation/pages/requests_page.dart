@@ -110,7 +110,10 @@ class _RequestsPageState extends State<RequestsPage> {
                 return TabBarView(
                   children: [
                     _buildRequestsList(context, pendingRequests, l10n.requestsNoPending),
-                    _buildRequestsList(context, agreedRequests, l10n.requestsNoScheduled),
+                    _ScheduledTabContainer(
+                      list: agreedRequests,
+                      child: _buildRequestsList(context, agreedRequests, l10n.requestsNoScheduled),
+                    ),
                   ],
                 );
               }
@@ -426,7 +429,7 @@ class _RequestsPageState extends State<RequestsPage> {
           return ActiveRequestItem(
             request: request,
             onTap: () async {
-              if (!request.isRead && request.status == 'REQUESTED') {
+              if (!request.isRead) {
                 final intId = int.tryParse(request.id) ?? 0;
                 if (intId > 0) {
                   context.read<RequestsBloc>().add(MarkRequestAsReadEvent(jobId: intId));
@@ -532,33 +535,53 @@ class _RequestsTabBarState extends State<RequestsTabBar> {
     final l10n = AppLocalizations.of(context)!;
     final int selectedIndex = controller.index;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TabBar(
-          controller: controller,
-          indicatorColor: const Color(0xFF0B6E4F),
-          indicatorWeight: 3.0,
-          indicatorSize: TabBarIndicatorSize.tab,
-          dividerColor: Colors.transparent,
-          tabs: [
-            _buildTab(
-              index: 0,
-              isSelected: selectedIndex == 0,
-              label: l10n.requestsTabPending,
+    return BlocBuilder<RequestsBloc, RequestsState>(
+      builder: (context, state) {
+        bool hasUnreadPending = false;
+        bool hasUnreadScheduled = false;
+
+        if (state is RequestsLoaded) {
+          hasUnreadPending = state.requests.any(
+            (r) => r.status == 'REQUESTED' && (!r.isRead || r.hasUnreadMessages),
+          );
+          hasUnreadScheduled = state.requests.any(
+            (r) =>
+                (r.status == 'AGREED' || r.status == 'SCHEDULED' || r.status == 'IN_VISIT') &&
+                (!r.isRead || r.hasUnreadMessages),
+          );
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TabBar(
+              controller: controller,
+              indicatorColor: const Color(0xFF0B6E4F),
+              indicatorWeight: 3.0,
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              tabs: [
+                _buildTab(
+                  index: 0,
+                  isSelected: selectedIndex == 0,
+                  label: l10n.requestsTabPending,
+                  hasUnread: hasUnreadPending,
+                ),
+                _buildTab(
+                  index: 1,
+                  isSelected: selectedIndex == 1,
+                  label: l10n.requestsTabScheduled,
+                  hasUnread: hasUnreadScheduled,
+                ),
+              ],
             ),
-            _buildTab(
-              index: 1,
-              isSelected: selectedIndex == 1,
-              label: l10n.requestsTabScheduled,
+            Container(
+              height: 1,
+              color: Colors.black.withValues(alpha: 0.06),
             ),
           ],
-        ),
-        Container(
-          height: 1,
-          color: Colors.black.withValues(alpha: 0.06),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -566,41 +589,82 @@ class _RequestsTabBarState extends State<RequestsTabBar> {
     required int index,
     required bool isSelected,
     required String label,
+    required bool hasUnread,
   }) {
     final activeColor = const Color(0xFF0B6E4F);
     final inactiveColor = const Color(0xFF5E6E78);
+    final redAccent = const Color(0xFFEF4444);
+
+    final circleBgColor = hasUnread
+        ? redAccent
+        : (isSelected
+            ? activeColor.withValues(alpha: 0.1)
+            : Colors.black.withValues(alpha: 0.04));
+
+    final iconColor = hasUnread
+        ? Colors.white
+        : (isSelected ? activeColor : inactiveColor);
 
     return Tab(
       height: 90,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: isSelected ? activeColor.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.04),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: SvgPicture.asset(
-              'assets/icon/icons_ F28C28/dialog.svg',
-              width: 22,
-              height: 22,
-              colorFilter: ColorFilter.mode(
-                isSelected ? activeColor : inactiveColor,
-                BlendMode.srcIn,
+          Badge(
+            isLabelVisible: hasUnread,
+            backgroundColor: redAccent,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: circleBgColor,
+                shape: BoxShape.circle,
+                boxShadow: hasUnread
+                    ? [
+                        BoxShadow(
+                          color: redAccent.withValues(alpha: 0.4),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : null,
+              ),
+              alignment: Alignment.center,
+              child: SvgPicture.asset(
+                'assets/icon/icons_ F28C28/dialog.svg',
+                width: 22,
+                height: 22,
+                colorFilter: ColorFilter.mode(
+                  iconColor,
+                  BlendMode.srcIn,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected ? activeColor : inactiveColor,
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: (isSelected || hasUnread) ? FontWeight.bold : FontWeight.w500,
+                  color: hasUnread ? redAccent : (isSelected ? activeColor : inactiveColor),
+                ),
+              ),
+              if (hasUnread) ...[
+                const SizedBox(width: 4),
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEF4444),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),
@@ -694,4 +758,52 @@ class TargetDartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _ScheduledTabContainer extends StatefulWidget {
+  final List<ActiveRequestDetailEntity> list;
+  final Widget child;
+
+  const _ScheduledTabContainer({
+    required this.list,
+    required this.child,
+  });
+
+  @override
+  State<_ScheduledTabContainer> createState() => _ScheduledTabContainerState();
+}
+
+class _ScheduledTabContainerState extends State<_ScheduledTabContainer> {
+  final Set<String> _markedJobIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _markAgreedAsRead();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ScheduledTabContainer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _markAgreedAsRead();
+  }
+
+  void _markAgreedAsRead() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final unreadList = widget.list.where((r) => !r.isRead && !_markedJobIds.contains(r.id)).toList();
+      for (final req in unreadList) {
+        _markedJobIds.add(req.id);
+        final intId = int.tryParse(req.id) ?? 0;
+        if (intId > 0) {
+          context.read<RequestsBloc>().add(MarkRequestAsReadEvent(jobId: intId));
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
+  }
 }

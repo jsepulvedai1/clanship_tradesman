@@ -1,6 +1,7 @@
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
+import 'package:clanship_mobile_tradesman/core/utils/lower_case_text_formatter.dart';
 import 'package:clanship_mobile_tradesman/features/navigation/presentation/pages/main_shell_page.dart';
 import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/navigation_bloc.dart';
 import 'package:flutter/material.dart';
@@ -270,6 +271,8 @@ class _LoginPageState extends State<LoginPage> {
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
+          textCapitalization: TextCapitalization.none,
+          inputFormatters: [LowerCaseTextFormatter()],
           decoration: const InputDecoration(
             labelText: 'Correo electrónico',
             prefixIcon: Icon(Icons.mail_outline, size: 20),
@@ -323,7 +326,7 @@ class _LoginPageState extends State<LoginPage> {
         ElevatedButton(
           onPressed: () {
             context.read<AuthBloc>().add(
-              LoginRequested(_emailController.text, _passwordController.text),
+              LoginRequested(_emailController.text.trim().toLowerCase(), _passwordController.text),
             );
           },
           style: ElevatedButton.styleFrom(
@@ -515,7 +518,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                final email = emailController.text.trim();
+                final email = emailController.text.trim().toLowerCase();
                 if (email.isNotEmpty) {
                   context.read<AuthBloc>().add(PasswordResetRequested(email));
                   Navigator.pop(dialogContext);

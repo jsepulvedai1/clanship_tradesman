@@ -1,4 +1,6 @@
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
+import 'package:clanship_mobile_tradesman/features/auth/domain/entities/user.dart';
+import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
 import 'package:clanship_mobile_tradesman/features/home/domain/entities/user_entity.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/bloc/profile_event.dart';
@@ -6,8 +8,12 @@ import 'package:clanship_mobile_tradesman/features/profile/presentation/bloc/pro
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
 import 'package:clanship_mobile_tradesman/core/di/injection.dart';
+import 'package:clanship_mobile_tradesman/features/profile/presentation/widgets/tradesman_subtags_sheet.dart';
+
+import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/navigation_bloc.dart';
 
 class MyPlanPage extends StatelessWidget {
   const MyPlanPage({super.key});
@@ -29,11 +35,12 @@ class MyPlanPageView extends StatefulWidget {
 }
 
 class _MyPlanPageViewState extends State<MyPlanPageView> {
+  bool _wasSubscribing = false;
+
   @override
   void initState() {
     super.initState();
-    // Load subscription plans from backend
-    context.read<ProfileBloc>().add(LoadSubscriptionPlansEvent());
+    // Los planes ahora se cargan automáticamente después de cargar el perfil en ProfileBloc
   }
 
   @override
@@ -44,15 +51,40 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
         if (state is ProfileLoaded) {
-          // Loaded successfully
+          final authState = context.read<AuthBloc>().state;
+          if (authState is AuthAuthenticated) {
+            final updatedUser = authState.user.copyWith(
+              requiresPlanUpgrade: state.user.requiresPlanUpgrade,
+            );
+            context.read<AuthBloc>().add(ProfileUpdated(updatedUser));
+          }
+
+          if (state.isSubscribing) {
+            _wasSubscribing = true;
+          } else if (_wasSubscribing && !state.user.requiresPlanUpgrade) {
+            _wasSubscribing = false;
+            // Successfully subscribed to plan! Navigate directly to Home tab
+            context.read<NavigationBloc>().add(const TabChanged(0));
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            }
+          }
+
+          if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage!),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
         }
       },
       builder: (context, state) {
         if (state is ProfileError) {
           return Scaffold(
-            appBar: AppBar(
-              title: Text(l10n.planTitle),
-            ),
+            appBar: AppBar(title: Text(l10n.planTitle)),
             body: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -71,9 +103,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
         }
         if (state is! ProfileLoaded) {
           return Scaffold(
-            appBar: AppBar(
-              title: Text(l10n.planTitle),
-            ),
+            appBar: AppBar(title: Text(l10n.planTitle)),
             body: const Center(
               child: CircularProgressIndicator(color: AppColors.primaryAzure),
             ),
@@ -82,37 +112,87 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
 
         final user = state.user;
         final currentPlan = user.subscriptionPlan;
-        final plans = state.availablePlans;
+        final plans = state.availablePlans
+            .where((p) => p.name.toLowerCase() != 'plan inicial')
+            .toList();
 
-        return Scaffold(
-          backgroundColor: isDark ? AppColors.trueBlack : AppColors.smokeWhite,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: isDark ? Colors.white : AppColors.primaryBlue,
+        final bool isRequired = user.requiresPlanUpgrade;
+
+        return PopScope(
+          canPop: !isRequired,
+          child: Scaffold(
+            backgroundColor: isDark ? AppColors.trueBlack : AppColors.smokeWhite,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              automaticallyImplyLeading: !isRequired,
+              leading: isRequired
+                  ? const SizedBox.shrink()
+                  : IconButton(
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: isDark ? Colors.white : AppColors.primaryBlue,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+              title: Text(
+                l10n.planTitle,
+                style: TextStyle(
+                  color: isDark ? Colors.white : AppColors.primaryBlue,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              onPressed: () => Navigator.pop(context),
+              centerTitle: true,
             ),
-            title: Text(
-              l10n.planTitle,
-              style: TextStyle(
-                color: isDark ? Colors.white : AppColors.primaryBlue,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            centerTitle: true,
-          ),
-          body: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Active Plan Card
-                _buildCurrentPlanCard(context, currentPlan, isDark, l10n),
+            body: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (isRequired)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 20),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade800,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.amber.shade800.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.warning_amber_rounded, color: Colors.white, size: 28),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Tu plan inicial ha finalizado. Debes seleccionar un nuevo plan para continuar usando la aplicación.',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // Active Plan Card
+                  SizedBox(
+                    width: double.infinity,
+                    child: _buildCurrentPlanCard(
+                      context,
+                    currentPlan,
+                    isDark,
+                    l10n,
+                  ),
+                ),
                 const SizedBox(height: 32),
 
                 // Available Plans Section
@@ -151,21 +231,28 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                   )
                 else
                   ...plans.map((plan) {
-                    final isCurrent = currentPlan?.id == plan.id ||
+                    final isCurrent =
+                        currentPlan?.id == plan.id ||
                         (currentPlan == null && plan.price == 0);
-                    return _buildPlanOptionCard(
-                      context: context,
-                      plan: plan,
-                      isCurrent: isCurrent,
-                      isDark: isDark,
-                      l10n: l10n,
-                      isSubscribing: state.isSubscribing,
+                    return SizedBox(
+                      width: double.infinity,
+                      child: _buildPlanOptionCard(
+                        context: context,
+                        plan: plan,
+                        isCurrent: isCurrent,
+                        isDark: isDark,
+                        l10n: l10n,
+                        isSubscribing: state.isSubscribing,
+                        user: state.user,
+                        availableSpecialties: state.availableSpecialties,
+                      ),
                     );
                   }),
               ],
             ),
           ),
-        );
+        ),
+      );
       },
     );
   }
@@ -205,7 +292,10 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(30),
@@ -272,7 +362,9 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    planPrice == 0 ? l10n.planFree : '\$${planPrice.toStringAsFixed(0)}',
+                    planPrice == 0
+                        ? l10n.planFree
+                        : '\$${planPrice.toStringAsFixed(0)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -294,7 +386,9 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    planDuration > 1000 ? 'Permanente' : '$planDuration ${l10n.planDurationDays}',
+                    planDuration > 1000
+                        ? 'Permanente'
+                        : '$planDuration ${l10n.planDurationDays}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -310,10 +404,17 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
     );
   }
 
-  Widget _buildFeatureRow(String label, String value, bool isDark, {bool isWhiteText = false}) {
+  Widget _buildFeatureRow(
+    String label,
+    String value,
+    bool isDark, {
+    bool isWhiteText = false,
+  }) {
     final bool isDisabled = value == '—' || value.isEmpty;
     final Color iconColor = isDisabled
-        ? (isWhiteText ? Colors.white38 : (isDark ? Colors.white24 : Colors.grey.shade400))
+        ? (isWhiteText
+              ? Colors.white38
+              : (isDark ? Colors.white24 : Colors.grey.shade400))
         : (isWhiteText ? Colors.white : AppColors.primaryAzure);
     final Color textColor = isWhiteText
         ? Colors.white.withOpacity(0.9)
@@ -327,7 +428,9 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
       child: Row(
         children: [
           Icon(
-            isDisabled ? Icons.remove_circle_outline_rounded : Icons.check_circle_rounded,
+            isDisabled
+                ? Icons.remove_circle_outline_rounded
+                : Icons.check_circle_rounded,
             size: 16,
             color: iconColor,
           ),
@@ -335,10 +438,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 13,
-                color: textColor,
-              ),
+              style: TextStyle(fontSize: 13, color: textColor),
             ),
           ),
           Text(
@@ -361,6 +461,8 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
     required bool isDark,
     required AppLocalizations l10n,
     required bool isSubscribing,
+    required UserEntity user,
+    required List<Map<String, dynamic>> availableSpecialties,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -388,12 +490,39 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                plan.name,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppColors.primaryBlue,
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        plan.name,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : AppColors.primaryBlue,
+                        ),
+                      ),
+                    ),
+                    if (plan.isComingSoon) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.orange.shade400, width: 1),
+                        ),
+                        child: Text(
+                          'Próximamente',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               if (isCurrent)
@@ -409,7 +538,9 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
             plan.description,
             style: TextStyle(
               fontSize: 14,
-              color: isDark ? Colors.white70 : AppColors.textDark.withOpacity(0.7),
+              color: isDark
+                  ? Colors.white70
+                  : AppColors.textDark.withOpacity(0.7),
             ),
           ),
           const SizedBox(height: 16),
@@ -420,7 +551,9 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    plan.price == 0 ? l10n.planFree : '\$${plan.price.toStringAsFixed(0)}',
+                    plan.price == 0
+                        ? l10n.planFree
+                        : '\$${plan.price.toStringAsFixed(0)}',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -428,7 +561,9 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                     ),
                   ),
                   Text(
-                    plan.durationDays > 1000 ? 'Permanente' : '${plan.durationDays} ${l10n.planDurationDays}',
+                    plan.durationDays > 1000
+                        ? 'Permanente'
+                        : '${plan.durationDays} ${l10n.planDurationDays}',
                     style: TextStyle(
                       fontSize: 12,
                       color: isDark ? Colors.white38 : Colors.black38,
@@ -437,58 +572,239 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                 ],
               ),
               if (!isCurrent)
-                ElevatedButton(
-                  onPressed: isSubscribing
-                      ? null
-                      : () {
-                          context
-                              .read<ProfileBloc>()
-                              .add(SubscribeToPlanEvent(plan.id));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(l10n.planUpgradeSuccess),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryAzure,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                SizedBox(
+                  width: 140,
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: (isSubscribing || plan.isComingSoon)
+                        ? null
+                        : () {
+                            final newLimit = plan.serviceCategories ?? 999;
+                            final currentCount =
+                                _calculateSelectedCategoriesCount(
+                                  user,
+                                  availableSpecialties,
+                                );
+
+                            if (newLimit < currentCount) {
+                              _showDowngradeAlert(
+                                context,
+                                user,
+                                availableSpecialties,
+                                newLimit,
+                                plan.id,
+                              );
+                            } else {
+                              context.read<ProfileBloc>().add(
+                                SubscribeToPlanEvent(plan.id),
+                              );
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      backgroundColor: plan.isComingSoon
+                          ? (isDark ? Colors.grey.shade800 : Colors.grey.shade300)
+                          : AppColors.primaryAzure,
+                      foregroundColor: plan.isComingSoon
+                          ? (isDark ? Colors.white38 : Colors.black45)
+                          : Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                  child: isSubscribing
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+                    child: isSubscribing
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            plan.isComingSoon ? 'Próximamente' : l10n.planSelect,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: plan.isComingSoon
+                                  ? (isDark ? Colors.white38 : Colors.black45)
+                                  : Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                        )
-                      : Text(
-                          l10n.planSelect,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                  ),
                 ),
             ],
           ),
           const SizedBox(height: 16),
-          Divider(color: isDark ? Colors.white12 : Colors.grey.shade200, height: 1),
+          Divider(
+            color: isDark ? Colors.white12 : Colors.grey.shade200,
+            height: 1,
+          ),
           const SizedBox(height: 12),
-          _buildFeatureRow('Solicitudes mensuales', plan.monthlyRequests == null ? 'Ilimitadas' : '${plan.monthlyRequests}', isDark),
-          _buildFeatureRow('Solicitudes urgentes', plan.urgentRequests == null ? 'Ilimitadas' : '${plan.urgentRequests}', isDark),
-          _buildFeatureRow('Categorías de servicio', plan.serviceCategories == null ? 'Ilimitadas' : '${plan.serviceCategories}', isDark),
-          _buildFeatureRow('Posición en búsquedas', plan.searchPosition, isDark),
-          _buildFeatureRow('Insignia destacada', plan.featuredBadge ?? '—', isDark),
-          _buildFeatureRow('Aparición campañas RRSS', plan.rrssCampaigns ?? '—', isDark),
-          _buildFeatureRow('Difusión radial', plan.radioBroadcast ?? '—', isDark),
-          _buildFeatureRow('Estadísticas del perfil', plan.profileStatistics, isDark),
+          _buildFeatureRow(
+            'Solicitudes mensuales',
+            plan.monthlyRequests == null
+                ? 'Ilimitadas'
+                : '${plan.monthlyRequests}',
+            isDark,
+          ),
+          _buildFeatureRow(
+            'Solicitudes urgentes',
+            plan.urgentRequests == null
+                ? 'Ilimitadas'
+                : '${plan.urgentRequests}',
+            isDark,
+          ),
+          _buildFeatureRow(
+            'Categorías de servicio',
+            plan.serviceCategories == null
+                ? 'Ilimitadas'
+                : '${plan.serviceCategories}',
+            isDark,
+          ),
+          _buildFeatureRow(
+            'Posición en búsquedas',
+            plan.searchPosition,
+            isDark,
+          ),
+          _buildFeatureRow(
+            'Insignia destacada',
+            plan.featuredBadge ?? '—',
+            isDark,
+          ),
+          _buildFeatureRow(
+            'Aparición campañas RRSS',
+            plan.rrssCampaigns ?? '—',
+            isDark,
+          ),
+          _buildFeatureRow(
+            'Difusión radial',
+            plan.radioBroadcast ?? '—',
+            isDark,
+          ),
+          _buildFeatureRow(
+            'Estadísticas del perfil',
+            plan.profileStatistics,
+            isDark,
+          ),
           _buildFeatureRow('Soporte', plan.supportLevel, isDark),
         ],
       ),
+    );
+  }
+
+  int _calculateSelectedCategoriesCount(
+    UserEntity user,
+    List<Map<String, dynamic>> availableSpecialties,
+  ) {
+    int count = user.subtags.length;
+    final userTagIds = user.tags.map((t) => t['id']?.toString() ?? '').toSet();
+
+    for (final spec in availableSpecialties) {
+      final tags = spec['tags'] as List<dynamic>? ?? [];
+      for (final tag in tags) {
+        final tagId = tag['id']?.toString() ?? '';
+        final subtags = tag['subtags'] as List<dynamic>? ?? [];
+        if (subtags.isEmpty && userTagIds.contains(tagId)) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+
+  void _showDowngradeAlert(
+    BuildContext context,
+    UserEntity user,
+    List<Map<String, dynamic>> availableSpecialties,
+    int newLimit,
+    String planId,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Límite excedido'),
+        content: Text(
+          'El plan seleccionado solo permite hasta $newLimit servicios/categorías. Actualmente tienes más seleccionados. Debes ajustar tus especialidades antes de cambiarte a este plan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _showSubtagsBottomSheet(
+                context,
+                user,
+                availableSpecialties,
+                newLimit,
+                planId,
+              );
+            },
+            child: const Text('Ajustar oficios'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSubtagsBottomSheet(
+    BuildContext context,
+    UserEntity user,
+    List<Map<String, dynamic>> availableSpecialties,
+    int newLimit,
+    String planId,
+  ) {
+    if (availableSpecialties.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cargando especialidades...')),
+      );
+      context.read<ProfileBloc>().add(LoadSpecialtiesEvent());
+      return;
+    }
+
+    final initialSpecialtyIds = user.specialties
+        .map((s) => s['id']?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toSet();
+
+    final initialTagIds = user.tags
+        .map((t) => t['id']?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toSet();
+
+    final initialSubtagIds = user.subtags
+        .map((s) => s['id']?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toSet();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return TradesmanSubtagsSheet(
+          specialties: availableSpecialties,
+          initialSelectedSpecialtyIds: initialSpecialtyIds,
+          initialSelectedTagIds: initialTagIds,
+          initialSelectedSubtagIds: initialSubtagIds,
+          maxSpecialtiesPerTradesman: newLimit,
+          onSave: (selectedSpecialtyIds, selectedTagIds, selectedSubtagIds) {
+            context.read<ProfileBloc>().add(
+              UpdateProfessionalProfileEvent(
+                specialtyIds: selectedSpecialtyIds.toList(),
+                tagIds: selectedTagIds.toList(),
+                subtagIds: selectedSubtagIds.toList(),
+              ),
+            );
+            // Request subscription automatically after saving the new limits
+            context.read<ProfileBloc>().add(SubscribeToPlanEvent(planId));
+          },
+        );
+      },
     );
   }
 }

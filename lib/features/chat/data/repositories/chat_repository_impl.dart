@@ -24,6 +24,11 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Stream<Map<String, dynamic>> getJobStatusStream(String roomId) {
+    return remoteDataSource.getJobStatusStream(roomId);
+  }
+
+  @override
   Future<void> sendMessage(
     String roomId, 
     String text, {
