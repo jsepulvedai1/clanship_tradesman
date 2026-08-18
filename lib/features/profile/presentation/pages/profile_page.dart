@@ -39,9 +39,19 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _showAllServices = false;
 
   Widget _buildServicesWrap(UserEntity user) {
+    final List<Map<String, dynamic>> displaySpecialties = List.from(user.specialties);
+    if (displaySpecialties.isEmpty && user.specialtyName != null && user.specialtyName!.isNotEmpty) {
+      displaySpecialties.add({
+        'id': user.specialtyId ?? '',
+        'name': user.specialtyName!,
+        'iconUrl': user.specialtyIconUrl ?? '',
+      });
+    }
+
     final List<Widget> allChips = [
-      ...user.specialties.map((spec) {
+      ...displaySpecialties.map((spec) {
         final specName = spec['name'] ?? '';
+        if (specName.isEmpty) return const SizedBox.shrink();
         return Chip(
           label: Text(specName),
           backgroundColor: AppColors.primaryBlue.withOpacity(0.12),

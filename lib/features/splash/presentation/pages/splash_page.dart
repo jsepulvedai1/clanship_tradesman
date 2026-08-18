@@ -6,8 +6,44 @@ import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_b
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
 import '../bloc/splash_bloc.dart';
 
-class SplashPage extends StatelessWidget {
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:clanship_mobile_tradesman/core/config/environment_config.dart';
+import 'package:clanship_mobile_tradesman/core/network/app_version_checker.dart';
+
+class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
+
+  @override
+  State<SplashPage> createState() => _SplashPageState();
+}
+
+class _SplashPageState extends State<SplashPage> {
+  @override
+  void initState() {
+    super.initState();
+    _checkVersion();
+  }
+
+  Future<void> _checkVersion() async {
+    String currentVersion = '1.0.0';
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (info.version.isNotEmpty) {
+        currentVersion = info.version;
+      }
+    } catch (_) {}
+
+    final bool isBlocked = await AppVersionChecker.checkVersion(
+      context: context,
+      appType: 'TRADESMAN',
+      currentVersion: currentVersion,
+      baseUrl: EnvConfig.instance.baseUrl,
+    );
+
+    if (!isBlocked && mounted) {
+      context.read<SplashBloc>().add(AppStarted());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

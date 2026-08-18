@@ -15,6 +15,8 @@ class User extends Equatable {
   final double? professionalLatitude;
   final double? professionalLongitude;
   final bool isValidated;
+  final String verificationStatus;
+  final String? rejectionReason;
   final bool requiresPlanUpgrade;
 
   const User({
@@ -32,8 +34,22 @@ class User extends Equatable {
     this.professionalLatitude,
     this.professionalLongitude,
     this.isValidated = false,
+    this.verificationStatus = 'PENDING',
+    this.rejectionReason,
     this.requiresPlanUpgrade = false,
   });
+
+  bool get isRejected {
+    if (isValidated) return false;
+    return verificationStatus.toUpperCase() == 'REJECTED' || (rejectionReason != null && rejectionReason!.trim().isNotEmpty);
+  }
+
+  String get effectiveRejectionReason {
+    if (rejectionReason != null && rejectionReason!.trim().isNotEmpty) {
+      return rejectionReason!;
+    }
+    return 'Tus antecedentes o documentos fueron observados por el equipo de administración. Por favor vuelve a adjuntar fotos legibles.';
+  }
 
   /// Creates a copy of this User with the given fields replaced by the new values.
   User copyWith({
@@ -51,6 +67,8 @@ class User extends Equatable {
     double? professionalLatitude,
     double? professionalLongitude,
     bool? isValidated,
+    String? verificationStatus,
+    String? rejectionReason,
     bool? requiresPlanUpgrade,
   }) {
     return User(
@@ -68,6 +86,8 @@ class User extends Equatable {
       professionalLatitude: professionalLatitude ?? this.professionalLatitude,
       professionalLongitude: professionalLongitude ?? this.professionalLongitude,
       isValidated: isValidated ?? this.isValidated,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
       requiresPlanUpgrade: requiresPlanUpgrade ?? this.requiresPlanUpgrade,
     );
   }
@@ -88,6 +108,9 @@ class User extends Equatable {
         professionalLatitude,
         professionalLongitude,
         isValidated,
+        verificationStatus,
+        rejectionReason,
         requiresPlanUpgrade,
       ];
 }
+

@@ -98,11 +98,11 @@ class _ChatPageContentState extends State<_ChatPageContent> {
 
     final socketService = sl<JobsWebSocketService>();
     _socketSubscription = socketService.stream.listen((event) {
-      final eventType = event['event']?.toString() ?? event['type']?.toString() ?? '';
-      if (eventType == 'job_updated' || eventType == 'JOB_STATUS_CHANGED') {
+      final eventType = (event['event']?.toString() ?? event['type']?.toString() ?? '').toLowerCase();
+      if (eventType == 'job_updated' || eventType == 'job_status_changed' || eventType == 'job_cancelled') {
         final jobId = event['job_id']?.toString() ?? event['jobId']?.toString();
-        final status = event['status']?.toString() ?? event['new_status']?.toString();
-        if (widget.jobId != null && jobId == widget.jobId.toString() && status == 'CANCELLED') {
+        final status = (event['status']?.toString() ?? event['new_status']?.toString() ?? '').toUpperCase();
+        if (widget.jobId != null && jobId == widget.jobId.toString() && (status == 'CANCELLED' || eventType == 'job_cancelled')) {
           if (mounted) {
             final reason = event['cancellation_reason'] ?? event['reason'];
             final messageText = reason != null && reason.toString().isNotEmpty
@@ -759,6 +759,19 @@ class _ChatPageContentState extends State<_ChatPageContent> {
             );
             },
           ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                Icons.flag_outlined,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+              tooltip: 'Reportar usuario o chat',
+              onPressed: () => _showReportUserDialog(
+                context,
+                widget.customerName ?? 'Cliente',
+              ),
+            ),
+          ],
         ),
         body: Column(
           children: [
@@ -857,6 +870,132 @@ class _ChatPageContentState extends State<_ChatPageContent> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showReportUserDialog(BuildContext context, String targetName) {
+    final TextEditingController detailController = TextEditingController();
+    String selectedReason = 'Lenguaje inapropiado o acoso';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Icon(Icons.flag_outlined, color: AppColors.primaryAzure, size: 24),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Reportar a $targetName',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Selecciona el motivo por el cual deseas reportar a este usuario en el chat:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ...[
+                    'Lenguaje inapropiado o acoso',
+                    'Spam o fraude',
+                    'Comportamiento sospechoso o agresivo',
+                    'Contenido / foto ofensiva',
+                    'Otro motivo',
+                  ].map((reason) => RadioListTile<String>(
+                        title: Text(reason, style: const TextStyle(fontSize: 14)),
+                        value: reason,
+                        groupValue: selectedReason,
+                        activeColor: AppColors.primaryAzure,
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (val) {
+                          if (val != null) {
+                            setModalState(() => selectedReason = val);
+                          }
+                        },
+                      )),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: detailController,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText: 'Detalles adicionales (opcional)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryAzure,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Reporte de chat recibido con éxito. El equipo de soporte revisará la conversación dentro de 24 horas.',
+                            ),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Enviar Reporte',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

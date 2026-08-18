@@ -18,6 +18,8 @@ class UserMapper {
       professionalLatitude: model.professionalLatitude,
       professionalLongitude: model.professionalLongitude,
       isValidated: model.isValidated,
+      verificationStatus: model.verificationStatus,
+      rejectionReason: model.rejectionReason,
       requiresPlanUpgrade: model.requiresPlanUpgrade,
     );
   }
@@ -38,7 +40,10 @@ class UserMapper {
       professionalLatitude: entity.professionalLatitude,
       professionalLongitude: entity.professionalLongitude,
       isValidated: entity.isValidated,
+      verificationStatus: entity.verificationStatus,
+      rejectionReason: entity.rejectionReason,
       requiresPlanUpgrade: entity.requiresPlanUpgrade,
     );
   }
 }
+

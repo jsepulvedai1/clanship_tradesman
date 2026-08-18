@@ -20,6 +20,8 @@ class UserModel extends User {
     super.professionalLatitude,
     super.professionalLongitude,
     super.isValidated = false,
+    super.verificationStatus = 'PENDING',
+    super.rejectionReason,
     super.requiresPlanUpgrade = false,
   });
 
@@ -48,6 +50,8 @@ class UserModel extends User {
     }
     
     bool isVal = data['isValidated'] == true || data['isVerified'] == true;
+    String vStatus = data['verificationStatus']?.toString() ?? 'PENDING';
+    String? rReason = data['rejectionReason']?.toString();
 
     // Map professionalProfile address and coordinates independently
     if (data['professionalProfile'] != null &&
@@ -63,17 +67,22 @@ class UserModel extends User {
       if (prof['isVerified'] == true) {
         isVal = true;
       }
+      if (prof['verificationStatus'] != null) {
+        vStatus = prof['verificationStatus'].toString();
+      }
+      if (prof['rejectionReason'] != null) {
+        rReason = prof['rejectionReason'].toString();
+      }
       if (prof['requiresPlanUpgrade'] == true || prof['requiresPlanUpgrade'] == 'true') {
         data['requiresPlanUpgrade'] = true;
       }
-      
-      // DEBUG: Almacenamos el valor raw temporalmente en el nombre para verlo en pantalla
-      data['name'] = "DEBUG RAW: ${prof['requiresPlanUpgrade']}";
     }
     
     final user = _$UserModelFromJson(data);
     return user.copyWith(
       isValidated: isVal,
+      verificationStatus: vStatus,
+      rejectionReason: rReason,
       requiresPlanUpgrade: data['requiresPlanUpgrade'] ?? false,
     );
   }
@@ -96,6 +105,8 @@ class UserModel extends User {
     double? professionalLatitude,
     double? professionalLongitude,
     bool? isValidated,
+    String? verificationStatus,
+    String? rejectionReason,
     bool? requiresPlanUpgrade,
   }) {
     return UserModel(
@@ -113,7 +124,10 @@ class UserModel extends User {
       professionalLatitude: professionalLatitude ?? this.professionalLatitude,
       professionalLongitude: professionalLongitude ?? this.professionalLongitude,
       isValidated: isValidated ?? this.isValidated,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
       requiresPlanUpgrade: requiresPlanUpgrade ?? this.requiresPlanUpgrade,
     );
   }
 }
+

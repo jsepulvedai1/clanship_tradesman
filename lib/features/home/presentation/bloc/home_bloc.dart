@@ -97,8 +97,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
     
     result.fold(
-      (failure) => emit(HomeError('Error al obtener el perfil')),
-      (user) => emit(HomeDataLoaded(user, requestsList)),
+      (failure) {
+        print('HomeBloc: Error al obtener el perfil: $failure');
+        emit(HomeError('Error al obtener el perfil'));
+      },
+      (user) {
+        print('HomeBloc: _onLoadUserData actualizado exitosamente (activeJobs: ${user.activeJobs}, rejectedJobs: ${user.rejectedJobs}, scheduledJobs: ${user.scheduledJobs}, completedJobs: ${user.completedJobs})');
+        emit(HomeDataLoaded(user, requestsList));
+      },
     );
   }
 

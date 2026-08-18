@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:clanship_mobile_tradesman/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
@@ -10,7 +11,6 @@ import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:clanship_mobile_tradesman/core/widgets/address_picker_page.dart';
@@ -19,6 +19,7 @@ import 'package:clanship_mobile_tradesman/core/utils/image_cropper_helper.dart';
 import 'package:clanship_mobile_tradesman/features/auth/domain/repositories/auth_repository.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/widgets/tradesman_subtags_sheet.dart';
 import 'package:clanship_mobile_tradesman/core/utils/lower_case_text_formatter.dart';
+import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -39,7 +40,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _birthdateController = TextEditingController();
-  DateTime? _selectedBirthdate;
+
 
   // Password visibility states
   bool _obscurePassword = true;
@@ -121,6 +122,13 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   // Pick Image from Gallery or Camera
+  Future<void> _pickAvatarFlow() async {
+    final source = await _showImageSourceOptions();
+    if (source != null) {
+      await _pickImage(source);
+    }
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final picker = ImagePicker();
@@ -143,9 +151,10 @@ class _RegisterPageState extends State<RegisterPage> {
       }
     } catch (e) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Lo sentimos, no se pudo seleccionar la imagen.'),
+          content: Text(l10n.registerPickImageError),
           backgroundColor: AppColors.errorRed,
         ),
       );
@@ -160,11 +169,22 @@ class _RegisterPageState extends State<RegisterPage> {
       now.month,
       now.day,
     );
+
+    DateTime initialDate = eighteenYearsAgo;
+    if (_birthdateController.text.isNotEmpty) {
+      try {
+        final parsed = DateFormat('dd/MM/yyyy').parseStrict(_birthdateController.text);
+        if (!parsed.isAfter(eighteenYearsAgo) && !parsed.isBefore(DateTime(1920))) {
+          initialDate = parsed;
+        }
+      } catch (_) {}
+    }
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: eighteenYearsAgo,
+      initialDate: initialDate,
       firstDate: DateTime(1920),
-      lastDate: now,
+      lastDate: eighteenYearsAgo,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -181,7 +201,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (picked != null) {
       setState(() {
-        _selectedBirthdate = picked;
         _birthdateController.text = DateFormat('dd/MM/yyyy').format(picked);
       });
     }
@@ -189,6 +208,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // Step 0 Validation
   bool _validateStep0() {
+    final l10n = AppLocalizations.of(context)!;
     final email = _emailController.text.trim().toLowerCase();
     final repeatEmail = _repeatEmailController.text.trim().toLowerCase();
     final password = _passwordController.text;
@@ -204,50 +224,67 @@ class _RegisterPageState extends State<RegisterPage> {
         firstName.isEmpty ||
         lastName.isEmpty ||
         birthdate.isEmpty) {
-      _showError('Por favor completa todos los campos.');
+      _showError(l10n.registerErrorFillAll);
+      return false;
+    }
+
+    // Validar edad >= 18 años
+    try {
+      final parsedDate = DateFormat('dd/MM/yyyy').parseStrict(birthdate);
+      final now = DateTime.now();
+      final eighteenYearsAgo = DateTime(now.year - 18, now.month, now.day);
+      if (parsedDate.isAfter(eighteenYearsAgo)) {
+        _showError(l10n.registerErrorAgeRestriction);
+        return false;
+      }
+    } catch (_) {
+      _showError(l10n.registerErrorFillAll);
       return false;
     }
 
     if (firstName.length > 30) {
-      _showError('El nombre no puede superar los 30 caracteres.');
+      _showError(l10n.registerErrorNameLength);
       return false;
     }
 
     if (lastName.length > 30) {
-      _showError('El apellido no puede superar los 30 caracteres.');
+      _showError(l10n.registerErrorLastNameLength);
       return false;
     }
 
     if (email != repeatEmail) {
-      _showError('Los correos electrónicos no coinciden.');
+      _showError(l10n.registerErrorEmailMismatch);
       return false;
     }
 
     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-      _showError('Por favor ingresa un correo electrónico válido.');
+      _showError(l10n.registerErrorEmailInvalid);
       return false;
     }
 
     if (password.length < 6) {
-      _showError('La contraseña debe tener al menos 6 caracteres.');
+      _showError(l10n.registerErrorPasswordLength);
       return false;
     }
 
     if (password != repeatPassword) {
-      _showError('Las contraseñas no coinciden.');
+      _showError(l10n.registerErrorPasswordMismatch);
       return false;
     }
 
     return true;
   }
 
+
   void _showTagsDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_availableTags.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cargando etiquetas de servicio...')),
+        SnackBar(content: Text(l10n.registerLoadingTags)),
       );
       return;
     }
+
 
     showModalBottomSheet(
       context: context,
@@ -259,6 +296,8 @@ class _RegisterPageState extends State<RegisterPage> {
           initialSelectedSpecialtyIds: _selectedSpecialtyIds.toSet(),
           initialSelectedTagIds: _selectedTagIds.toSet(),
           initialSelectedSubtagIds: _selectedSubtagIds.toSet(),
+          maxSpecialtiesPerTradesman:
+              AuthRemoteDataSourceImpl.maxSpecialtiesLimit,
           onSave: (selectedSpecialtyIds, selectedTagIds, selectedSubtagIds) {
             setState(() {
               _selectedSpecialtyIds = selectedSpecialtyIds.toList();
@@ -278,7 +317,9 @@ class _RegisterPageState extends State<RegisterPage> {
     return _addressController.text.trim().isNotEmpty &&
         phone.length == 8 &&
         RegExp(r'^[0-9]{8}$').hasMatch(phone) &&
-        (_selectedSpecialtyIds.isNotEmpty || _selectedTagIds.isNotEmpty || _selectedSubtagIds.isNotEmpty) &&
+        (_selectedSpecialtyIds.isNotEmpty ||
+            _selectedTagIds.isNotEmpty ||
+            _selectedSubtagIds.isNotEmpty) &&
         _acceptedTerms;
   }
 
@@ -428,6 +469,7 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildLogoHeader() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         Container(
@@ -448,18 +490,18 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
         const SizedBox(height: 1),
-        const Text(
-          'Registro',
-          style: TextStyle(
+        Text(
+          l10n.registerTitle,
+          style: const TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
             color: Color(0xFF0D2B45),
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Crea tu cuenta para comenzar',
-          style: TextStyle(
+        Text(
+          l10n.registerSubtitle,
+          style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
             color: Color(0xFF2E3135),
@@ -471,6 +513,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // STEP 0: DATOS PERSONALES
   Widget _buildStep0() {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
@@ -481,7 +524,7 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 10),
           _buildTextField(
             controller: _emailController,
-            hint: 'Correo electrónico',
+            hint: l10n.registerEmailHint,
             keyboardType: TextInputType.emailAddress,
             icon: Icons.mail_outline,
             textCapitalization: TextCapitalization.none,
@@ -490,7 +533,7 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 12),
           _buildTextField(
             controller: _repeatEmailController,
-            hint: 'Repite el correo',
+            hint: l10n.registerRepeatEmailHint,
             keyboardType: TextInputType.emailAddress,
             icon: Icons.mail_outline,
             textCapitalization: TextCapitalization.none,
@@ -499,7 +542,7 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 12),
           _buildTextField(
             controller: _passwordController,
-            hint: 'Contraseña',
+            hint: l10n.registerPasswordHint,
             obscureText: _obscurePassword,
             icon: Icons.lock_outline,
             suffixIcon: IconButton(
@@ -520,7 +563,7 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 12),
           _buildTextField(
             controller: _repeatPasswordController,
-            hint: 'Repite la contraseña',
+            hint: l10n.registerRepeatPasswordHint,
             obscureText: _obscureRepeatPassword,
             icon: Icons.lock_outline,
             suffixIcon: IconButton(
@@ -541,7 +584,7 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 12),
           _buildTextField(
             controller: _firstNameController,
-            hint: 'Nombre',
+            hint: l10n.registerFirstNameHint,
             keyboardType: TextInputType.name,
             icon: Icons.person_outline,
             inputFormatters: [LengthLimitingTextInputFormatter(30)],
@@ -549,7 +592,7 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 12),
           _buildTextField(
             controller: _lastNameController,
-            hint: 'Apellido',
+            hint: l10n.registerLastNameHint,
             keyboardType: TextInputType.name,
             icon: Icons.person_outline,
             inputFormatters: [LengthLimitingTextInputFormatter(30)],
@@ -560,7 +603,7 @@ class _RegisterPageState extends State<RegisterPage> {
             child: AbsorbPointer(
               child: _buildTextField(
                 controller: _birthdateController,
-                hint: 'Fecha de Nacimiento',
+                hint: l10n.registerBirthdateHint,
                 icon: Icons.calendar_month_outlined,
               ),
             ),
@@ -578,8 +621,12 @@ class _RegisterPageState extends State<RegisterPage> {
                         setState(() {
                           _isCheckingStep0 = true;
                         });
-                        final email = _emailController.text.trim().toLowerCase();
-                        final res = await di.sl<AuthRepository>().checkUserExistence(email: email);
+                        final email = _emailController.text
+                            .trim()
+                            .toLowerCase();
+                        final res = await di
+                            .sl<AuthRepository>()
+                            .checkUserExistence(email: email);
                         if (mounted) {
                           setState(() {
                             _isCheckingStep0 = false;
@@ -590,7 +637,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             },
                             (data) {
                               if (data['emailExists'] == true) {
-                                _showError('El correo electrónico ya se encuentra registrado. Por favor inicia sesión o utiliza otro correo.');
+                                _showError(
+                                  l10n.registerErrorEmailRegistered,
+                                );
                               } else {
                                 _nextPage();
                               }
@@ -616,15 +665,18 @@ class _RegisterPageState extends State<RegisterPage> {
                         strokeWidth: 2,
                       ),
                     )
-                  : const Row(
+                  : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Siguiente',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          l10n.authNext,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward_ios, size: 14),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward_ios, size: 14),
                       ],
                     ),
             ),
@@ -648,10 +700,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Al registrarte aceptas nuestros\nTérminos y Condiciones y Política de Privacidad',
-                    style: TextStyle(
+                    l10n.registerTermsAgreement,
+                    style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF0B6E4F),
@@ -666,10 +718,11 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+
   int _calculateSelectedCategoriesCount() {
     int count = _selectedSubtagIds.length;
     final userTagIds = _selectedTagIds.toSet();
-    
+
     for (final spec in _availableTags) {
       final tags = spec['tags'] as List<dynamic>? ?? [];
       for (final tag in tags) {
@@ -685,6 +738,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // STEP 1: UBICACIÓN Y CONTACTO
   Widget _buildStep1() {
+    final l10n = AppLocalizations.of(context)!;
     final bool isValid = _isStep1FormValid();
     final int realCount = _calculateSelectedCategoriesCount();
 
@@ -695,19 +749,19 @@ class _RegisterPageState extends State<RegisterPage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(height: 20),
-          const Text(
-            'Ubicación y Contacto',
-            style: TextStyle(
+          Text(
+            l10n.registerStepLocation,
+            style: const TextStyle(
               color: Color(0xFF0D2B45),
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Completa tus datos de contacto para continuar',
+          Text(
+            l10n.registerStepLocationSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF2E3135), fontSize: 14),
+            style: const TextStyle(color: Color(0xFF2E3135), fontSize: 14),
           ),
           const SizedBox(height: 36),
           GestureDetector(
@@ -715,7 +769,7 @@ class _RegisterPageState extends State<RegisterPage> {
             child: AbsorbPointer(
               child: _buildTextField(
                 controller: _addressController,
-                hint: 'Mi dirección',
+                hint: l10n.registerAddressHint,
                 keyboardType: TextInputType.streetAddress,
                 icon: Icons.location_on_outlined,
                 onChanged: (_) => setState(() {}),
@@ -735,9 +789,9 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
             child: Column(
               children: [
-                const Text(
-                  'Etiquetas de Servicio',
-                  style: TextStyle(
+                Text(
+                  l10n.registerTagsTitle,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF0D2B45),
@@ -745,9 +799,9 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  realCount == 0 
-                      ? 'No has seleccionado ninguna especialidad. Selecciona al menos una para continuar.' 
-                      : '$realCount especialidades seleccionadas.',
+                  realCount == 0
+                      ? l10n.registerTagsEmpty
+                      : l10n.registerTagsSelectedCount(realCount),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
@@ -761,7 +815,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   OutlinedButton.icon(
                     onPressed: () => _showTagsDialog(context),
                     icon: const Icon(Icons.sell_outlined),
-                    label: const Text('Seleccionar Etiquetas'),
+                    label: Text(l10n.registerTagsButton),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF0D2B45),
                       side: const BorderSide(color: Color(0xFF0D2B45)),
@@ -787,10 +841,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   checkColor: Colors.white,
                   side: const BorderSide(color: Color(0xFF2E3135), width: 1.5),
                 ),
-                const Flexible(
+                Flexible(
                   child: Text(
-                    'Lee los términos y condiciones de uso',
-                    style: TextStyle(
+                    l10n.registerTermsAccept,
+                    style: const TextStyle(
                       color: Color(0xFF0D2B45),
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -813,7 +867,9 @@ class _RegisterPageState extends State<RegisterPage> {
                         _isCheckingStep1 = true;
                       });
                       final phone = '+569${_phoneController.text.trim()}';
-                      final res = await di.sl<AuthRepository>().checkUserExistence(phoneNumber: phone);
+                      final res = await di
+                          .sl<AuthRepository>()
+                          .checkUserExistence(phoneNumber: phone);
                       if (mounted) {
                         setState(() {
                           _isCheckingStep1 = false;
@@ -824,7 +880,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           },
                           (data) {
                             if (data['phoneExists'] == true) {
-                              _showError('El número de teléfono ya está registrado por otro usuario. Por favor utiliza otro número.');
+                              _showError(
+                                l10n.registerErrorPhoneRegistered,
+                              );
                             } else {
                               _nextPage();
                             }
@@ -854,15 +912,18 @@ class _RegisterPageState extends State<RegisterPage> {
                         strokeWidth: 2,
                       ),
                     )
-                  : const Row(
+                  : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Siguiente',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          l10n.authNext,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward_ios, size: 14),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward_ios, size: 14),
                       ],
                     ),
             ),
@@ -872,10 +933,9 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-
-
   // STEP 3 (NEW): DOCUMENTOS (Cédula y Certificados)
   Widget _buildStep3New() {
+    final l10n = AppLocalizations.of(context)!;
     final bool hasCedula = _cedulaFrontPath != null && _cedulaBackPath != null;
 
     return SingleChildScrollView(
@@ -884,20 +944,20 @@ class _RegisterPageState extends State<RegisterPage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(height: 20),
-          const Text(
-            'Documentos de Identidad',
+          Text(
+            l10n.registerStepDocs,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xFF0D2B45),
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'A continuación, sube una foto frontal y posterior de tu Cédula de Identidad',
+          Text(
+            l10n.registerStepDocsSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xFF2E3135),
               fontSize: 14,
               height: 1.4,
@@ -910,8 +970,8 @@ class _RegisterPageState extends State<RegisterPage> {
                 Expanded(
                   child: _buildDocUploadButton(
                     label: _cedulaFrontPath == null
-                        ? '+ Foto Frontal'
-                        : 'Frontal Adjunta ✓',
+                        ? l10n.registerPhotoFront
+                        : l10n.registerPhotoFrontAttached,
                     hasFile: _cedulaFrontPath != null,
                     onTap: () => _pickCedulaPhoto(isFront: true),
                   ),
@@ -920,8 +980,8 @@ class _RegisterPageState extends State<RegisterPage> {
                 Expanded(
                   child: _buildDocUploadButton(
                     label: _cedulaBackPath == null
-                        ? '+ Foto Posterior'
-                        : 'Posterior Adjunta ✓',
+                        ? l10n.registerPhotoBack
+                        : l10n.registerPhotoBackAttached,
                     hasFile: _cedulaBackPath != null,
                     onTap: () => _pickCedulaPhoto(isFront: false),
                   ),
@@ -930,7 +990,7 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ] else ...[
             _buildDocUploadButton(
-              label: 'Cédula Identidad Adjunta',
+              label: l10n.registerCedulaAttached,
               hasFile: true,
               onTap: () {
                 setState(() {
@@ -941,10 +1001,10 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ],
           const SizedBox(height: 32),
-          const Text(
-            'Sube el documento que acredite tu oficio/profesión\n(Si no los tienes, puedes ignorar este paso)',
+          Text(
+            l10n.registerTradeProofHint,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xFF2E3135),
               fontSize: 14,
               height: 1.4,
@@ -952,7 +1012,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
           const SizedBox(height: 20),
           _buildDocUploadButton(
-            label: '+ Subir Documentos (opcional)',
+            label: l10n.registerUploadDocsOptional,
             hasFile: false,
             onTap: _addCertificateFlow,
           ),
@@ -1014,9 +1074,9 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 32),
           GestureDetector(
             onTap: _showTermsDialog,
-            child: const Text(
-              'Lee los términos y condiciones de uso',
-              style: TextStyle(
+            child: Text(
+              l10n.registerTermsAccept,
+              style: const TextStyle(
                 color: Color(0xFF0D2B45),
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -1034,7 +1094,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   _nextPage();
                 } else {
                   _showError(
-                    'Por favor sube la foto frontal y posterior de tu Cédula de Identidad.',
+                    l10n.registerErrorCedulaMissing,
                   );
                 }
               },
@@ -1046,15 +1106,15 @@ class _RegisterPageState extends State<RegisterPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Siguiente',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    l10n.authNext,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_ios, size: 14),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward_ios, size: 14),
                 ],
               ),
             ),
@@ -1065,8 +1125,10 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+
   // STEP 2: BIOGRAFÍA Y EXPERIENCIA PROFESIONAL
   Widget _buildStep2Bio() {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -1074,20 +1136,20 @@ class _RegisterPageState extends State<RegisterPage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(height: 10),
-          const Text(
-            'Tu Experiencia Profesional',
+          Text(
+            l10n.registerStepBio,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xFF0D2B45),
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Cuéntale a tus futuros clientes sobre tu trayectoria, especialidad y años en el oficio para destacar tu perfil.',
+          Text(
+            l10n.registerStepBioSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xFF2E3135),
               fontSize: 14,
               height: 1.4,
@@ -1099,7 +1161,7 @@ class _RegisterPageState extends State<RegisterPage> {
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Plantillas rápidas de sugerencia:',
+              l10n.registerBioTemplatesTitle,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -1113,29 +1175,35 @@ class _RegisterPageState extends State<RegisterPage> {
             runSpacing: 8,
             children: [
               ActionChip(
-                label: const Text('💡 Electricista Certificado', style: TextStyle(fontSize: 12)),
+                label: const Text(
+                  '💡 Electricista Certificado',
+                  style: TextStyle(fontSize: 12),
+                ),
                 onPressed: () {
                   setState(() {
-                    _bioController.text =
-                        'Maestro electricista con más de 5 años de experiencia en instalaciones residenciales, tableros y reparaciones de urgencia garantizadas.';
+                    _bioController.text = l10n.registerBioElectrician;
                   });
                 },
               ),
               ActionChip(
-                label: const Text('🔧 Gasfitería 24/7', style: TextStyle(fontSize: 12)),
+                label: const Text(
+                  '🔧 Gasfitería 24/7',
+                  style: TextStyle(fontSize: 12),
+                ),
                 onPressed: () {
                   setState(() {
-                    _bioController.text =
-                        'Especialista en instalaciones de agua, filtraciones, calefón y destapes. Atención rápida y trabajos garantizados.';
+                    _bioController.text = l10n.registerBioPlumber;
                   });
                 },
               ),
               ActionChip(
-                label: const Text('🎨 Pintura y Remodelación', style: TextStyle(fontSize: 12)),
+                label: const Text(
+                  '🎨 Pintura y Remodelación',
+                  style: TextStyle(fontSize: 12),
+                ),
                 onPressed: () {
                   setState(() {
-                    _bioController.text =
-                        'Técnico en pintura de interiores, fachadas y acabados finos. Compromiso con la limpieza y la puntualidad.';
+                    _bioController.text = l10n.registerBioPainter;
                   });
                 },
               ),
@@ -1153,10 +1221,9 @@ class _RegisterPageState extends State<RegisterPage> {
               controller: _bioController,
               maxLines: 5,
               maxLength: 400,
-              decoration: const InputDecoration(
-                hintText:
-                    'Ejemplo: Llevo 8 años ofreciendo servicios de reparación e instalaciones. Me caracterizo por la puntualidad, transparencia en presupuestos y garantía por trabajo realizado...',
-                contentPadding: EdgeInsets.all(16),
+              decoration: InputDecoration(
+                hintText: l10n.registerBioHint,
+                contentPadding: const EdgeInsets.all(16),
                 border: InputBorder.none,
               ),
             ),
@@ -1176,15 +1243,15 @@ class _RegisterPageState extends State<RegisterPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Siguiente',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    l10n.authNext,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_ios, size: 14),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward_ios, size: 14),
                 ],
               ),
             ),
@@ -1197,26 +1264,27 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // STEP 3: FOTO DE PERFIL Y FOTOS DE TRABAJOS ANTERIORES
   Widget _buildStep3WorkPhotos() {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(height: 10),
-          const Text(
-            'Muestra tu Trabajo',
+          Text(
+            l10n.registerStepPhotos,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xFF0D2B45),
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Sube tu foto de perfil y fotos de trabajos realizados para generar confianza en tus clientes.',
+          Text(
+            l10n.registerStepPhotosSubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xFF2E3135),
               fontSize: 14,
               height: 1.4,
@@ -1225,93 +1293,114 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(height: 20),
 
           // Avatar Section
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 32,
-                  backgroundColor: const Color(0xFF0D2B45).withValues(alpha: 0.1),
-                  backgroundImage: _avatarPath != null ? FileImage(File(_avatarPath!)) : null,
-                  child: _avatarPath == null
-                      ? const Icon(Icons.person, color: Color(0xFF0D2B45), size: 36)
-                      : null,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Text(
-                            'Foto de Perfil ',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
-                          Text(
-                            '* (Obligatoria)',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: Colors.red.shade700,
+          InkWell(
+            onTap: _pickAvatarFlow,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 32,
+                    backgroundColor: const Color(
+                      0xFF0D2B45,
+                    ).withValues(alpha: 0.1),
+                    backgroundImage: _avatarPath != null
+                        ? FileImage(File(_avatarPath!))
+                        : null,
+                    child: _avatarPath == null
+                        ? const Icon(
+                            Icons.person,
+                            color: Color(0xFF0D2B45),
+                            size: 36,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              l10n.registerProfilePhotoTitle,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _avatarPath != null
-                            ? 'Foto cargada ✓'
-                            : 'Sube una foto clara donde se aprecie bien tu rostro (será evaluada para la validación de tu perfil).',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _avatarPath != null ? Colors.green.shade700 : Colors.red.shade700,
-                          fontWeight: _avatarPath == null ? FontWeight.w500 : FontWeight.normal,
+                            Text(
+                              l10n.registerProfilePhotoMandatory,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: Colors.red.shade700,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          _avatarPath != null
+                              ? l10n.registerProfilePhotoUploaded
+                              : l10n.registerProfilePhotoDesc,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _avatarPath != null
+                                ? Colors.green.shade700
+                                : Colors.red.shade700,
+                            fontWeight: _avatarPath == null
+                                ? FontWeight.w500
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    _avatarPath != null ? Icons.edit_outlined : Icons.add_a_photo_outlined,
-                    color: const Color(0xFF0D2B45),
+                  IconButton(
+                    icon: Icon(
+                      _avatarPath != null
+                          ? Icons.edit_outlined
+                          : Icons.add_a_photo_outlined,
+                      color: const Color(0xFF0D2B45),
+                    ),
+                    onPressed: _pickAvatarFlow,
                   ),
-                  onPressed: () => _pickImage(ImageSource.gallery),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
           const SizedBox(height: 24),
-          
+
           // Work Gallery Photos Section
           Align(
             alignment: Alignment.centerLeft,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Galería de Trabajos Realizados',
-                  style: TextStyle(
+                Text(
+                  l10n.registerWorkGalleryTitle,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF0D2B45),
                   ),
                 ),
                 Text(
-                  '${_workPhotoPaths.length}/6 fotos',
+                  l10n.registerWorkPhotosCount(_workPhotoPaths.length),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -1332,25 +1421,35 @@ class _RegisterPageState extends State<RegisterPage> {
               mainAxisSpacing: 10,
               childAspectRatio: 1,
             ),
-            itemCount: _workPhotoPaths.length < 6 ? _workPhotoPaths.length + 1 : 6,
+            itemCount: _workPhotoPaths.length < 6
+                ? _workPhotoPaths.length + 1
+                : 6,
             itemBuilder: (context, index) {
-              if (index == _workPhotoPaths.length && _workPhotoPaths.length < 6) {
+              if (index == _workPhotoPaths.length &&
+                  _workPhotoPaths.length < 6) {
                 return InkWell(
                   onTap: _pickWorkPhoto,
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF0D2B45), width: 1.5),
+                      border: Border.all(
+                        color: const Color(0xFF0D2B45),
+                        width: 1.5,
+                      ),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.add_photo_alternate_outlined, color: Color(0xFF0D2B45), size: 28),
-                        SizedBox(height: 4),
+                      children: [
+                        const Icon(
+                          Icons.add_photo_alternate_outlined,
+                          color: Color(0xFF0D2B45),
+                          size: 28,
+                        ),
+                        const SizedBox(height: 4),
                         Text(
-                          'Añadir',
-                          style: TextStyle(
+                          l10n.registerAddPhoto,
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF0D2B45),
@@ -1389,7 +1488,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           color: Colors.black54,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.close, color: Colors.white, size: 14),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                       ),
                     ),
                   ),
@@ -1406,7 +1509,9 @@ class _RegisterPageState extends State<RegisterPage> {
             child: ElevatedButton(
               onPressed: () {
                 if (_avatarPath == null || _avatarPath!.isEmpty) {
-                  _showError('Debes subir una foto de perfil clara de tu rostro. Es obligatoria para la validación de tu perfil.');
+                  _showError(
+                    l10n.registerErrorAvatarMissing,
+                  );
                   return;
                 }
                 _nextPage();
@@ -1419,15 +1524,15 @@ class _RegisterPageState extends State<RegisterPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Siguiente',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    l10n.authNext,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_ios, size: 14),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward_ios, size: 14),
                 ],
               ),
             ),
@@ -1453,12 +1558,16 @@ class _RegisterPageState extends State<RegisterPage> {
         });
       }
     } catch (e) {
-      _showError('No se pudo cargar la imagen del trabajo.');
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        _showError(l10n.registerPickWorkPhotoError);
+      }
     }
   }
 
   // STEP 5: RESUMEN Y CONFIRMAR REGISTRO
   Widget _buildStep3() {
+    final l10n = AppLocalizations.of(context)!;
     final bool hasCedula = _cedulaFrontPath != null && _cedulaBackPath != null;
 
     return SingleChildScrollView(
@@ -1472,20 +1581,20 @@ class _RegisterPageState extends State<RegisterPage> {
             color: Color(0xFF0B6E4F),
           ),
           const SizedBox(height: 16),
-          const Text(
-            '¡Tu Perfil está listo!',
+          Text(
+            l10n.registerStepSummary,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xFF0D2B45),
               fontSize: 26,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Revisa el resumen de tu registro antes de activar tu perfil profesional en ClanShip.',
+          Text(
+            l10n.registerStepSummarySubtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xFF2E3135),
               fontSize: 14,
               height: 1.4,
@@ -1514,10 +1623,18 @@ class _RegisterPageState extends State<RegisterPage> {
                   children: [
                     CircleAvatar(
                       radius: 28,
-                      backgroundColor: const Color(0xFF0D2B45).withValues(alpha: 0.1),
-                      backgroundImage: _avatarPath != null ? FileImage(File(_avatarPath!)) : null,
+                      backgroundColor: const Color(
+                        0xFF0D2B45,
+                      ).withValues(alpha: 0.1),
+                      backgroundImage: _avatarPath != null
+                          ? FileImage(File(_avatarPath!))
+                          : null,
                       child: _avatarPath == null
-                          ? const Icon(Icons.person, color: Color(0xFF0D2B45), size: 32)
+                          ? const Icon(
+                              Icons.person,
+                              color: Color(0xFF0D2B45),
+                              size: 32,
+                            )
                           : null,
                     ),
                     const SizedBox(width: 14),
@@ -1536,7 +1653,10 @@ class _RegisterPageState extends State<RegisterPage> {
                           const SizedBox(height: 2),
                           Text(
                             _emailController.text.trim().toLowerCase(),
-                            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
                           ),
                         ],
                       ),
@@ -1546,9 +1666,13 @@ class _RegisterPageState extends State<RegisterPage> {
                 const Divider(height: 24),
 
                 // Especialidades
-                const Text(
-                  'Especialidades seleccionadas:',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+                Text(
+                  l10n.registerSummarySelectedTags,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 _selectedSubtagNames.isNotEmpty
@@ -1557,9 +1681,14 @@ class _RegisterPageState extends State<RegisterPage> {
                         runSpacing: 6,
                         children: _selectedSubtagNames.map((name) {
                           return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0D2B45).withValues(alpha: 0.1),
+                              color: const Color(
+                                0xFF0D2B45,
+                              ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -1573,21 +1702,35 @@ class _RegisterPageState extends State<RegisterPage> {
                           );
                         }).toList(),
                       )
-                    : const Text('Especialidades seleccionadas ✓', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0D2B45))),
+                    : const Text(
+                        '✓',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF0D2B45),
+                        ),
+                      ),
 
                 const SizedBox(height: 16),
 
                 // Biografía
-                const Text(
-                  'Biografía / Experiencia:',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+                Text(
+                  l10n.registerSummaryBio,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _bioController.text.trim().isNotEmpty
                       ? _bioController.text.trim()
-                      : 'Sin biografía redactada',
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF2E3135)),
+                      : l10n.registerSummaryNoBio,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF2E3135),
+                  ),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1599,15 +1742,22 @@ class _RegisterPageState extends State<RegisterPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '📷 Fotos de trabajos: ${_workPhotoPaths.length}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      l10n.registerSummaryWorkPhotos(_workPhotoPaths.length),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     Text(
-                      '📄 Cédula: ${hasCedula ? "Cargada ✓" : "Pendiente"}',
+                      l10n.registerSummaryIdCard(
+                        hasCedula ? l10n.registerSummaryIdCardLoaded : l10n.registerSummaryIdCardPending,
+                      ),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: hasCedula ? AppColors.successGreen : Colors.orange,
+                        color: hasCedula
+                            ? AppColors.successGreen
+                            : Colors.orange,
                       ),
                     ),
                   ],
@@ -1632,7 +1782,9 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: ElevatedButton(
                   onPressed: () {
                     if (_avatarPath == null || _avatarPath!.isEmpty) {
-                      _showError('Debes subir una foto de perfil clara de tu rostro. Es obligatoria para la validación de tu perfil.');
+                      _showError(
+                        l10n.registerErrorAvatarMissing,
+                      );
                       return;
                     }
                     context.read<AuthBloc>().add(
@@ -1666,9 +1818,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'Completar Registro',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                  child: Text(
+                    l10n.registerCompleteButton,
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
                 ),
               );
@@ -1679,6 +1831,7 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
     );
   }
+
 
   // HELPER WIDGETS
   Widget _buildTextField({
@@ -1751,7 +1904,9 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildPhoneField() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
+
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -1775,7 +1930,7 @@ class _RegisterPageState extends State<RegisterPage> {
         style: const TextStyle(color: Color(0xFF2E3135), fontSize: 14),
         cursorColor: const Color(0xFF0D2B45),
         decoration: InputDecoration(
-          labelText: 'Número de teléfono',
+          labelText: l10n.registerPhoneHint,
           labelStyle: TextStyle(
             color: const Color(0xFF2E3135).withValues(alpha: 0.6),
             fontSize: 14,
@@ -1913,7 +2068,10 @@ class _RegisterPageState extends State<RegisterPage> {
           });
         }
       } catch (e) {
-        _showError('Lo sentimos, no se pudo seleccionar la imagen.');
+        if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
+          _showError(l10n.registerPickImageError);
+        }
       }
     }
   }
@@ -1932,6 +2090,7 @@ class _RegisterPageState extends State<RegisterPage> {
         if (image != null) {
           if (mounted) {
             final String? name = await _showDocumentNameDialog();
+            if (!mounted) return;
             if (name != null && name.isNotEmpty) {
               setState(() {
                 _certificates.add({'path': image.path, 'name': name});
@@ -1940,12 +2099,16 @@ class _RegisterPageState extends State<RegisterPage> {
           }
         }
       } catch (e) {
-        _showError('Lo sentimos, no se pudo seleccionar la imagen.');
+        if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
+          _showError(l10n.registerPickImageError);
+        }
       }
     }
   }
 
   Future<ImageSource?> _showImageSourceOptions() async {
+    final l10n = AppLocalizations.of(context)!;
     return await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: Colors.white,
@@ -1963,7 +2126,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   Icons.camera_alt_outlined,
                   color: Color(0xFF0D2B45),
                 ),
-                title: const Text('Tomar foto con la cámara'),
+                title: Text(l10n.authCamera),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
               ListTile(
@@ -1971,7 +2134,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   Icons.image_outlined,
                   color: Color(0xFF0D2B45),
                 ),
-                title: const Text('Elegir desde la galería'),
+                title: Text(l10n.authGallery),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
               const SizedBox(height: 8),
@@ -1983,6 +2146,7 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<String?> _showDocumentNameDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     return await showDialog<String>(
       context: context,
@@ -1992,26 +2156,26 @@ class _RegisterPageState extends State<RegisterPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: const Text(
-            'Nombre del Documento',
-            style: TextStyle(
+          title: Text(
+            l10n.registerDocNameDialogTitle,
+            style: const TextStyle(
               color: Color(0xFF0D2B45),
               fontWeight: FontWeight.bold,
             ),
           ),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(
-              hintText: 'Ej: Título Técnico, Certificación SEC',
+            decoration: InputDecoration(
+              hintText: l10n.registerDocNameDialogHint,
             ),
             autofocus: true,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancelar',
-                style: TextStyle(
+              child: Text(
+                l10n.commonCancel,
+                style: const TextStyle(
                   color: Colors.grey,
                   fontWeight: FontWeight.bold,
                 ),
@@ -2028,7 +2192,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text('Guardar'),
+              child: Text(l10n.commonSave),
             ),
           ],
         );
@@ -2055,23 +2219,26 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _showTermsDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     final Uri url = Uri.parse('https://clanship.cl/terminos-y-condiciones');
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
       return;
     }
 
+    if (!mounted) return;
     showDialog(
       context: context,
+
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: const Text(
-            'Términos y Condiciones',
-            style: TextStyle(
+          title: Text(
+            l10n.settingsTerms,
+            style: const TextStyle(
               color: Color(0xFF0D2B45),
               fontWeight: FontWeight.bold,
             ),
@@ -2089,9 +2256,9 @@ class _RegisterPageState extends State<RegisterPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cerrar',
-                style: TextStyle(
+              child: Text(
+                l10n.commonCancel,
+                style: const TextStyle(
                   color: Colors.grey,
                   fontWeight: FontWeight.bold,
                 ),
@@ -2111,7 +2278,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text('Aceptar'),
+              child: Text(l10n.commonAccept),
             ),
           ],
         );
@@ -2119,6 +2286,7 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 }
+
 
 class BottomWavePainter extends CustomPainter {
   @override

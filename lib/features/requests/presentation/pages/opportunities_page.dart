@@ -3,7 +3,9 @@ import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/documents_page.dart';
+import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/rejection_review_page.dart';
 import 'package:clanship_mobile_tradesman/features/requests/data/datasources/requests_remote_data_source.dart';
+
 import 'package:clanship_mobile_tradesman/core/network/jobs_websocket_service.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -49,14 +51,14 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
     
     final socketService = di.sl<JobsWebSocketService>();
     _socketSubscription = socketService.stream.listen((event) {
-      if (event != null && event is Map) {
-        if (event['event'] == 'job_created' || event['event'] == 'job_updated') {
-          if (mounted) {
-            _fetchOpportunities();
-          }
+      final ev = (event['event']?.toString() ?? event['type']?.toString() ?? '').toLowerCase();
+      if (ev == 'job_created' || ev == 'job_updated' || ev == 'job_status_changed') {
+        if (mounted) {
+          _fetchOpportunities();
         }
       }
     });
+
   }
 
   @override
@@ -411,8 +413,12 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
     bool isValidated = true;
+    bool isRejected = false;
+    String rejectionReason = '';
     if (authState is AuthAuthenticated) {
       isValidated = authState.user.isValidated;
+      isRejected = authState.user.isRejected;
+      rejectionReason = authState.user.effectiveRejectionReason;
     }
 
     if (!isValidated) {
@@ -431,29 +437,31 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.amber.shade100,
+                    color: isRejected ? Colors.red.shade100 : Colors.amber.shade100,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.lock_clock_rounded,
+                  child: Icon(
+                    isRejected ? Icons.cancel_rounded : Icons.lock_clock_rounded,
                     size: 54,
-                    color: Color(0xFFD97706),
+                    color: isRejected ? Colors.red.shade700 : const Color(0xFFD97706),
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'En Proceso de Validación',
+                Text(
+                  isRejected ? 'Registro Rechazado' : 'En Proceso de Validación',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF92400E),
+                    color: isRejected ? Colors.red.shade800 : const Color(0xFF92400E),
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Tu perfil profesional se encuentra en proceso de revisión por nuestro equipo. Una vez validado tu registro, podrás explorar y enviar cotizaciones a los requerimientos específicos de clientes en tu zona.',
-                  style: TextStyle(
+                Text(
+                  isRejected
+                      ? 'Tu perfil profesional fue observado:\n"$rejectionReason"\n\nPor favor vuelve a subir los documentos corregidos para iniciar una nueva revisión.'
+                      : 'Tu perfil profesional se encuentra en proceso de revisión por nuestro equipo. Una vez validado tu registro, podrás explorar y enviar cotizaciones a los requerimientos específicos de clientes en tu zona.',
+                  style: const TextStyle(
                     fontSize: 14,
                     color: Colors.black87,
                     height: 1.4,
@@ -463,7 +471,7 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
                 const SizedBox(height: 28),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
+                    backgroundColor: isRejected ? const Color(0xFFDC2626) : AppColors.primaryBlue,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -474,15 +482,23 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DocumentsPage()),
-                    );
+                    if (isRejected && authState is AuthAuthenticated) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const RejectionReviewPage()),
+                      );
+                    } else {
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const DocumentsPage()),
+                      );
+                    }
                   },
-                  icon: const Icon(Icons.description_outlined),
-                  label: const Text(
-                    'Ver mis Documentos',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  icon: Icon(isRejected ? Icons.upload_file_rounded : Icons.description_outlined),
+                  label: Text(
+                    isRejected ? 'Subir documentos de nuevo' : 'Ver mis Documentos',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -491,6 +507,8 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
         ),
       );
     }
+
+
 
     final filteredList = _selectedTabIndex == 0
         ? _opportunities

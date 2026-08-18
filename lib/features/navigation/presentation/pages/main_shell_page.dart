@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/navigation_bloc.dart';
@@ -9,6 +10,7 @@ import 'package:clanship_mobile_tradesman/features/settings/presentation/pages/s
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_event.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_state.dart';
+import 'package:clanship_mobile_tradesman/features/home/presentation/bloc/home_bloc.dart';
 import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
 import 'package:clanship_mobile_tradesman/core/network/jobs_websocket_service.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
@@ -36,55 +38,82 @@ class _MainShellPageState extends State<MainShellPage> {
     // Connect and listen globally to WebSocket notifications
     final socketService = di.sl<JobsWebSocketService>();
     socketService.connect();
-    _socketSubscription = socketService.stream.listen((event) {
+    _socketSubscription = socketService.stream.listen((event) async {
+      if (!mounted) return;
       debugPrint('MainShellPage received jobs websocket notification: $event');
-      if (mounted) {
-        context.read<RequestsBloc>().add(LoadPendingRequests());
 
-        try {
-          final Map<String, dynamic> data = Map<String, dynamic>.from(event);
-          final String eventType = data['event']?.toString() ?? '';
-          final String message = data['message']?.toString() ?? '';
+      context.read<RequestsBloc>().add(RefreshCurrentRequests());
+      context.read<HomeBloc>().add(LoadUserData());
 
-          if (eventType == 'job_created') {
-            LocalNotificationService.saveNotification(
-              'Nueva Solicitud',
-              message.isNotEmpty ? message : 'Nueva solicitud de trabajo recibida',
+      try {
+        final Map<String, dynamic> data = Map<String, dynamic>.from(event);
+        final String rawEvent =
+            data['event']?.toString() ?? data['type']?.toString() ?? '';
+        final String eventType = rawEvent.toLowerCase();
+        final String message = data['message']?.toString() ?? '';
+
+        if (eventType == 'new_message' ||
+            eventType == 'job_created' ||
+            eventType == 'job_updated' ||
+            eventType == 'job_status_changed' ||
+            eventType == 'job_cancelled') {
+          final l10n = AppLocalizations.of(context)!;
+          final String title = eventType == 'job_created'
+              ? l10n.homeNotifNewRequest
+              : (eventType == 'job_cancelled'
+                  ? 'Trabajo Cancelado/Rechazado'
+                  : (eventType == 'job_updated' || eventType == 'job_status_changed'
+                      ? l10n.homeNotifJobUpdated
+                      : l10n.homeNotifNewMessage));
+          final String msgText = message.isNotEmpty
+              ? message
+              : l10n.homeNotifDefaultBody;
+          await LocalNotificationService.saveNotification(title, msgText);
+          debugPrint(
+            'Saved local notification for event $rawEvent: $title - $msgText',
+          );
+        }
+
+        if (eventType == 'profile_validated' ||
+            eventType == 'profile_unvalidated' ||
+            eventType == 'profile_rejected') {
+          final isVal =
+              eventType == 'profile_validated' || data['is_validated'] == true;
+          final String vStatus =
+              data['verification_status']?.toString() ??
+              (eventType == 'profile_rejected'
+                  ? 'REJECTED'
+                  : (isVal ? 'APPROVED' : 'PENDING'));
+          final String? rReason = data['rejection_reason']?.toString();
+
+          final authState = context.read<AuthBloc>().state;
+          if (authState is AuthAuthenticated) {
+            final updatedUser = authState.user.copyWith(
+              isValidated: isVal,
+              verificationStatus: vStatus,
+              rejectionReason: rReason,
             );
+            context.read<AuthBloc>().add(ProfileUpdated(updatedUser));
+          }
 
-            // Non-error SnackBar commented out to preserve UI/UX
-            /*
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          if (eventType == 'profile_rejected') {
+            final l10n = AppLocalizations.of(context)!;
+            final reasonText = rReason != null && rReason.isNotEmpty
+                ? ': $rReason'
+                : '';
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Row(
-                  children: [
-                    const Icon(Icons.notifications_active, color: Colors.white),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        message.isNotEmpty ? message : 'Nueva solicitud de trabajo recibida',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
+                content: Text(
+                  l10n.homeRegistrationObservedSnackBar(reasonText),
                 ),
-                backgroundColor: const Color(0xFF0D2B45),
-                duration: const Duration(seconds: 4),
-                action: SnackBarAction(
-                  label: 'VER',
-                  textColor: Colors.amber,
-                  onPressed: () {
-                    context.read<NavigationBloc>().add(const TabChanged(1));
-                  },
-                ),
+                backgroundColor: Colors.redAccent,
+                duration: const Duration(seconds: 5),
               ),
             );
-            */
           }
-        } catch (e) {
-          debugPrint('Error processing WS notification in MainShellPage: $e');
         }
+      } catch (e) {
+        debugPrint('Error processing WS notification in MainShellPage: $e');
       }
     });
   }
@@ -240,7 +269,7 @@ class _PremiumBottomNavBar extends StatelessWidget {
       _NavBarItemData(
         activeIcon: Icons.campaign_rounded,
         inactiveIcon: Icons.campaign_outlined,
-        label: 'Busca',
+        label: l10n.navSearch,
       ),
       _NavBarItemData(
         activeIcon: Icons.person_rounded,

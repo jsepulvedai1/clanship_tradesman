@@ -31,13 +31,19 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     
     final result = await profileRepository.getMyProfile();
 
+    if (isClosed) return;
+
     result.fold(
-      (failure) => emit(ProfileError(failure.message)),
+      (failure) {
+        if (!isClosed) emit(ProfileError(failure.message));
+      },
       (user) {
-        emit(ProfileLoaded(user: user));
-        add(LoadTagsEvent());
-        add(LoadSpecialtiesEvent());
-        add(LoadSubscriptionPlansEvent());
+        if (!isClosed) {
+          emit(ProfileLoaded(user: user));
+          add(LoadTagsEvent());
+          add(LoadSpecialtiesEvent());
+          add(LoadSubscriptionPlansEvent());
+        }
       },
     );
   }
@@ -308,18 +314,22 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           );
 
           result.fold(
-            (failure) => emit(currentState.copyWith(isAvatarUploading: false)),
+            (failure) {
+              if (!isClosed) emit(currentState.copyWith(isAvatarUploading: false));
+            },
             (user) {
-              emit(ProfileLoaded(user: user));
-              add(LoadTagsEvent());
-              add(LoadSpecialtiesEvent());
+              if (!isClosed) {
+                emit(ProfileLoaded(user: user));
+                add(LoadTagsEvent());
+                add(LoadSpecialtiesEvent());
+              }
             },
           );
         } else {
-          emit(currentState.copyWith(isAvatarUploading: false));
+          if (!isClosed) emit(currentState.copyWith(isAvatarUploading: false));
         }
       } catch (e) {
-        emit(currentState.copyWith(isAvatarUploading: false));
+        if (!isClosed) emit(currentState.copyWith(isAvatarUploading: false));
       }
     }
   }

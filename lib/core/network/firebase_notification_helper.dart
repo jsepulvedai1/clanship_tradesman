@@ -73,7 +73,7 @@ class FirebaseNotificationHelper {
     LocalNotificationService.saveNotification(title, body);
 
     try {
-      di.sl<RequestsBloc>().add(LoadPendingRequests());
+      di.sl<RequestsBloc>().add(RefreshCurrentRequests());
     } catch (_) {}
   }
 
@@ -92,22 +92,19 @@ class FirebaseNotificationHelper {
       // On iOS, FCM requires an APNS token first.
       // Simulators do not support APNS so we skip gracefully.
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        // Wait for APNS token with retries (needed on real devices after cold start)
         String? apnsToken;
-        // Aumentar los intentos a 8 con retraso de 1.5s para dar suficiente margen en iPhones reales
-        for (int attempt = 1; attempt <= 8; attempt++) {
+        for (int attempt = 1; attempt <= 6; attempt++) {
           apnsToken = await FirebaseMessaging.instance.getAPNSToken();
           if (apnsToken != null) break;
-          debugPrint('Waiting for APNS token (attempt $attempt/8)...');
-          await Future.delayed(const Duration(milliseconds: 1500));
+          debugPrint('Waiting for APNS token (attempt $attempt/6)...');
+          await Future.delayed(const Duration(milliseconds: 1000));
         }
 
-        if (apnsToken == null) {
-          debugPrint('APNS token unavailable (check if Push Capability is added in Xcode and provisioning profiles). Skipping FCM token upload.');
-          return;
+        if (apnsToken != null) {
+          debugPrint('APNS token obtained: $apnsToken. Proceeding to fetch FCM token.');
+        } else {
+          debugPrint('APNS token check timed out, proceeding to fetch FCM token anyway.');
         }
-
-        debugPrint('APNS token obtained. Proceeding to fetch FCM token.');
       }
 
       final token = await FirebaseMessaging.instance.getToken();

@@ -13,6 +13,8 @@ class LoadCompletedRequests extends RequestsEvent {}
 
 class LoadRejectedRequests extends RequestsEvent {}
 
+class RefreshCurrentRequests extends RequestsEvent {}
+
 class UpdateJobStatusEvent extends RequestsEvent {
   final int jobId;
   final String newStatus;

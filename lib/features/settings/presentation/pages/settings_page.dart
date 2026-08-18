@@ -6,7 +6,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/documents_page.dart';
+import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/rejection_review_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
@@ -90,15 +92,17 @@ class _SettingsPageState extends State<SettingsPage> {
         result.fold(
           (failure) {
             if (mounted) {
+              final l10n = AppLocalizations.of(context)!;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Lo sentimos, no se pudo subir la foto.'),
+                  content: Text(l10n.settingsAvatarUploadError),
                 ),
               );
             }
           },
           (updatedUserEntity) {
             if (mounted) {
+              final l10n = AppLocalizations.of(context)!;
               // Actualizar AuthBloc global
               final updatedUser = currentUser.copyWith(
                 avatarPath: updatedUserEntity.profileImageUrl,
@@ -106,8 +110,8 @@ class _SettingsPageState extends State<SettingsPage> {
               context.read<AuthBloc>().add(ProfileUpdated(updatedUser));
 
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Foto de perfil actualizada con éxito'),
+                SnackBar(
+                  content: Text(l10n.settingsAvatarUploadSuccess),
                   backgroundColor: AppColors.successGreen,
                 ),
               );
@@ -116,17 +120,19 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       } else {
         if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error: No autenticado')),
+            SnackBar(content: Text(l10n.settingsNotAuthenticatedError)),
           );
         }
       }
     } catch (e) {
       debugPrint('Error uploading avatar: $e');
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Lo sentimos, no se pudo procesar la foto.')));
+        ).showSnackBar(SnackBar(content: Text(l10n.settingsAvatarProcessError)));
       }
     } finally {
       if (mounted) {
@@ -166,7 +172,7 @@ class _SettingsPageState extends State<SettingsPage> {
             const SizedBox(height: 32),
 
             _SettingsSection(
-              title: 'Cuenta',
+              title: l10n.settingsSectionAccount,
               items: [
                 _SettingsItem(
                   icon: Icons.person_outline_rounded,
@@ -212,7 +218,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             _SettingsSection(
-              title: 'Preferencias',
+              title: l10n.settingsSectionPreferences,
               items: [
                 _SettingsItem(
                   icon: Icons.verified_user_outlined,
@@ -220,8 +226,10 @@ class _SettingsPageState extends State<SettingsPage> {
                   trailing: BlocBuilder<AuthBloc, AuthState>(
                     builder: (context, authState) {
                       bool isValidated = false;
+                      bool isRejected = false;
                       if (authState is AuthAuthenticated) {
                         isValidated = authState.user.isValidated;
+                        isRejected = authState.user.isRejected;
                       }
                       return Row(
                         mainAxisSize: MainAxisSize.min,
@@ -229,15 +237,21 @@ class _SettingsPageState extends State<SettingsPage> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: isValidated ? Colors.green.shade100 : Colors.amber.shade100,
+                              color: isValidated
+                                  ? Colors.green.shade100
+                                  : (isRejected ? Colors.red.shade100 : Colors.amber.shade100),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              isValidated ? '✓ Validado' : '⌛ En proceso',
+                              isValidated
+                                  ? l10n.settingsStatusValidated
+                                  : (isRejected ? l10n.settingsStatusRejected : l10n.settingsStatusInProcess),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: isValidated ? Colors.green.shade800 : Colors.amber.shade900,
+                                color: isValidated
+                                    ? Colors.green.shade800
+                                    : (isRejected ? Colors.red.shade900 : Colors.amber.shade900),
                               ),
                             ),
                           ),
@@ -245,7 +259,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           Icon(
                             Icons.arrow_forward_ios_rounded,
                             size: 14,
-                            color: (isDark ? Colors.white : AppColors.textDark).withOpacity(0.24),
+                            color: (isDark ? Colors.white : AppColors.textDark).withValues(alpha: 0.24),
                           ),
                         ],
                       );
@@ -254,12 +268,17 @@ class _SettingsPageState extends State<SettingsPage> {
                   onTap: () {
                     final authState = context.read<AuthBloc>().state;
                     bool isValidated = false;
+                    bool isRejected = false;
+                    String rejectionReason = '';
                     if (authState is AuthAuthenticated) {
                       isValidated = authState.user.isValidated;
+                      isRejected = authState.user.isRejected;
+                      rejectionReason = authState.user.effectiveRejectionReason;
                     }
-                    _showValidationStatusModal(context, isValidated);
+                    _showValidationStatusModal(context, isValidated, isRejected, rejectionReason);
                   },
                 ),
+
                 _SettingsItem(
                   icon: Icons.language_rounded,
                   title: l10n.settingsChooseLanguage,
@@ -269,7 +288,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       Text(
                         currentLocale.languageCode == 'es'
                             ? 'Español'
-                            : 'English',
+                            : (currentLocale.languageCode == 'fr' ? 'Français' : 'English'),
                         style: TextStyle(
                           fontSize: 14,
                           color: (isDark ? Colors.white : AppColors.textDark)
@@ -307,11 +326,12 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             _SettingsSection(
-              title: 'Otros',
+              title: l10n.settingsSectionOtherSecurity,
               items: [
                 _SettingsItem(
                   icon: Icons.support_agent_rounded,
                   title: l10n.settingsSupport,
+                  iconColor: AppColors.primaryAzure,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -322,8 +342,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   },
                 ),
                 _SettingsItem(
+                  icon: Icons.flag_outlined,
+                  title: l10n.settingsReportContent,
+                  iconColor: AppColors.primaryAzure,
+                  onTap: () => _showReportContentDialog(context),
+                ),
+                _SettingsItem(
                   icon: Icons.info_outline_rounded,
-                  title: 'Versión de la app',
+                  title: l10n.settingsAppVersion,
                   iconColor: AppColors.primaryAzure,
                   trailing: Text(
                     'v$_appVersion ($_buildNumber)',
@@ -336,7 +362,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 _SettingsItem(
                   icon: Icons.logout_rounded,
-                  title: 'Cerrar sesión',
+                  title: l10n.settingsLogout,
                   iconColor: AppColors.errorRed,
                   onTap: () {
                     context.read<AuthBloc>().add(LogoutRequested());
@@ -345,6 +371,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       (route) => false,
                     );
                   },
+                ),
+                _SettingsItem(
+                  icon: Icons.delete_forever_outlined,
+                  title: l10n.settingsDeleteAccount,
+                  iconColor: AppColors.errorRed,
+                  onTap: () => _showDeleteAccountDialog(context),
                 ),
               ],
             ),
@@ -367,7 +399,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Clanship Profesional v$_appVersion (Build $_buildNumber)',
+              l10n.settingsFooterVersion(_appVersion, _buildNumber),
               style: TextStyle(
                 fontSize: 12,
                 color: (isDark ? Colors.white : AppColors.textDark).withOpacity(0.4),
@@ -381,9 +413,10 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildProfileHeader(bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
-        String displayName = 'Maestro';
+        String displayName = l10n.settingsDefaultDisplayName;
         String? email;
         String? avatarPath;
 
@@ -501,7 +534,176 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showValidationStatusModal(BuildContext context, bool isValidated) {
+  void _showDeleteAccountDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: AppColors.errorRed, size: 28),
+            const SizedBox(width: 8),
+            Text(l10n.settingsDeleteAccountTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Text(
+          l10n.settingsDeleteAccountBody,
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.requestCancel),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.errorRed,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<AuthBloc>().add(LogoutRequested());
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+                (route) => false,
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(l10n.settingsAccountDeletedSuccess),
+                  backgroundColor: AppColors.errorRed,
+                ),
+              );
+            },
+            child: Text(l10n.settingsDeleteAccountConfirm),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReportContentDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final TextEditingController detailController = TextEditingController();
+    String selectedReason = l10n.settingsReportReasonInappropriate;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.settingsReportDialogTitle,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.settingsReportDialogSubtitle,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ...[
+                    l10n.settingsReportReasonInappropriate,
+                    l10n.settingsReportReasonSpam,
+                    l10n.settingsReportReasonPhotoProblem,
+                    l10n.settingsReportReasonCopyright,
+                    l10n.settingsReportReasonOther,
+                  ].map((reason) => RadioListTile<String>(
+                        title: Text(reason, style: const TextStyle(fontSize: 14)),
+                        value: reason,
+                        groupValue: selectedReason,
+                        activeColor: AppColors.primaryAzure,
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (val) {
+                          if (val != null) {
+                            setModalState(() => selectedReason = val);
+                          }
+                        },
+                      )),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: detailController,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText: l10n.settingsReportDetailsHint,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryAzure,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              l10n.settingsReportSubmittedSuccess,
+                            ),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      },
+                      child: Text(
+                        l10n.settingsReportSubmitBtn,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showValidationStatusModal(BuildContext context, bool isValidated, bool isRejected, String rejectionReason) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -530,52 +732,75 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: isValidated ? Colors.green.shade100 : Colors.amber.shade100,
+                      color: isValidated
+                          ? Colors.green.shade100
+                          : (isRejected ? Colors.red.shade100 : Colors.amber.shade100),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      isValidated ? Icons.verified_rounded : Icons.hourglass_top_rounded,
+                      isValidated
+                          ? Icons.verified_rounded
+                          : (isRejected ? Icons.cancel_rounded : Icons.hourglass_top_rounded),
                       size: 48,
-                      color: isValidated ? Colors.green.shade700 : const Color(0xFFD97706),
+                      color: isValidated
+                          ? Colors.green.shade700
+                          : (isRejected ? Colors.red.shade700 : const Color(0xFFD97706)),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  isValidated ? 'Perfil Aprobado y Validado' : 'En Proceso de Validación',
+                  isValidated
+                      ? l10n.verificationModalApprovedTitle
+                      : (isRejected ? l10n.verificationModalRejectedTitle : l10n.verificationModalPendingTitle),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: isValidated ? Colors.green.shade900 : const Color(0xFF92400E),
+                    color: isValidated
+                        ? Colors.green.shade900
+                        : (isRejected ? Colors.red.shade900 : const Color(0xFF92400E)),
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   isValidated
-                      ? '¡Felicidades! Tu perfil profesional ha sido verificado. Cuentas con acceso completo para estar activo, recibir solicitudes directas de clientes y cotizar en la bolsa de requerimientos específicos.'
-                      : 'Tus antecedentes y documentos están en proceso de revisión por nuestro equipo administrativo. El proceso toma entre 24 a 48 horas laborables. Durante este periodo tu disponibilidad y acceso a cotizaciones permanecerán restringidos.',
+                      ? l10n.verificationModalApprovedBody
+                      : (isRejected
+                          ? l10n.verificationModalRejectedBody(rejectionReason)
+                          : l10n.verificationModalPendingBody),
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryAzure,
+                    backgroundColor: isRejected ? const Color(0xFFDC2626) : AppColors.primaryAzure,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   onPressed: () {
                     Navigator.pop(ctx);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DocumentsPage()),
-                    );
+                    final authState = context.read<AuthBloc>().state;
+                    if (isRejected && authState is AuthAuthenticated) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const RejectionReviewPage()),
+                      );
+                    } else {
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const DocumentsPage()),
+                      );
+                    }
                   },
-                  icon: const Icon(Icons.folder_open_rounded),
+                  icon: Icon(isRejected ? Icons.upload_file_rounded : Icons.folder_open_rounded),
                   label: Text(
-                    isValidated ? 'Ver mis Documentos' : 'Gestionar Mis Documentos',
+                    isValidated
+                        ? l10n.verificationModalApprovedBtn
+                        : (isRejected ? l10n.verificationModalRejectedBtn : l10n.verificationModalPendingBtn),
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                 ),
@@ -586,6 +811,8 @@ class _SettingsPageState extends State<SettingsPage> {
       },
     );
   }
+
+
 
   void _showLanguagePicker(
     BuildContext context,
@@ -646,6 +873,19 @@ class _SettingsPageState extends State<SettingsPage> {
                   onTap: () {
                     context.read<LanguageBloc>().add(
                       const LanguageChanged(Locale('en')),
+                    );
+                    Navigator.pop(context);
+                  },
+                  theme: theme,
+                ),
+                const SizedBox(height: 12),
+                _buildLanguageOption(
+                  context: context,
+                  label: 'Français',
+                  isSelected: currentLocale.languageCode == 'fr',
+                  onTap: () {
+                    context.read<LanguageBloc>().add(
+                      const LanguageChanged(Locale('fr')),
                     );
                     Navigator.pop(context);
                   },

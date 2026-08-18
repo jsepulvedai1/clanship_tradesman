@@ -41,6 +41,9 @@ class AvailabilityWidget extends StatelessWidget {
   final bool isAvailable;
   final bool isUrgencyModeActive;
   final bool isValidated;
+  final bool isRejected;
+  final String? rejectionReason;
+  final VoidCallback? onReuploadDocuments;
   final ValueChanged<bool> onToggleAvailability;
   final ValueChanged<bool> onToggleUrgencyMode;
 
@@ -49,6 +52,9 @@ class AvailabilityWidget extends StatelessWidget {
     required this.isAvailable,
     required this.isUrgencyModeActive,
     this.isValidated = true,
+    this.isRejected = false,
+    this.rejectionReason,
+    this.onReuploadDocuments,
     required this.onToggleAvailability,
     required this.onToggleUrgencyMode,
   });
@@ -69,6 +75,144 @@ class AvailabilityWidget extends StatelessWidget {
     final inactiveIconColor = theme.brightness == Brightness.dark
         ? Colors.grey[400]!
         : Colors.grey[600]!;
+
+    if (isRejected) {
+      final isDark = theme.brightness == Brightness.dark;
+      final reason = (rejectionReason != null && rejectionReason!.trim().isNotEmpty)
+          ? rejectionReason!
+          : 'Tus antecedentes o documentos fueron observados por el equipo de administración.';
+
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16 : 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF450A0A).withValues(alpha: 0.35) : const Color(0xFFFEF2F2),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFF87171), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withValues(alpha: 0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: EdgeInsets.all(isSmallScreen ? 14 : 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFDC2626),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.cancel_rounded,
+                      size: 24,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.homeRejectedValidationTitle,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.homeRejectedValidationSubtitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.white70 : const Color(0xFF7F1D1D),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF991B1B) : const Color(0xFFFECACA),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline_rounded,
+                          size: 16,
+                          color: Color(0xFFDC2626),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          l10n.homeRejectedReasonLabel,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: Color(0xFFDC2626),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      reason,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? Colors.white : const Color(0xFF1F2937),
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (onReuploadDocuments != null) ...[
+                const SizedBox(height: 14),
+                ElevatedButton.icon(
+                  onPressed: onReuploadDocuments,
+                  icon: const Icon(Icons.upload_file_rounded, size: 18),
+                  label: Text(
+                    l10n.homeRejectedReuploadBtn,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFDC2626),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
 
     if (!isValidated) {
       return Padding(
@@ -108,19 +252,19 @@ class AvailabilityWidget extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
-                      'En proceso de validación',
-                      style: TextStyle(
+                      l10n.homePendingValidationTitle,
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                         color: Color(0xFF92400E),
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
-                      'Tu cuenta está siendo revisada por el equipo administrativo. Una vez aprobada podrás activar tu disponibilidad.',
-                      style: TextStyle(fontSize: 12, color: Color(0xFFB45309)),
+                      l10n.homePendingValidationMessage,
+                      style: const TextStyle(fontSize: 12, color: Color(0xFFB45309)),
                     ),
                   ],
                 ),
@@ -130,6 +274,7 @@ class AvailabilityWidget extends StatelessWidget {
         ),
       );
     }
+
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16 : 20),

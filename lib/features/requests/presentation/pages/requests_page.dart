@@ -1,9 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
-import 'package:clanship_mobile_tradesman/core/network/jobs_websocket_service.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_event.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_state.dart';
@@ -21,28 +18,10 @@ class RequestsPage extends StatefulWidget {
 }
 
 class _RequestsPageState extends State<RequestsPage> {
-  StreamSubscription? _socketSubscription;
-
   @override
   void initState() {
     super.initState();
     context.read<RequestsBloc>().add(LoadPendingRequests());
-
-    // Escuchar notificaciones del WebSocket para actualizar la lista
-    final socketService = di.sl<JobsWebSocketService>();
-    socketService.connect();
-    _socketSubscription = socketService.stream.listen((event) {
-      debugPrint('RequestsPage received jobs websocket notification: $event');
-      if (mounted) {
-        context.read<RequestsBloc>().add(LoadPendingRequests());
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _socketSubscription?.cancel();
-    super.dispose();
   }
 
   @override

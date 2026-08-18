@@ -132,6 +132,8 @@ class UserEntity extends Equatable {
   final List<Map<String, dynamic>> tags;
   final List<Map<String, dynamic>> subtags;
   final bool isValidated;
+  final String verificationStatus;
+  final String? rejectionReason;
   final bool requiresPlanUpgrade;
 
   const UserEntity({
@@ -172,8 +174,33 @@ class UserEntity extends Equatable {
     this.tags = const [],
     this.subtags = const [],
     this.isValidated = false,
+    this.verificationStatus = 'PENDING',
+    this.rejectionReason,
     this.requiresPlanUpgrade = false,
   });
+
+  bool get isRejected {
+    if (isValidated) return false;
+    if (verificationStatus.toUpperCase() == 'REJECTED') return true;
+    if (rejectionReason != null && rejectionReason!.trim().isNotEmpty) return true;
+    return documents.any((d) => d.status.toUpperCase() == 'REJECTED');
+  }
+
+  String get effectiveRejectionReason {
+    if (rejectionReason != null && rejectionReason!.trim().isNotEmpty) {
+      return rejectionReason!;
+    }
+    final rejectedDocs = documents.where((d) => d.status.toUpperCase() == 'REJECTED').toList();
+    if (rejectedDocs.isNotEmpty) {
+      final reasonsWithDocs = rejectedDocs
+          .map((d) => d.rejectionReason != null && d.rejectionReason!.trim().isNotEmpty
+              ? '${d.name}: ${d.rejectionReason}'
+              : '${d.name} (Rechazado)')
+          .join('\n');
+      return reasonsWithDocs;
+    }
+    return 'Tus antecedentes o documentos fueron observados por el equipo de administración. Por favor vuelve a adjuntar fotos legibles.';
+  }
 
   UserEntity copyWith({
     String? id,
@@ -213,6 +240,8 @@ class UserEntity extends Equatable {
     List<Map<String, dynamic>>? tags,
     List<Map<String, dynamic>>? subtags,
     bool? isValidated,
+    String? verificationStatus,
+    String? rejectionReason,
     bool? requiresPlanUpgrade,
   }) {
     return UserEntity(
@@ -253,6 +282,8 @@ class UserEntity extends Equatable {
       tags: tags ?? this.tags,
       subtags: subtags ?? this.subtags,
       isValidated: isValidated ?? this.isValidated,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
       requiresPlanUpgrade: requiresPlanUpgrade ?? this.requiresPlanUpgrade,
     );
   }
@@ -296,6 +327,9 @@ class UserEntity extends Equatable {
         tags,
         subtags,
         isValidated,
+        verificationStatus,
+        rejectionReason,
         requiresPlanUpgrade,
       ];
 }
+

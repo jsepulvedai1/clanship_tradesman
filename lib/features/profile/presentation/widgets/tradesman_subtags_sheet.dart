@@ -716,7 +716,9 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Selecciona las especializaciones que manejas. Máximo $_maxLimit en total.',
+              _maxLimit >= 999
+                  ? 'Selecciona las especializaciones que manejas. (Plan Ilimitado)'
+                  : 'Selecciona las especializaciones que manejas. Máximo $_maxLimit en total.',
               style: TextStyle(
                 fontSize: 12,
                 color: theme.colorScheme.onSurface.withOpacity(0.6),
@@ -1039,7 +1041,10 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
     required String cancelText,
     String? selectedCountText,
   }) {
-    final countText = selectedCountText ?? '$_totalCount de $_maxLimit especialidades seleccionadas';
+    final defaultCountText = _maxLimit >= 999
+        ? '$_totalCount especialidades seleccionadas (Sin límite)'
+        : '$_totalCount de $_maxLimit especialidades seleccionadas';
+    final countText = selectedCountText ?? defaultCountText;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),

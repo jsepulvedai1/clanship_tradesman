@@ -80,6 +80,8 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     professionalProfile {
       requiresPlanUpgrade
       isVerified
+      verificationStatus
+      rejectionReason
       address
       latitude
       longitude
@@ -173,6 +175,10 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
           )
         : null;
 
+    final isVal = data['isValidated'] == true || profProfile?['isVerified'] == true;
+    final vStatus = profProfile?['verificationStatus']?.toString() ?? (isVal ? 'APPROVED' : 'PENDING');
+    final rReason = profProfile?['rejectionReason']?.toString();
+
     return UserEntity(
       id: data['id']?.toString() ?? '',
       name: '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim(),
@@ -247,7 +253,9 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
                 },
               })
           .toList() ?? const [],
-      isValidated: data['isValidated'] == true || profProfile?['isVerified'] == true,
+      isValidated: isVal,
+      verificationStatus: vStatus,
+      rejectionReason: rReason,
       requiresPlanUpgrade: profProfile?['requiresPlanUpgrade'] == true,
       subscriptionPlan: subscriptionPlan,
       planName: subscriptionPlan?.name ?? 'Plan Base',

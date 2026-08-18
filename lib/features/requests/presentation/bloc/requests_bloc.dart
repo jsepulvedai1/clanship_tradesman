@@ -1,10 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:clanship_mobile_tradesman/core/config/environment_config.dart';
 import 'package:clanship_mobile_tradesman/core/utils/error_parser.dart';
+
 import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/get_pending_requests_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/get_completed_requests_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/get_rejected_requests_usecase.dart';
@@ -21,10 +18,6 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
   final UpdateJobStatusUseCase updateJobStatus;
   final MarkJobAsReadUseCase markJobAsRead;
   final ScheduleJobVisitUseCase scheduleJobVisit;
-  final storage = const FlutterSecureStorage();
-
-  WebSocketChannel? _jobsChannel;
-
   RequestsBloc({
     required this.getPendingRequests,
     required this.getCompletedRequests,
@@ -36,42 +29,22 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
     on<LoadPendingRequests>(_onLoadPendingRequests);
     on<LoadCompletedRequests>(_onLoadCompletedRequests);
     on<LoadRejectedRequests>(_onLoadRejectedRequests);
+    on<RefreshCurrentRequests>(_onRefreshCurrentRequests);
     on<UpdateJobStatusEvent>(_onUpdateJobStatus);
     on<MarkRequestAsReadEvent>(_onMarkRequestAsRead);
     on<ScheduleJobVisitEvent>(_onScheduleJobVisit);
   }
 
-  void _connectJobsWebSocket() async {
-    if (_jobsChannel != null) return;
-    try {
-      final token = await storage.read(key: 'jwt_token');
-      if (token == null) return;
-
-      final uri = Uri.parse(EnvConfig.instance.websocketUrl);
-      final baseUrl =
-          '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
-      final wsUrl = Uri.parse('$baseUrl/ws/jobs/?token=$token');
-
-      _jobsChannel = WebSocketChannel.connect(wsUrl);
-      _jobsChannel!.stream.listen(
-        (data) {
-          try {
-            final Map<String, dynamic> jsonData = jsonDecode(data);
-            final event = jsonData['event'];
-            if (event == 'job_created' || event == 'job_updated') {
-              add(LoadPendingRequests());
-            }
-          } catch (_) {}
-        },
-        onError: (_) {
-          _jobsChannel = null;
-        },
-        onDone: () {
-          _jobsChannel = null;
-        },
-      );
-    } catch (_) {
-      _jobsChannel = null;
+  void _onRefreshCurrentRequests(
+    RefreshCurrentRequests event,
+    Emitter<RequestsState> emit,
+  ) {
+    if (state is CompletedRequestsLoaded) {
+      add(LoadCompletedRequests());
+    } else if (state is RejectedRequestsLoaded) {
+      add(LoadRejectedRequests());
+    } else {
+      add(LoadPendingRequests());
     }
   }
 
@@ -79,10 +52,10 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
     LoadPendingRequests event,
     Emitter<RequestsState> emit,
   ) async {
-    _connectJobsWebSocket();
     if (state is! RequestsLoaded) {
       emit(RequestsLoading());
     }
+
     try {
       final requests = await getPendingRequests();
       emit(RequestsLoaded(requests));
@@ -183,11 +156,5 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
       emit(RequestsError(sanitizeErrorForUser(e)));
     }
   }
-
-  @override
-  Future<void> close() {
-    _jobsChannel?.sink.close();
-    _jobsChannel = null;
-    return super.close();
-  }
 }
+

@@ -6,7 +6,9 @@ import 'package:clanship_mobile_tradesman/core/di/injection.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 import 'package:clanship_mobile_tradesman/features/home/domain/entities/user_entity.dart';
+import 'rejection_review_page.dart';
 import '../bloc/profile_bloc.dart';
+
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
 
@@ -40,34 +42,66 @@ class _DocumentsPageViewState extends State<DocumentsPageView> {
 
   void _showAddDocumentDialog(BuildContext context) {
     _nameController.clear();
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (dialogContext) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return AlertDialog(
           backgroundColor: isDark ? AppColors.cardDark : Colors.white,
-          title: const Text(
-            'Agregar Documento',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          title: Text(
+            l10n.docsAddTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          content: TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: 'Nombre del Documento/Título',
-              hintText: 'Ej: Certificado SEC, Título Técnico',
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: l10n.docsAddInputLabel,
+                    hintText: l10n.docsAddInputHint,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Sugerencias rápidas:',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    'Cédula de Identidad (Frontal)',
+                    'Cédula de Identidad (Posterior)',
+                    'Certificado de Antecedentes',
+                    'Certificado de Título / Oficio',
+                  ].map((sug) => ActionChip(
+                    label: Text(sug, style: const TextStyle(fontSize: 11)),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    onPressed: () {
+                      _nameController.text = sug;
+                    },
+                  )).toList(),
+                ),
+              ],
             ),
           ),
+
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+              child: Text(l10n.commonCancel, style: const TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: () async {
                 final name = _nameController.text.trim();
                 if (name.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Por favor ingresa un nombre para el documento')),
+                    SnackBar(content: Text(l10n.docsAddNameError)),
                   );
                   return;
                 }
@@ -78,7 +112,7 @@ class _DocumentsPageViewState extends State<DocumentsPageView> {
                 backgroundColor: AppColors.primaryBlue,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Siguiente'),
+              child: Text(l10n.authNext),
             ),
           ],
         );
@@ -159,8 +193,80 @@ class _DocumentsPageViewState extends State<DocumentsPageView> {
                             height: 1.4,
                           ),
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 24),
+                        if (user.isRejected) ...[
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 20),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF450A0A).withValues(alpha: 0.35)
+                                  : const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFF87171), width: 1.5),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: Color(0xFFDC2626),
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Atención: Documentación Observada',
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? const Color(0xFFFCA5A5)
+                                            : const Color(0xFF991B1B),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  user.effectiveRejectionReason,
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : const Color(0xFF1F2937),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                ElevatedButton.icon(
+                                  onPressed: () async {
+                                    final res = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const RejectionReviewPage()),
+                                    );
+                                    if (res == true && context.mounted) {
+                                      context.read<ProfileBloc>().add(LoadProfileData());
+                                    }
+                                  },
+                                  icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
+                                  label: const Text(
+                                    'Resolver Observaciones y Reenviar',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFDC2626),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    elevation: 0,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         if (docs.isEmpty)
+
                           Container(
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
@@ -287,6 +393,7 @@ class _DocumentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     Color statusColor;
     String statusText;
     IconData statusIcon;
@@ -294,19 +401,21 @@ class _DocumentCard extends StatelessWidget {
     switch (document.status) {
       case 'APPROVED':
         statusColor = AppColors.successGreen;
-        statusText = 'Validado';
+        statusText = l10n.docsStatusApproved;
         statusIcon = Icons.check_circle_rounded;
         break;
       case 'REJECTED':
         statusColor = Colors.redAccent;
-        statusText = 'Rechazado';
+        statusText = l10n.docsStatusRejected;
         statusIcon = Icons.cancel_rounded;
         break;
       default:
         statusColor = Colors.amber;
-        statusText = 'Pendiente de validación';
+        statusText = l10n.docsStatusPending;
         statusIcon = Icons.watch_later_rounded;
     }
+
+    final displayName = _getLocalizedDocumentName(document.name, l10n);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -330,7 +439,7 @@ class _DocumentCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  document.name,
+                  displayName,
                   style: TextStyle(
                     color: isDark ? Colors.white : AppColors.trueBlack,
                     fontSize: 16,
@@ -370,7 +479,7 @@ class _DocumentCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                'Motivo: ${document.rejectionReason}',
+                l10n.docsRejectionReason(document.rejectionReason!),
                 style: const TextStyle(color: Colors.redAccent, fontSize: 13),
               ),
             ),
@@ -380,7 +489,7 @@ class _DocumentCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Visible en perfil público',
+                l10n.docsVisiblePublicProfile,
                 style: TextStyle(
                   color: isDark ? Colors.white70 : Colors.black87,
                   fontSize: 14,
@@ -397,6 +506,23 @@ class _DocumentCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _getLocalizedDocumentName(String name, AppLocalizations l10n) {
+    final trimmed = name.trim();
+    if (trimmed == 'Cédula de Identidad (Frontal)' || trimmed == 'Cedula de Identidad (Frontal)') {
+      return l10n.docsIdCardFront;
+    }
+    if (trimmed == 'Cédula de Identidad (Posterior)' || trimmed == 'Cedula de Identidad (Posterior)') {
+      return l10n.docsIdCardBack;
+    }
+    if (trimmed == 'Cédula de Identidad' || trimmed == 'Cedula de Identidad') {
+      return l10n.docsIdCard;
+    }
+    if (trimmed == 'Licencia de Conducir') {
+      return l10n.docsDriverLicense;
+    }
+    return name;
   }
 }
 

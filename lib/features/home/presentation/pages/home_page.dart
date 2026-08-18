@@ -17,21 +17,24 @@ import 'package:clanship_mobile_tradesman/features/home/presentation/widgets/rec
 import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/navigation_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/pages/completed_requests_page.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/pages/rejected_requests_page.dart';
+import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 import 'package:clanship_mobile_tradesman/features/home/presentation/widgets/home_skeleton.dart';
 import 'package:clanship_mobile_tradesman/features/profile/domain/repositories/profile_repository.dart';
 import 'package:clanship_mobile_tradesman/features/profile/domain/usecases/update_profile_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
-import 'package:clanship_mobile_tradesman/core/network/jobs_websocket_service.dart';
 import 'package:clanship_mobile_tradesman/core/network/firebase_notification_helper.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_event.dart';
 import 'package:clanship_mobile_tradesman/core/network/local_notification_service.dart';
 import '../../../../core/widgets/skeleton_box.dart';
 import 'package:clanship_mobile_tradesman/core/widgets/address_picker_page.dart';
+import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/documents_page.dart';
+import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/rejection_review_page.dart';
 
 class HomePage extends StatefulWidget {
+
   const HomePage({super.key});
 
   @override
@@ -39,7 +42,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  StreamSubscription? _socketSubscription;
   late final HomeBloc _homeBloc;
   List<LocalNotificationItem> _localNotifications = [];
   bool _showAllNotifications = false;
@@ -48,58 +50,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _homeBloc = di.sl<HomeBloc>()..add(LoadUserData());
+    _homeBloc = context.read<HomeBloc>()..add(LoadUserData());
     FirebaseNotificationHelper.uploadFcmToken();
 
-    // Conectar y escuchar notificaciones del WebSocket
-    final socketService = di.sl<JobsWebSocketService>();
-    socketService.connect();
-    _socketSubscription = socketService.stream.listen((event) {
-      debugPrint('HomePage received jobs websocket notification: $event');
 
-      try {
-        final Map<String, dynamic> data = event;
-        if (data['event'] == 'new_message' ||
-            data['event'] == 'job_created' ||
-            data['event'] == 'job_updated') {
-          final String title = data['event'] == 'job_created'
-              ? 'Nueva Solicitud'
-              : (data['event'] == 'job_updated' ? 'Trabajo Actualizado' : 'Mensaje Nuevo');
-          final String msgText = data['message'] ?? 'Tienes una actualización de trabajo';
-          LocalNotificationService.saveNotification(title, msgText);
-
-          try {
-            di.sl<RequestsBloc>().add(LoadPendingRequests());
-          } catch (_) {}
-        }
-        if (data['event'] == 'profile_validated' ||
-            data['event'] == 'profile_unvalidated') {
-          final isVal =
-              data['event'] == 'profile_validated' ||
-              data['is_validated'] == true;
-          final authState = context.read<AuthBloc>().state;
-          if (authState is AuthAuthenticated) {
-            final updatedUser = authState.user.copyWith(isValidated: isVal);
-            context.read<AuthBloc>().add(ProfileUpdated(updatedUser));
-          }
-          /*
-          if (isVal && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  '🎉 ¡Tu perfil profesional ha sido validado! Ya puedes activarte y cotizar.',
-                ),
-                backgroundColor: AppColors.successGreen,
-                duration: Duration(seconds: 4),
-              ),
-            );
-          }
-          */
-        }
-      } catch (_) {}
-
-      _homeBloc.add(LoadUserData());
-    });
 
     _loadLocalNotifications();
     _localNotificationSubscription = LocalNotificationService
@@ -120,7 +74,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    _socketSubscription?.cancel();
     _localNotificationSubscription?.cancel();
     super.dispose();
   }
@@ -128,6 +81,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildNotificationsSection(double spacing) {
     if (_localNotifications.isEmpty) return const SizedBox.shrink();
 
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final count = _localNotifications.length;
 
@@ -140,7 +94,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Notificaciones',
+                l10n.homeNotificationsTitle,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -151,7 +105,7 @@ class _HomePageState extends State<HomePage> {
                   _loadLocalNotifications();
                 },
                 child: Text(
-                  'Limpiar todo',
+                  l10n.homeClearAllNotifications,
                   style: TextStyle(
                     color: AppColors.primaryBlue,
                     fontWeight: FontWeight.bold,
@@ -285,6 +239,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showLocalNotificationsBottomSheet() {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -309,7 +264,7 @@ class _HomePageState extends State<HomePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Notificaciones',
+                        l10n.homeNotificationsTitle,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -321,7 +276,7 @@ class _HomePageState extends State<HomePage> {
                           setSheetState(() {});
                         },
                         child: Text(
-                          'Limpiar todo',
+                          l10n.homeClearAllNotifications,
                           style: TextStyle(
                             color: AppColors.primaryBlue,
                             fontWeight: FontWeight.bold,
@@ -332,12 +287,12 @@ class _HomePageState extends State<HomePage> {
                   ),
                   const SizedBox(height: 16),
                   if (_localNotifications.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
                       child: Center(
                         child: Text(
-                          'No tienes nuevas notificaciones',
-                          style: TextStyle(color: Colors.grey),
+                          l10n.homeNoNewNotifications,
+                          style: const TextStyle(color: Colors.grey),
                         ),
                       ),
                     )
@@ -525,6 +480,18 @@ class _HomePageState extends State<HomePage> {
                       isAvailable: state.user.isAvailable,
                       isUrgencyModeActive: state.user.isEmergency,
                       isValidated: state.user.isValidated,
+                      isRejected: state.user.isRejected,
+                      rejectionReason: state.user.effectiveRejectionReason,
+                      onReuploadDocuments: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RejectionReviewPage(),
+                          ),
+                        );
+                        _homeBloc.add(LoadUserData());
+
+                      },
                       onToggleAvailability: (bool value) {
                         _homeBloc.add(ToggleAvailability(value));
                       },
@@ -532,6 +499,8 @@ class _HomePageState extends State<HomePage> {
                         _homeBloc.add(ToggleUrgency(value));
                       },
                     ),
+
+
                     SizedBox(height: spacing),
 
                     SizedBox(height: spacing),
@@ -632,13 +601,15 @@ class _AppBarLoaderState extends State<_AppBarLoader> {
       result.fold(
         (failure) {
           if (mounted) {
+            final l10n = AppLocalizations.of(context)!;
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lo sentimos, no se pudo subir la foto.')),
+              SnackBar(content: Text(l10n.settingsAvatarUploadError)),
             );
           }
         },
         (updatedUserEntity) {
           if (mounted) {
+            final l10n = AppLocalizations.of(context)!;
             if (authState is AuthAuthenticated) {
               final updatedUser = authState.user.copyWith(
                 avatarPath: updatedUserEntity.profileImageUrl,
@@ -651,7 +622,7 @@ class _AppBarLoaderState extends State<_AppBarLoader> {
 
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Foto de perfil actualizada con éxito'),
+                content: Text(l10n.settingsAvatarUploadSuccess),
                 backgroundColor: AppColors.successGreen,
               ),
             );
@@ -661,8 +632,9 @@ class _AppBarLoaderState extends State<_AppBarLoader> {
     } catch (e) {
       debugPrint('Error uploading avatar: $e');
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lo sentimos, no se pudo procesar la foto.')),
+          SnackBar(content: Text(l10n.settingsAvatarProcessError)),
         );
       }
     } finally {
@@ -758,6 +730,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
     BuildContext context,
     HomeBloc homeBloc,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoading = true;
     });
@@ -765,19 +738,19 @@ class _LocationWidgetState extends State<_LocationWidget> {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        throw 'Los servicios de ubicación están desactivados en el dispositivo.';
+        throw l10n.homeGpsDisabledError;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          throw 'Permiso de ubicación denegado.';
+          throw l10n.homeGpsPermissionDenied;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        throw 'Permiso de ubicación denegado permanentemente. Actívalo en los ajustes del sistema.';
+        throw l10n.homeGpsPermissionDeniedPermanent;
       }
 
       Position? position;
@@ -789,28 +762,29 @@ class _LocationWidgetState extends State<_LocationWidget> {
         try {
           position = await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.low,
-            timeLimit: const Duration(seconds: 5),
-          );
+          ).timeout(const Duration(seconds: 5), onTimeout: () {
+            throw 'Location timeout';
+          });
         } catch (_) {}
       }
 
       if (position == null) {
-        throw 'No se pudo obtener la ubicación actual.';
+        throw l10n.homeGpsLocationFetchError;
       }
 
       final profileRepo = di.sl<ProfileRepository>();
       final result = await profileRepo.updateProfessionalProfile(
-        address: 'Ubicación GPS actual',
+        address: l10n.homeGpsCurrentLocationAddress,
         latitude: position.latitude,
         longitude: position.longitude,
       );
 
       result.fold((failure) => _showError(failure.message), (_) {
         homeBloc.add(LoadUserData());
-        _showSuccess('Ubicación GPS actualizada con éxito.');
+        _showSuccess(l10n.homeGpsUpdateSuccess);
       });
     } catch (e) {
-      _showError('Lo sentimos, hubo un error. Por favor, intenta de nuevo.');
+      _showError(e is String ? e : l10n.homeGenericError);
     } finally {
       if (mounted) {
         setState(() {
@@ -829,6 +803,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
   ) async {
     if (address.trim().isEmpty) return;
 
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoading = true;
     });
@@ -843,10 +818,10 @@ class _LocationWidgetState extends State<_LocationWidget> {
 
       result.fold((failure) => _showError(failure.message), (_) {
         homeBloc.add(LoadUserData());
-        _showSuccess('Dirección fija actualizada con éxito.');
+        _showSuccess(l10n.homeFixAddressSuccess);
       });
     } catch (e) {
-      _showError('Lo sentimos, hubo un error. Por favor, intenta de nuevo.');
+      _showError(l10n.homeGenericError);
     } finally {
       if (mounted) {
         setState(() {
@@ -857,28 +832,29 @@ class _LocationWidgetState extends State<_LocationWidget> {
   }
 
   void _showGpsActualInfoDialog(BuildContext context, HomeBloc homeBloc) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.gps_fixed, color: Color(0xFF0D2B45)),
-            SizedBox(width: 10),
+            const Icon(Icons.gps_fixed, color: Color(0xFF0D2B45)),
+            const SizedBox(width: 10),
             Text(
-              'GPS Actual',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              l10n.mapGpsDialogTitle,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ],
         ),
-        content: const Text(
-          'Esta opción utiliza el sensor GPS en tiempo real de tu dispositivo para detectar tu ubicación geográfica exacta en este momento. Es ideal si te encuentras en terreno y deseas recibir trabajos cercanos a tu posición física actual.',
-          style: TextStyle(fontSize: 14, height: 1.4, color: Color(0xFF2E3135)),
+        content: Text(
+          l10n.homeGpsDialogInfoContent,
+          style: const TextStyle(fontSize: 14, height: 1.4, color: Color(0xFF2E3135)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            child: Text(l10n.requestCancel, style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -892,7 +868,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
               Navigator.pop(dialogContext);
               _updateLocationWithGPS(context, homeBloc);
             },
-            child: const Text('Usar mi GPS'),
+            child: Text(l10n.homeUseMyGpsBtn),
           ),
         ],
       ),
@@ -900,28 +876,29 @@ class _LocationWidgetState extends State<_LocationWidget> {
   }
 
   void _showFijarDireccionInfoDialog(BuildContext context, HomeBloc homeBloc) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.pin_drop_rounded, color: Color(0xFF0B6E4F)),
-            SizedBox(width: 10),
+            const Icon(Icons.pin_drop_rounded, color: Color(0xFF0B6E4F)),
+            const SizedBox(width: 10),
             Text(
-              'Fijar Dirección',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              l10n.mapPinAddressDialogTitle,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ],
         ),
-        content: const Text(
-          'Esta opción te permite seleccionar y fijar una dirección estática en el mapa como tu punto base de trabajo (por ejemplo tu hogar o taller). Así recibirás solicitudes en ese sector sin depender de tu ubicación GPS.',
-          style: TextStyle(fontSize: 14, height: 1.4, color: Color(0xFF2E3135)),
+        content: Text(
+          l10n.homePinAddressInfoContent,
+          style: const TextStyle(fontSize: 14, height: 1.4, color: Color(0xFF2E3135)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            child: Text(l10n.requestCancel, style: const TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -937,7 +914,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => AddressPickerPage(
-                    initialAddress: widget.user.address == 'Ubicación GPS actual'
+                    initialAddress: widget.user.address == l10n.homeGpsCurrentLocationAddress
                         ? ''
                         : widget.user.address,
                   ),
@@ -956,7 +933,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
                 );
               }
             },
-            child: const Text('Seleccionar en Mapa'),
+            child: Text(l10n.homeSelectOnMapBtn),
           ),
         ],
       ),
@@ -965,6 +942,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final homeBloc = context.read<HomeBloc>();
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final double screenHeight = MediaQuery.of(context).size.height;
@@ -972,7 +950,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
     final String currentAddress =
         (widget.user.address != null && widget.user.address!.trim().isNotEmpty)
         ? widget.user.address!.trim()
-        : 'Sin dirección configurada';
+        : l10n.homeNoAddressConfigured;
     final hasCoordinates =
         widget.user.latitude != null && widget.user.longitude != null;
 
@@ -1007,7 +985,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Mi Área de Servicio / Ubicación',
+                  l10n.homeServiceAreaTitle,
                   style: TextStyle(
                     fontSize: isSmallScreen ? 14 : 16,
                     fontWeight: FontWeight.bold,
@@ -1028,38 +1006,38 @@ class _LocationWidgetState extends State<_LocationWidget> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      title: const Row(
+                      title: Row(
                         children: [
-                          Icon(Icons.map_rounded, color: Color(0xFF0D2B45)),
-                          SizedBox(width: 10),
+                          const Icon(Icons.map_rounded, color: Color(0xFF0D2B45)),
+                          const SizedBox(width: 10),
                           Text(
-                            'Área de Servicio',
-                            style: TextStyle(
+                            l10n.homeServiceAreaInfoTitle,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
-                      content: const Column(
+                      content: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '• GPS Actual: Utiliza tu ubicación en vivo por GPS para recibir solicitudes cerca de donde te encuentres físicamente.',
-                            style: TextStyle(fontSize: 13, height: 1.4),
+                            l10n.homeServiceAreaInfoGps,
+                            style: const TextStyle(fontSize: 13, height: 1.4),
                           ),
-                          SizedBox(height: 12),
+                          const SizedBox(height: 12),
                           Text(
-                            '• Fijar Dirección: Define un punto fijo o taller en el mapa para recibir solicitudes en ese sector de forma permanente.',
-                            style: TextStyle(fontSize: 13, height: 1.4),
+                            l10n.homeServiceAreaInfoPin,
+                            style: const TextStyle(fontSize: 13, height: 1.4),
                           ),
                         ],
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
-                          child: const Text('Entendido'),
+                          child: Text(l10n.commonUnderstood),
                         ),
                       ],
                     ),
@@ -1080,7 +1058,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
           if (hasCoordinates) ...[
             const SizedBox(height: 4),
             Text(
-              'Coordenadas: ${widget.user.latitude.toStringAsFixed(5)}, ${widget.user.longitude.toStringAsFixed(5)}',
+              '${l10n.homeCoordinatesLabel}: ${widget.user.latitude.toStringAsFixed(5)}, ${widget.user.longitude.toStringAsFixed(5)}',
               style: TextStyle(
                 fontSize: isSmallScreen ? 10 : 11,
                 color: Colors.grey[600],
@@ -1112,7 +1090,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
                       ),
                     ),
                     label: Text(
-                      'GPS Actual',
+                      l10n.homeGpsActualBtn,
                       style: TextStyle(
                         fontSize: isSmallScreen ? 11 : 12,
                         fontWeight: FontWeight.bold,
@@ -1144,7 +1122,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
                       ),
                     ),
                     label: Text(
-                      'Fijar Dirección',
+                      l10n.homeFixAddressBtn,
                       style: TextStyle(
                         fontSize: isSmallScreen ? 11 : 12,
                         fontWeight: FontWeight.bold,

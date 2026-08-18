@@ -9,6 +9,8 @@ import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_s
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:clanship_mobile_tradesman/core/network/local_notification_service.dart';
+import 'package:clanship_mobile_tradesman/core/network/jobs_websocket_service.dart';
+import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginUseCase loginUseCase;
@@ -41,10 +43,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLogoutRequested(LogoutRequested event, Emitter<AuthState> emit) async {
-    await logoutUseCase(NoParams());
-    await LocalNotificationService.clearAll();
-    emit(AuthUnauthenticated());
+    try {
+      try {
+        di.sl<JobsWebSocketService>().disconnect();
+      } catch (_) {}
+      await logoutUseCase(NoParams());
+      await LocalNotificationService.clearAll();
+    } catch (_) {
+      // Ignorar fallo de red durante logout
+    } finally {
+      emit(AuthUnauthenticated());
+    }
   }
+
 
   void _onUserAuthenticated(UserAuthenticated event, Emitter<AuthState> emit) {
     emit(AuthAuthenticated(event.user));

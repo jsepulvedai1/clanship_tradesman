@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+
 import 'package:clanship_mobile_tradesman/core/config/environment_config.dart';
 import 'package:clanship_mobile_tradesman/core/utils/lower_case_text_formatter.dart';
+import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -52,7 +53,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Error del servidor: ${response.statusCode}');
+      throw Exception('Error: ${response.statusCode}');
     }
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -64,9 +65,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   Future<void> _sendOtp() async {
+    final l10n = AppLocalizations.of(context)!;
     final email = _emailController.text.trim().toLowerCase();
     if (email.isEmpty) {
-      _showError('Por favor, ingresa tu correo electrónico.');
+      _showError(l10n.registerErrorFillAll);
       return;
     }
 
@@ -97,10 +99,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           _isLoading = false;
         });
       } else {
-        _showError(msg.isNotEmpty ? msg : 'No se pudo enviar el correo.');
+        _showError(msg.isNotEmpty ? msg : 'Error');
       }
     } catch (e) {
-      _showError('No se pudo conectar con el servidor. Verifica tu conexión.');
+      _showError(e.toString().replaceAll('Exception: ', ''));
     }
   }
 
@@ -145,21 +147,22 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         _showError(msg.isNotEmpty ? msg : 'El código no es válido.');
       }
     } catch (e) {
-      _showError('No se pudo verificar el código. Inténtalo de nuevo.');
+      _showError(e.toString().replaceAll('Exception: ', ''));
     }
   }
 
   Future<void> _resetPassword() async {
+    final l10n = AppLocalizations.of(context)!;
     final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
     if (password.length < 6) {
-      _showError('La contraseña debe tener al menos 6 caracteres.');
+      _showError(l10n.registerErrorPasswordLength);
       return;
     }
     if (password != confirmPassword) {
-      _showError('Las contraseñas no coinciden.');
+      _showError(l10n.registerErrorPasswordMismatch);
       return;
     }
 
@@ -194,15 +197,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           _isLoading = false;
         });
       } else {
-        _showError(msg.isNotEmpty ? msg : 'Error al cambiar contraseña.');
+        _showError(msg.isNotEmpty ? msg : 'Error');
       }
     } catch (e) {
-      _showError('No se pudo actualizar la contraseña. Inténtalo de nuevo.');
+      _showError(e.toString().replaceAll('Exception: ', ''));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -224,7 +229,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               )
             : null,
         title: Text(
-          _currentStep == 4 ? 'Contraseña Restablecida' : 'Recuperar Contraseña',
+          _currentStep == 4 ? l10n.forgotPasswordSuccessTitle : l10n.forgotPasswordTitle,
           style: const TextStyle(
             color: Color(0xFF0D2B45),
             fontWeight: FontWeight.bold,
@@ -281,10 +286,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 const SizedBox(height: 20),
               ],
 
-              if (_currentStep == 1) _buildEmailStep(),
-              if (_currentStep == 2) _buildOtpStep(),
-              if (_currentStep == 3) _buildPasswordStep(),
-              if (_currentStep == 4) _buildSuccessStep(),
+              if (_currentStep == 1) _buildEmailStep(l10n),
+              if (_currentStep == 2) _buildOtpStep(l10n),
+              if (_currentStep == 3) _buildPasswordStep(l10n),
+              if (_currentStep == 4) _buildSuccessStep(l10n),
             ],
           ),
         ),
@@ -292,22 +297,22 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  Widget _buildEmailStep() {
+  Widget _buildEmailStep(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '¿Olvidaste tu contraseña?',
-          style: TextStyle(
+        Text(
+          l10n.forgotPasswordTitle,
+          style: const TextStyle(
             color: Color(0xFF0D2B45),
             fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Ingresa tu correo electrónico y te enviaremos un código temporal de 6 dígitos para restablecer tu cuenta.',
-          style: TextStyle(color: Color(0xFF2E3135), fontSize: 14, height: 1.4),
+        Text(
+          l10n.forgotPasswordSubtitle,
+          style: const TextStyle(color: Color(0xFF2E3135), fontSize: 14, height: 1.4),
         ),
         const SizedBox(height: 32),
         TextField(
@@ -316,9 +321,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           textCapitalization: TextCapitalization.none,
           inputFormatters: [LowerCaseTextFormatter()],
           style: const TextStyle(color: Color(0xFF2E3135), fontSize: 14),
-          decoration: const InputDecoration(
-            labelText: 'Correo electrónico',
-            prefixIcon: Icon(Icons.mail_outline, size: 20),
+          decoration: InputDecoration(
+            labelText: l10n.registerEmailHint,
+            prefixIcon: const Icon(Icons.mail_outline, size: 20),
           ),
         ),
         const SizedBox(height: 32),
@@ -339,22 +344,22 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                 )
-              : const Text(
-                  'Enviar código',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              : Text(
+                  l10n.forgotPasswordSendCode,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
         ),
       ],
     );
   }
 
-  Widget _buildOtpStep() {
+  Widget _buildOtpStep(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Verificar código',
-          style: TextStyle(
+        Text(
+          l10n.forgotPasswordVerifyCode,
+          style: const TextStyle(
             color: Color(0xFF0D2B45),
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -362,7 +367,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Hemos enviado un código de seguridad de 6 dígitos a ${_emailController.text}.',
+          l10n.forgotPasswordEnterOtp,
           style: const TextStyle(color: Color(0xFF2E3135), fontSize: 14, height: 1.4),
         ),
         const SizedBox(height: 32),
@@ -378,7 +383,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             letterSpacing: 8,
           ),
           decoration: const InputDecoration(
-            labelText: 'Código de 6 dígitos',
+            labelText: 'OTP',
             counterText: '',
             prefixIcon: Icon(Icons.lock_clock_outlined, size: 20),
           ),
@@ -401,18 +406,18 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                 )
-              : const Text(
-                  'Verificar código',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              : Text(
+                  l10n.forgotPasswordVerifyCode,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
         ),
         const SizedBox(height: 16),
         Center(
           child: TextButton(
             onPressed: _isLoading ? null : _sendOtp,
-            child: const Text(
-              'Reenviar código',
-              style: TextStyle(
+            child: Text(
+              l10n.forgotPasswordSendCode,
+              style: const TextStyle(
                 color: Color.fromARGB(255, 71, 169, 255),
                 fontWeight: FontWeight.bold,
               ),
@@ -423,29 +428,29 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  Widget _buildPasswordStep() {
+  Widget _buildPasswordStep(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Nueva contraseña',
-          style: TextStyle(
+        Text(
+          l10n.forgotPasswordNewPassword,
+          style: const TextStyle(
             color: Color(0xFF0D2B45),
             fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Escribe una nueva contraseña para tu cuenta. Asegúrate de que tenga al menos 6 caracteres.',
-          style: TextStyle(color: Color(0xFF2E3135), fontSize: 14, height: 1.4),
+        Text(
+          l10n.forgotPasswordNewPassword,
+          style: const TextStyle(color: Color(0xFF2E3135), fontSize: 14, height: 1.4),
         ),
         const SizedBox(height: 32),
         TextField(
           controller: _passwordController,
           obscureText: _obscurePassword,
           decoration: InputDecoration(
-            labelText: 'Contraseña nueva',
+            labelText: l10n.forgotPasswordNewPassword,
             prefixIcon: const Icon(Icons.lock_outline, size: 20),
             suffixIcon: IconButton(
               icon: Icon(
@@ -461,7 +466,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           controller: _confirmPasswordController,
           obscureText: _obscureConfirmPassword,
           decoration: InputDecoration(
-            labelText: 'Confirmar contraseña',
+            labelText: l10n.forgotPasswordConfirmNewPassword,
             prefixIcon: const Icon(Icons.lock_outline, size: 20),
             suffixIcon: IconButton(
               icon: Icon(
@@ -490,16 +495,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                 )
-              : const Text(
-                  'Guardar contraseña',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              : Text(
+                  l10n.forgotPasswordResetButton,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
         ),
       ],
     );
   }
 
-  Widget _buildSuccessStep() {
+  Widget _buildSuccessStep(AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -519,10 +524,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
         ),
         const SizedBox(height: 32),
-        const Center(
+        Center(
           child: Text(
-            '¡Contraseña Cambiada!',
-            style: TextStyle(
+            l10n.forgotPasswordSuccessTitle,
+            style: const TextStyle(
               color: Color(0xFF0D2B45),
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -530,11 +535,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
         ),
         const SizedBox(height: 12),
-        const Center(
+        Center(
           child: Text(
-            'Tu contraseña ha sido restablecida con éxito. Ya puedes iniciar sesión con tu nueva contraseña.',
+            l10n.forgotPasswordSuccessDesc,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF2E3135), fontSize: 14, height: 1.5),
+            style: const TextStyle(color: Color(0xFF2E3135), fontSize: 14, height: 1.5),
           ),
         ),
         const SizedBox(height: 40),
@@ -549,12 +554,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text(
-            'Volver al inicio',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          child: Text(
+            l10n.forgotPasswordBackToLogin,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ),
       ],
     );
   }
 }
+

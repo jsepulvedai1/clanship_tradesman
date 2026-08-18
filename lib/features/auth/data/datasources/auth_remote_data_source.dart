@@ -40,12 +40,24 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   AuthRemoteDataSourceImpl(this.client);
 
+  String _extractErrorMessage(OperationException? exception) {
+    if (exception == null) return 'Ocurrió un error inesperado.';
+    if (exception.graphqlErrors.isNotEmpty) {
+      return exception.graphqlErrors.first.message;
+    }
+    if (exception.linkException != null) {
+      return 'Error de conexión con el servidor. Por favor verifica tu conexión a internet.';
+    }
+    return exception.toString();
+  }
+
   @override
   Future<UserModel> login(String email, String password) async {
     // Clear any existing token to prevent AuthLink from sending an invalid/expired token
     // which causes 'Error decoding signature' on the server.
     const storage = FlutterSecureStorage();
     await storage.delete(key: 'jwt_token');
+    await storage.delete(key: 'jwt_refresh_token');
 
     const String loginMutation = r'''
       mutation TokenAuth($username: String!, $password: String!, $appType: String) {
@@ -97,15 +109,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     final QueryResult result = await client.mutate(options);
 
     if (result.hasException) {
-      throw Exception(result.exception.toString());
+      throw Exception(_extractErrorMessage(result.exception));
     }
 
     final token = result.data?['tokenAuth']?['token'];
+    final refreshToken = result.data?['tokenAuth']?['refreshToken'];
     
     // Save token in flutter_secure_storage so AuthLink can use it securely
     if (token != null) {
       const storage = FlutterSecureStorage();
       await storage.write(key: 'jwt_token', value: token);
+      if (refreshToken != null) {
+        await storage.write(key: 'jwt_refresh_token', value: refreshToken);
+      }
     }
     
     // Proceed to fetch 'me'
@@ -123,8 +139,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     final QueryResult meResult = await client.query(meOptions);
 
     if (meResult.hasException) {
-      throw Exception(meResult.exception.toString());
+      throw Exception(_extractErrorMessage(meResult.exception));
     }
+
 
     final userData = meResult.data?['me'] as Map<String, dynamic>?;
     if (userData == null) {
@@ -158,6 +175,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     // which causes 'Error decoding signature' on the server.
     const storage = FlutterSecureStorage();
     await storage.delete(key: 'jwt_token');
+    await storage.delete(key: 'jwt_refresh_token');
 
     const String registerMutation = r'''
       mutation RegisterUser($email: String!, $password: String!, $firstName: String!, $lastName: String!, $userType: String!) {
@@ -194,13 +212,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     final QueryResult result = await client.mutate(options);
 
     if (result.hasException) {
-      throw Exception(result.exception.toString());
+      throw Exception(_extractErrorMessage(result.exception));
     }
 
     final success = result.data?['registerUser']?['success'] as bool? ?? false;
     if (!success) {
-      throw Exception('Registration failed');
+      throw Exception('El registro no pudo completarse. Intenta nuevamente.');
     }
+
 
     // After successful registration, we login the user
     final userModel = await login(cleanEmail, password);
@@ -483,6 +502,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
     const storage = FlutterSecureStorage();
     await storage.delete(key: 'jwt_token');
+    await storage.delete(key: 'jwt_refresh_token');
   }
 
   @override

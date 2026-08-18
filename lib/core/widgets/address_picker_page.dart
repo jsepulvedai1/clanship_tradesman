@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:http/http.dart' as http;
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
+import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 
 class AddressPickerPage extends StatefulWidget {
   final String? initialAddress;
@@ -23,8 +24,8 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
   LatLng _currentCenter = const LatLng(-33.4489, -70.6693); // Default Santiago Centro
   String _currentAddress = '';
   bool _isLoadingAddress = false;
-  bool _isSearching = false;
   List<Map<String, dynamic>> _predictions = [];
+
   Timer? _debounce;
 
   @override
@@ -80,8 +81,9 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
 
     return await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.low,
-      timeLimit: const Duration(seconds: 5),
-    );
+    ).timeout(const Duration(seconds: 5), onTimeout: () {
+      throw 'Location timeout';
+    });
   }
 
   Future<void> _reverseGeocode(LatLng position) async {
@@ -144,8 +146,9 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
 
   Future<void> _fetchAutocomplete(String input) async {
     const apiKey = 'AIzaSyB985z0U9nO1LXSrpnn4qwnbDAe-7opBHI';
+    final langCode = Localizations.localeOf(context).languageCode;
     final url = Uri.parse(
-      'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(input)}&key=$apiKey&components=country:cl&language=es',
+      'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(input)}&key=$apiKey&components=country:cl&language=$langCode',
     );
 
     try {
@@ -169,10 +172,10 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
     _searchFocusNode.unfocus();
     setState(() {
       _predictions = [];
-      _isSearching = false;
       _currentAddress = prediction['description'];
       _searchController.text = _currentAddress;
     });
+
 
     const apiKey = 'AIzaSyB985z0U9nO1LXSrpnn4qwnbDAe-7opBHI';
     final url = Uri.parse(
@@ -203,25 +206,26 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
   }
 
   void _showGpsInfoDialog() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.my_location, color: AppColors.primaryAzure),
-            SizedBox(width: 10),
-            Text('GPS Actual', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const Icon(Icons.my_location, color: AppColors.primaryAzure),
+            const SizedBox(width: 10),
+            Text(l10n.mapGpsDialogTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           ],
         ),
-        content: const Text(
-          'Esta función utiliza el sensor GPS de tu dispositivo para obtener tu ubicación geográfica en tiempo real, centrar el mapa en tus coordenadas exactas y autocompletar la dirección.',
-          style: TextStyle(fontSize: 14, height: 1.4, color: Colors.black87),
+        content: Text(
+          l10n.mapGpsDialogContent,
+          style: const TextStyle(fontSize: 14, height: 1.4, color: Colors.black87),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Entendido', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(l10n.commonUnderstood, style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -229,25 +233,26 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
   }
 
   void _showConfirmAddressInfoDialog() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.pin_drop, color: AppColors.primaryAzure),
-            SizedBox(width: 10),
-            Text('Fijar Dirección', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const Icon(Icons.pin_drop, color: AppColors.primaryAzure),
+            const SizedBox(width: 10),
+            Text(l10n.mapPinAddressDialogTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           ],
         ),
-        content: const Text(
-          'Confirma y guarda el punto exacto seleccionado en el mapa como tu dirección registrada o punto base de atención.',
-          style: TextStyle(fontSize: 14, height: 1.4, color: Colors.black87),
+        content: Text(
+          l10n.mapPinAddressDialogContent,
+          style: const TextStyle(fontSize: 14, height: 1.4, color: Colors.black87),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Entendido', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(l10n.commonUnderstood, style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -256,6 +261,8 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -317,7 +324,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                             borderRadius: BorderRadius.circular(30),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -328,7 +335,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                             focusNode: _searchFocusNode,
                             onChanged: _onSearchChanged,
                             decoration: InputDecoration(
-                              hintText: 'Buscar dirección...',
+                              hintText: l10n.mapSearchAddressHint,
                               hintStyle: const TextStyle(color: Colors.black38),
                               prefixIcon: const Icon(Icons.search, color: Colors.black45),
                               suffixIcon: _searchController.text.isNotEmpty
@@ -361,7 +368,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -423,7 +430,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                   mini: true,
                   backgroundColor: Colors.white,
                   onPressed: _initializeLocation,
-                  tooltip: 'GPS Actual',
+                  tooltip: l10n.mapCurrentGpsTooltip,
                   child: const Icon(Icons.my_location, color: AppColors.primaryBlue),
                 ),
               ],
@@ -441,7 +448,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   ),
@@ -460,7 +467,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                         child: _isLoadingAddress
                             ? const LinearProgressIndicator(color: AppColors.primaryAzure)
                             : Text(
-                                _currentAddress.isNotEmpty ? _currentAddress : 'Selecciona una ubicación',
+                                _currentAddress.isNotEmpty ? _currentAddress : l10n.mapSelectLocationHint,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
@@ -477,7 +484,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                           size: 22,
                         ),
                         onPressed: _showConfirmAddressInfoDialog,
-                        tooltip: 'Información sobre Fijar Dirección',
+                        tooltip: l10n.mapPinAddressTooltip,
                       ),
                     ],
                   ),
@@ -501,9 +508,9 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      'Confirmar Ubicación',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    child: Text(
+                      l10n.mapConfirmLocation,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ),
                 ],
@@ -515,3 +522,4 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
     );
   }
 }
+

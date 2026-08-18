@@ -1,5 +1,4 @@
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
-import 'package:clanship_mobile_tradesman/features/auth/domain/entities/user.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
 import 'package:clanship_mobile_tradesman/features/home/domain/entities/user_entity.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/bloc/profile_bloc.dart';

@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:clanship_mobile_tradesman/core/config/environment_config.dart';
 import 'package:clanship_mobile_tradesman/features/chat/data/models/message_model.dart';
 
@@ -24,7 +24,7 @@ abstract class ChatRemoteDataSource {
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   final GraphQLClient client;
   final storage = const FlutterSecureStorage();
-  WebSocketChannel? _channel;
+  WebSocket? _socket;
   StreamController<MessageModel>? _streamController;
   StreamController<Map<String, dynamic>>? _jobStatusController;
 
@@ -137,30 +137,42 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     
     final uri = Uri.parse(EnvConfig.instance.websocketUrl);
     final baseUrl = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
-    final wsUrl = Uri.parse('$baseUrl/ws/chat/$roomId/?token=$token');
+    final wsUrl = '$baseUrl/ws/chat/$roomId/?token=$token';
 
-    _channel = WebSocketChannel.connect(wsUrl);
+    try {
+      _socket = await WebSocket.connect(wsUrl);
 
-    _channel!.stream.listen(
-      (data) {
-        try {
-          final Map<String, dynamic> jsonData = jsonDecode(data);
-          final type = jsonData['event'] ?? jsonData['type'];
-          if (type == 'JOB_STATUS_CHANGED' || type == 'job_status_changed') {
-            _jobStatusController?.add(jsonData);
-          } else {
-            final message = MessageModel.fromJsonWebSocket(jsonData);
-            _streamController?.add(message);
+      _socket!.listen(
+        (data) {
+          try {
+            final Map<String, dynamic> jsonData = jsonDecode(data.toString());
+            final type = (jsonData['event'] ?? jsonData['type'] ?? '').toString().toLowerCase();
+            if (type == 'job_status_changed' || type == 'job_updated' || type == 'job_cancelled') {
+              if (_jobStatusController != null && !_jobStatusController!.isClosed) {
+                _jobStatusController?.add(jsonData);
+              }
+            } else {
+              final message = MessageModel.fromJsonWebSocket(jsonData);
+              if (_streamController != null && !_streamController!.isClosed) {
+                _streamController?.add(message);
+              }
+            }
+          } catch (_) {}
+        },
+        onError: (error) {
+          if (_streamController != null && !_streamController!.isClosed) {
+            _streamController?.addError(error);
           }
-        } catch (_) {}
-      },
-      onError: (error) {
-        _streamController?.addError(error);
-      },
-      onDone: () {
-        // Handle disconnection if necessary
-      },
-    );
+        },
+        onDone: () {
+          // Handle disconnection if necessary
+        },
+      );
+    } catch (e) {
+      if (_streamController != null && !_streamController!.isClosed) {
+        _streamController?.addError(e);
+      }
+    }
   }
 
   @override
@@ -171,8 +183,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     String? fileName, 
     String? messageType,
   }) async {
-    if (_channel != null) {
-      _channel!.sink.add(jsonEncode({
+    if (_socket != null) {
+      _socket!.add(jsonEncode({
         'message': text,
         'file_base64': fileBase64,
         'file_name': fileName,
@@ -185,11 +197,17 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
   @override
   void closeConnection() {
-    _channel?.sink.close();
-    _channel = null;
-    _streamController?.close();
+    try {
+      _socket?.close();
+    } catch (_) {}
+    _socket = null;
+    if (_streamController != null && !_streamController!.isClosed) {
+      _streamController?.close();
+    }
     _streamController = null;
-    _jobStatusController?.close();
+    if (_jobStatusController != null && !_jobStatusController!.isClosed) {
+      _jobStatusController?.close();
+    }
     _jobStatusController = null;
   }
 }
