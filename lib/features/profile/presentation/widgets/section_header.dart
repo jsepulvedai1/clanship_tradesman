@@ -16,7 +16,7 @@ class SectionHeader extends StatelessWidget {
       child: Center(
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.primaryBlue,
             fontSize: 32,
             fontWeight: FontWeight.bold,

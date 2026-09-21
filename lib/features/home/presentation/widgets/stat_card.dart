@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class StatCard extends StatelessWidget {
   final String value;
@@ -11,6 +12,10 @@ class StatCard extends StatelessWidget {
   final Color iconColor;
   final bool showChevron;
   final Color chevronColor;
+  final Color? backgroundColor;
+  final String? bgImageUrl;
+  final Color? labelColor;
+  final double? imageOpacity;
 
   const StatCard({
     super.key,
@@ -23,6 +28,10 @@ class StatCard extends StatelessWidget {
     required this.iconColor,
     this.showChevron = false,
     required this.chevronColor,
+    this.backgroundColor,
+    this.bgImageUrl,
+    this.labelColor,
+    this.imageOpacity,
   });
 
   @override
@@ -31,12 +40,19 @@ class StatCard extends StatelessWidget {
     final double screenHeight = MediaQuery.of(context).size.height;
     final bool isSmallScreen = screenHeight < 750;
 
-    Color cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    Color cardColor = backgroundColor ?? (isDark ? const Color(0xFF1E293B) : Colors.white);
     if (hasHighlight) {
       cardColor = isDark
           ? const Color(0xFF0D2B45).withValues(alpha: 0.2)
           : const Color(0xFF0D2B45).withValues(alpha: 0.05);
     }
+
+    final bool isBackgroundDark = isDark || (backgroundColor != null && backgroundColor!.computeLuminance() < 0.45);
+    final Color defaultLabelColor = isBackgroundDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF2E3135);
+    final Color effectiveLabelColor = labelColor ?? defaultLabelColor;
+    final Color effectiveValueColor = (isBackgroundDark && valueColor == const Color(0xFF2E3135))
+        ? Colors.white
+        : valueColor;
 
     return GestureDetector(
       onTap: onTap,
@@ -47,7 +63,9 @@ class StatCard extends StatelessWidget {
           border: Border.all(
             color: hasHighlight
                 ? const Color(0xFF0D2B45).withValues(alpha: 0.2)
-                : const Color(0xFFE2E8F0),
+                : (backgroundColor != null
+                    ? backgroundColor!.withValues(alpha: 0.4)
+                    : const Color(0xFFE2E8F0)),
             width: 1.5,
           ),
           boxShadow: [
@@ -58,57 +76,90 @@ class StatCard extends StatelessWidget {
             ),
           ],
         ),
-        padding: EdgeInsets.symmetric(
-          horizontal: isSmallScreen ? 8 : 12,
-          vertical: isSmallScreen ? 8 : 12,
-        ),
-        child: Row(
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
           children: [
-            // Icono con círculo de fondo
-            Container(
-              padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
+            if (bgImageUrl != null && bgImageUrl!.isNotEmpty) ...[
+              Positioned.fill(
+                child: Opacity(
+                  opacity: (imageOpacity ?? 0.25).clamp(0.0, 1.0),
+                  child: CachedNetworkImage(
+                    imageUrl: bgImageUrl!,
+                    fit: BoxFit.cover,
+                    fadeInDuration: const Duration(milliseconds: 150),
+                    fadeOutDuration: const Duration(milliseconds: 100),
+                    placeholder: (context, url) => const SizedBox.shrink(),
+                    errorWidget: (context, url, error) => const SizedBox.shrink(),
+                  ),
+                ),
               ),
-              child: SvgPicture.asset(
-                svgIconPath,
-                width: isSmallScreen ? 16 : 20,
-                height: isSmallScreen ? 16 : 20,
-                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+            ],
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 8 : 12,
+                vertical: isSmallScreen ? 8 : 12,
               ),
-            ),
-            SizedBox(width: isSmallScreen ? 8 : 12),
-            // Textos
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Row(
                 children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      color: valueColor,
-                      fontSize: isSmallScreen ? 18 : 24,
-                      fontWeight: FontWeight.bold,
+                  // Icono con círculo de fondo
+                  Container(
+                    padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
+                    decoration: BoxDecoration(
+                      color: iconColor.withValues(alpha: isBackgroundDark ? 0.2 : 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: SvgPicture.asset(
+                      svgIconPath,
+                      width: isSmallScreen ? 16 : 20,
+                      height: isSmallScreen ? 16 : 20,
+                      colorFilter: ColorFilter.mode(
+                        isBackgroundDark && iconColor == const Color(0xFF2E3135)
+                            ? Colors.white
+                            : iconColor,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: const Color(0xFF2E3135),
-                      fontSize: isSmallScreen ? 9 : 10,
-                      fontWeight: FontWeight.bold,
-                      height: 1.2,
+                  SizedBox(width: isSmallScreen ? 8 : 12),
+                  // Textos
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          value,
+                          style: TextStyle(
+                            color: effectiveValueColor,
+                            fontSize: isSmallScreen ? 18 : 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            color: effectiveLabelColor,
+                            fontSize: isSmallScreen ? 9 : 10,
+                            fontWeight: FontWeight.bold,
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  if (showChevron) ...[
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: isSmallScreen ? 10 : 12,
+                      color: isBackgroundDark && chevronColor == const Color(0xFF2E3135)
+                          ? Colors.white70
+                          : chevronColor,
+                    ),
+                  ],
                 ],
               ),
             ),
-            if (showChevron) ...[
-              Icon(Icons.arrow_forward_ios, size: isSmallScreen ? 10 : 12, color: chevronColor),
-            ],
           ],
         ),
       ),

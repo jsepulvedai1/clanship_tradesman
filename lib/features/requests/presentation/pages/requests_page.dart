@@ -8,6 +8,8 @@ import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/
 import 'active_request_detail_page.dart';
 import '../widgets/active_request_item.dart';
 import 'package:clanship_mobile_tradesman/features/requests/domain/entities/active_request_detail_entity.dart';
+import 'package:clanship_mobile_tradesman/core/services/ugc_safety_service.dart';
+import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 
 class RequestsPage extends StatefulWidget {
@@ -18,10 +20,24 @@ class RequestsPage extends StatefulWidget {
 }
 
 class _RequestsPageState extends State<RequestsPage> {
+  VoidCallback? _blockedListener;
+
   @override
   void initState() {
     super.initState();
     context.read<RequestsBloc>().add(LoadPendingRequests());
+    _blockedListener = () {
+      if (mounted) setState(() {});
+    };
+    di.sl<UgcSafetyService>().blockedUserIdsNotifier.addListener(_blockedListener!);
+  }
+
+  @override
+  void dispose() {
+    if (_blockedListener != null) {
+      di.sl<UgcSafetyService>().blockedUserIdsNotifier.removeListener(_blockedListener!);
+    }
+    super.dispose();
   }
 
   @override
@@ -81,7 +97,11 @@ class _RequestsPageState extends State<RequestsPage> {
               } else if (state is RequestsError) {
                 return Center(child: Text('Error: ${state.message}'));
               } else if (state is RequestsLoaded) {
-                final requests = state.requests;
+                final blockedIds = di.sl<UgcSafetyService>().getBlockedUserIds();
+                final requests = state.requests.where((r) {
+                  return !blockedIds.contains(r.id) &&
+                      !blockedIds.contains(r.customerId.toString());
+                }).toList();
                 
                 final pendingRequests = requests.where((r) => r.status == 'REQUESTED').toList();
                 final agreedRequests = requests.where((r) => r.status == 'AGREED' || r.status == 'SCHEDULED' || r.status == 'IN_VISIT').toList();

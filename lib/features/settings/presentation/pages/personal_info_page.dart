@@ -76,7 +76,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
             prefixIcon: Icon(prefixIcon, color: AppColors.primaryBlue),
             hintText: hintText,
             filled: true,
-            fillColor: (isDark ? Colors.white : Colors.black).withOpacity(0.04),
+            fillColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04),
             suffixIcon: const Tooltip(
               message: 'Este campo no puede ser modificado',
               child: Icon(Icons.lock_outline_rounded, size: 18, color: Colors.grey),
@@ -205,16 +205,16 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryBlue.withOpacity(0.08),
+                  color: AppColors.primaryBlue.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.primaryBlue.withOpacity(0.2),
+                    color: AppColors.primaryBlue.withValues(alpha: 0.2),
                   ),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(Icons.lock_rounded, color: AppColors.primaryBlue, size: 24),
-                    SizedBox(width: 14),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Text(
                         'Tus datos personales no pueden ser editados directamente. Si necesitas cambiar algún dato, por favor contacta al equipo de soporte.',

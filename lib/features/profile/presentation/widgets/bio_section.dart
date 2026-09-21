@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
+import 'package:clanship_mobile_tradesman/core/utils/text_formatter.dart';
+import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 
 class BioSection extends StatelessWidget {
   final String biography;
@@ -74,7 +75,7 @@ class BioSection extends StatelessWidget {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
               biography.isNotEmpty
-                  ? biography
+                  ? formatBioText(biography)
                   : 'Sin biografía aún. Haz clic en Editar para agregar una.',
               style: TextStyle(
                 fontSize: 14,

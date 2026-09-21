@@ -1,11 +1,44 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Brand Colors (Vibrant/Action)
-  static const Color primaryBlue = Color(0xFF0D2B45); // Deep Blue
-  static const Color primaryAzure = Color(0xFF0B6E4F); // Green
+  // Brand Defaults (Official Corporate Colors)
+  static const Color defaultPrimaryBlue = Color(0xFF0D2B45); // Deep Blue
+  static const Color defaultPrimaryAzure = Color(0xFF0B6E4F); // Green (#0B6E4F)
+  static const Color defaultAccentCyan = Color(0xFFF28C28); // Orange (#F28C28)
+
+  // Mutable overrides for dynamic remote seasonal theming
+  static Color _primaryBlue = defaultPrimaryBlue;
+  static Color _primaryAzure = defaultPrimaryAzure;
+  static Color _accentCyan = defaultAccentCyan;
+
+  // Dynamic getters
+  static Color get primaryBlue => _primaryBlue;
+  static Color get primaryAzure => _primaryAzure;
+  static Color get accentCyan => _accentCyan;
+
+  // Semantic aliases for consistency
+  static Color get primary => _primaryAzure;
+  static Color get secondary => _primaryBlue;
+  static Color get accent => _accentCyan;
+
+  static void setSeasonalOverrides({
+    Color? primary,
+    Color? secondary,
+    Color? accent,
+  }) {
+    if (primary != null) _primaryAzure = primary;
+    if (secondary != null) _primaryBlue = secondary;
+    if (accent != null) _accentCyan = accent;
+  }
+
+  static void resetDefaults() {
+    _primaryAzure = defaultPrimaryAzure;
+    _primaryBlue = defaultPrimaryBlue;
+    _accentCyan = defaultAccentCyan;
+  }
+
+  // Other brand colors
   static const Color availabilityGreen = Color(0xFF13D934); // Green
-  static const Color accentCyan = Color(0xFFF28C28); // Orange
   static const Color textDark = Color(0xFF2E3135); // Graphite Grey
   static const Color gray = Color(0xFF323437);
 
@@ -24,7 +57,7 @@ class AppColors {
 
   // Semantic Colors (Stats)
   static const Color statsGreen = Color(0xFF00C853);
-  static const Color statsBlue = Color(0xFF0B6E4F);
+  static Color get statsBlue => _primaryAzure;
   static const Color statsRed = Color(0xFFFF5252);
   static const Color statsOrange = Color(0xFFFFAB40);
   static const Color availabilityActive = Color.fromARGB(221, 2, 122, 24);
@@ -35,7 +68,5 @@ class AppColors {
   static const Color successGreen = Color(0xFF4CAF50);
 
   // Helper for Gradients
-  static const List<Color> logoGradient = [primaryBlue, primaryAzure];
-
-  static var primary;
+  static List<Color> get logoGradient => [primaryBlue, primaryAzure];
 }

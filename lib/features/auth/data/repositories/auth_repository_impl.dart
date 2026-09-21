@@ -39,6 +39,7 @@ class AuthRepositoryImpl implements AuthRepository {
     List<String>? subtagIds,
     String? bio,
     List<String>? workPhotoPaths,
+    String? referralCode,
   }) async {
     try {
       final userModel = await remoteDataSource.register(
@@ -59,6 +60,7 @@ class AuthRepositoryImpl implements AuthRepository {
         subtagIds: subtagIds,
         bio: bio,
         workPhotoPaths: workPhotoPaths,
+        referralCode: referralCode,
       );
       return Right(UserMapper.toEntity(userModel));
     } catch (e) {
@@ -92,6 +94,14 @@ class AuthRepositoryImpl implements AuthRepository {
       final userModel = await remoteDataSource.getCurrentUser();
       return Right(UserMapper.toEntity(userModel));
     } catch (e) {
+      final lower = e.toString().toLowerCase();
+      if (lower.contains('no saved token') ||
+          lower.contains('signature') ||
+          lower.contains('session_invalidated') ||
+          lower.contains('token is invalid') ||
+          lower.contains('token_expired')) {
+        return Left(AuthFailure(message: e.toString()));
+      }
       return Left(ServerFailure(message: e.toString()));
     }
   }
@@ -116,6 +126,26 @@ class AuthRepositoryImpl implements AuthRepository {
         email: email,
         phoneNumber: phoneNumber,
       );
+      return Right(res);
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> validateReferralCode(String code) async {
+    try {
+      final res = await remoteDataSource.validateReferralCode(code);
+      return Right(res);
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, String>>> getReferralProgramContent({String? language}) async {
+    try {
+      final res = await remoteDataSource.getReferralProgramContent(language: language);
       return Right(res);
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));

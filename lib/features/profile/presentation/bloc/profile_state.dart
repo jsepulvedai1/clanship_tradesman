@@ -25,6 +25,8 @@ class ProfileLoaded extends ProfileState {
   final List<Map<String, dynamic>> availableTags;
   final List<Map<String, dynamic>> availableSpecialties;
   final List<SubscriptionPlanEntity> availablePlans;
+  final AppConfigEntity appConfig;
+  final ReferralContentEntity referralContent;
   final String? errorMessage;
 
   const ProfileLoaded({
@@ -40,6 +42,8 @@ class ProfileLoaded extends ProfileState {
     this.availableTags = const [],
     this.availableSpecialties = const [],
     this.availablePlans = const [],
+    this.appConfig = const AppConfigEntity(),
+    this.referralContent = const ReferralContentEntity(),
     this.errorMessage,
   });
 
@@ -56,6 +60,8 @@ class ProfileLoaded extends ProfileState {
     List<Map<String, dynamic>>? availableTags,
     List<Map<String, dynamic>>? availableSpecialties,
     List<SubscriptionPlanEntity>? availablePlans,
+    AppConfigEntity? appConfig,
+    ReferralContentEntity? referralContent,
     String? errorMessage,
   }) {
     return ProfileLoaded(
@@ -71,6 +77,8 @@ class ProfileLoaded extends ProfileState {
       availableTags: availableTags ?? this.availableTags,
       availableSpecialties: availableSpecialties ?? this.availableSpecialties,
       availablePlans: availablePlans ?? this.availablePlans,
+      appConfig: appConfig ?? this.appConfig,
+      referralContent: referralContent ?? this.referralContent,
       errorMessage: errorMessage, // We don't default to this.errorMessage to allow clearing it
     );
   }
@@ -89,6 +97,8 @@ class ProfileLoaded extends ProfileState {
         availableTags,
         availableSpecialties,
         availablePlans,
+        appConfig,
+        referralContent,
         errorMessage,
       ];
 }

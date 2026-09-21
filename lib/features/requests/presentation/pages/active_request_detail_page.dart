@@ -440,7 +440,7 @@ class _ActiveRequestDetailPageState extends State<ActiveRequestDetailPage> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.08),
+                  color: Colors.orange.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.orange.shade300, width: 1.5),
                 ),
@@ -468,7 +468,7 @@ class _ActiveRequestDetailPageState extends State<ActiveRequestDetailPage> {
                   icon: const Icon(Icons.calendar_today_rounded),
                   label: Text(l10n.requestRescheduleVisit),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(
+                    side: BorderSide(
                       color: AppColors.primaryBlue,
                       width: 2,
                     ),
@@ -522,7 +522,7 @@ class _ActiveRequestDetailPageState extends State<ActiveRequestDetailPage> {
                   icon: const Icon(Icons.calendar_today_rounded),
                   label: Text(l10n.requestRescheduleVisit),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(
+                    side: BorderSide(
                       color: AppColors.primaryBlue,
                       width: 2,
                     ),
@@ -708,7 +708,7 @@ class _ActiveRequestDetailPageState extends State<ActiveRequestDetailPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.08),
+        color: Colors.red.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.red.shade300, width: 1.5),
       ),
@@ -749,7 +749,7 @@ class _ActiveRequestDetailPageState extends State<ActiveRequestDetailPage> {
                 fontSize: 14,
                 color: Theme.of(
                   context,
-                ).colorScheme.onSurface.withOpacity(0.85),
+                ).colorScheme.onSurface.withValues(alpha: 0.85),
               ),
             ),
           ],

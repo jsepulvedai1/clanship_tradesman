@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
+import 'package:clanship_mobile_tradesman/features/auth/presentation/widgets/terms_and_eula_dialog.dart';
 import 'register_page.dart';
 import 'forgot_password_page.dart';
 
@@ -81,13 +82,13 @@ class _LoginPageState extends State<LoginPage> {
                 child: CustomPaint(painter: TopWavePainter()),
               ),
               // Bottom-right deep blue decorative wave
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 180,
-                child: CustomPaint(painter: BottomWavePainter()),
-              ),
+              // Positioned(
+              //   bottom: 0,
+              //   left: 0,
+              //   right: 0,
+              //   height: 180,
+              //   child: CustomPaint(painter: BottomWavePainter()),
+              // ),
               // Main content
               SafeArea(
                 child: SingleChildScrollView(
@@ -95,8 +96,8 @@ class _LoginPageState extends State<LoginPage> {
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   child: Column(
                     children: [
-                      // Language Selector at top right
-                      _buildLanguageSelector(context),
+                      // Top Bar: Terms & EULA on Left, Language on Right
+                      _buildTopBar(context, l10n),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 24.0),
                         child: Column(
@@ -132,50 +133,99 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildLanguageSelector(BuildContext context) {
-    return BlocBuilder<LanguageBloc, LanguageState>(
-      builder: (context, state) {
-        final currentCode = state.locale.languageCode.toUpperCase();
-        return Align(
-          alignment: Alignment.topRight,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 8, right: 16),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () => _showLanguageModal(context),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 6,
+  Widget _buildTopBar(BuildContext context, AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Terms & EULA Pill Button
+          InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () => TermsAndEulaDialog.show(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.gavel_rounded,
+                    size: 16,
+                    color: Color(0xFF0D2B45),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    l10n.authTermsAndEula,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0D2B45),
                     ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.language_rounded, size: 16, color: Color(0xFF0D2B45)),
-                    const SizedBox(width: 6),
-                    Text(
-                      currentCode,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0D2B45),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
-        );
-      },
+
+          // Language Selector
+          BlocBuilder<LanguageBloc, LanguageState>(
+            builder: (context, state) {
+              final currentCode = state.locale.languageCode.toUpperCase();
+              return InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => _showLanguageModal(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.language_rounded,
+                        size: 16,
+                        color: Color(0xFF0D2B45),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        currentCode,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0D2B45),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -205,25 +255,40 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 12),
                 ListTile(
                   leading: const Text('🇪🇸', style: TextStyle(fontSize: 24)),
-                  title: const Text('Español', style: TextStyle(fontWeight: FontWeight.w600)),
+                  title: const Text(
+                    'Español',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   onTap: () {
-                    context.read<LanguageBloc>().add(const LanguageChanged(Locale('es')));
+                    context.read<LanguageBloc>().add(
+                      const LanguageChanged(Locale('es')),
+                    );
                     Navigator.pop(ctx);
                   },
                 ),
                 ListTile(
                   leading: const Text('🇺🇸', style: TextStyle(fontSize: 24)),
-                  title: const Text('English', style: TextStyle(fontWeight: FontWeight.w600)),
+                  title: const Text(
+                    'English',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   onTap: () {
-                    context.read<LanguageBloc>().add(const LanguageChanged(Locale('en')));
+                    context.read<LanguageBloc>().add(
+                      const LanguageChanged(Locale('en')),
+                    );
                     Navigator.pop(ctx);
                   },
                 ),
                 ListTile(
                   leading: const Text('🇫🇷', style: TextStyle(fontSize: 24)),
-                  title: const Text('Français', style: TextStyle(fontWeight: FontWeight.w600)),
+                  title: const Text(
+                    'Français',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   onTap: () {
-                    context.read<LanguageBloc>().add(const LanguageChanged(Locale('fr')));
+                    context.read<LanguageBloc>().add(
+                      const LanguageChanged(Locale('fr')),
+                    );
                     Navigator.pop(ctx);
                   },
                 ),
@@ -438,7 +503,10 @@ class _LoginPageState extends State<LoginPage> {
         ElevatedButton(
           onPressed: () {
             context.read<AuthBloc>().add(
-              LoginRequested(_emailController.text.trim().toLowerCase(), _passwordController.text),
+              LoginRequested(
+                _emailController.text.trim().toLowerCase(),
+                _passwordController.text,
+              ),
             );
           },
           style: ElevatedButton.styleFrom(
@@ -530,22 +598,23 @@ class _LoginPageState extends State<LoginPage> {
               Text(
                 l10n.authRegisterHere,
                 style: const TextStyle(
-                  color: Color(0xFF0D2B45),
+                  color: Color.fromARGB(255, 255, 98, 0),
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
                 ),
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF0D2B45)),
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 12,
+                color: Color.fromARGB(255, 255, 98, 0),
+              ),
             ],
           ),
         ),
       ],
     );
   }
-
-
-
 }
 
 // Background Wave Painters
@@ -583,7 +652,7 @@ class BottomWavePainter extends CustomPainter {
 
     final path = Path()
       ..moveTo(size.width, size.height)
-      ..lineTo(size.width * 0.5, size.height)
+      ..lineTo(size.width * 0.1, size.height)
       ..quadraticBezierTo(
         size.width * 0.7,
         size.height * 0.6,

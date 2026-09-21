@@ -18,6 +18,10 @@ import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/re
 import 'package:clanship_mobile_tradesman/features/home/presentation/bloc/home_bloc.dart';
 import 'package:clanship_mobile_tradesman/core/network/session_service.dart';
 
+import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
+import 'package:clanship_mobile_tradesman/core/theme/bloc/seasonal_theme_bloc.dart';
+import 'package:clanship_mobile_tradesman/core/theme/bloc/seasonal_theme_event.dart';
+import 'package:clanship_mobile_tradesman/core/theme/bloc/seasonal_theme_state.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 
 /// Clave global de navegación para poder navegar desde fuera del widget tree
@@ -79,6 +83,9 @@ class _AntiGravityAppState extends State<AntiGravityApp> {
         BlocProvider(create: (_) => di.sl<AuthBloc>()),
         BlocProvider(create: (_) => di.sl<RequestsBloc>()),
         BlocProvider(create: (_) => di.sl<HomeBloc>()),
+        BlocProvider(
+          create: (_) => di.sl<SeasonalThemeBloc>()..add(const LoadSeasonalTheme()),
+        ),
       ],
       child: Builder(
         builder: (context) {
@@ -88,22 +95,47 @@ class _AntiGravityAppState extends State<AntiGravityApp> {
             builder: (context, themeState) {
               return BlocBuilder<LanguageBloc, LanguageState>(
                 builder: (context, langState) {
-                  return MaterialApp(
-                    title: 'Anti Gravity Tradesman',
-                    navigatorKey: navigatorKey,
-                    debugShowCheckedModeBanner: false,
-                    theme: AppTheme.lightTheme,
-                    darkTheme: AppTheme.darkTheme,
-                    themeMode: ThemeMode.light, // Locked to light mode for now
-                    locale: langState.locale,
-                    localizationsDelegates: const [
-                      AppLocalizations.delegate,
-                      GlobalMaterialLocalizations.delegate,
-                      GlobalWidgetsLocalizations.delegate,
-                      GlobalCupertinoLocalizations.delegate,
-                    ],
-                    supportedLocales: AppLocalizations.supportedLocales,
-                    home: const SplashPage(),
+                  return BlocBuilder<SeasonalThemeBloc, SeasonalThemeState>(
+                    builder: (context, seasonalState) {
+                      if (seasonalState.hasActiveCampaign) {
+                        AppColors.setSeasonalOverrides(
+                          primary: seasonalState.primaryColor,
+                          secondary: seasonalState.secondaryColor,
+                          accent: seasonalState.accentColor,
+                        );
+                      } else {
+                        AppColors.resetDefaults();
+                      }
+
+                      final lightTheme = AppTheme.buildLightTheme(
+                        primary: seasonalState.primaryColor,
+                        secondary: seasonalState.secondaryColor,
+                        accent: seasonalState.accentColor,
+                      );
+                      final darkTheme = AppTheme.buildDarkTheme(
+                        primary: seasonalState.primaryColor,
+                        secondary: seasonalState.secondaryColor,
+                        accent: seasonalState.accentColor,
+                      );
+
+                      return MaterialApp(
+                        title: 'Anti Gravity Tradesman',
+                        navigatorKey: navigatorKey,
+                        debugShowCheckedModeBanner: false,
+                        theme: lightTheme,
+                        darkTheme: darkTheme,
+                        themeMode: ThemeMode.light, // Locked to light mode for now
+                        locale: langState.locale,
+                        localizationsDelegates: const [
+                          AppLocalizations.delegate,
+                          GlobalMaterialLocalizations.delegate,
+                          GlobalWidgetsLocalizations.delegate,
+                          GlobalCupertinoLocalizations.delegate,
+                        ],
+                        supportedLocales: AppLocalizations.supportedLocales,
+                        home: const SplashPage(),
+                      );
+                    },
                   );
                 },
               );

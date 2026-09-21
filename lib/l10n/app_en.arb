@@ -372,6 +372,88 @@
   "homeNoAddressConfigured": "No address configured",
   "homeServiceAreaInfoTitle": "Service Area",
   "homeServiceAreaInfoGps": "• Current GPS: Uses your live GPS location to receive requests near where you are physically located.",
-  "homeServiceAreaInfoPin": "• Set Address: Defines a fixed point or workshop on the map to receive requests in that sector permanently."
+  "homeServiceAreaInfoPin": "• Set Address: Defines a fixed point or workshop on the map to receive requests in that sector permanently.",
+  "authTermsAndEula": "Terms & EULA",
+  "settingsBlockedUsers": "Blocked Users",
+  "settingsBlockedUsersSubtitle": "Manage and review the users you have blocked",
+  "settingsBlockedUsersEmpty": "No blocked users.",
+  "settingsUnblock": "Unblock",
+  "settingsUnblockConfirmTitle": "Unblock user?",
+  "settingsUnblockConfirmBody": "Are you sure you want to unblock this user? They will be able to contact you again.",
+  "settingsEulaTile": "Terms of Service (EULA) & Zero Tolerance",
+  "chatReportUser": "Report user or chat",
+  "chatBlockUser": "Block customer",
+  "chatBlockConfirmTitle": "Block this customer?",
+  "chatBlockConfirmBody": "By blocking this user:\n\n• This chat will close immediately and all content will be hidden.\n• This customer will no longer be able to send you requests or messages.\n• Our moderation team will be notified to review their conduct and take action within 24 hours.",
+  "chatBlockConfirmButton": "Block customer",
+  "chatBlockedSuccess": "You have blocked this user. Our team will act within 24 hours.",
+  "eulaTitle": "Terms and Conditions (EULA)",
+  "eulaSubtitle": "End User License Agreement & Moderation",
+  "eulaZeroToleranceTitle": "ZERO TOLERANCE POLICY",
+  "eulaZeroToleranceBody": "Clanship enforces a strict ZERO TOLERANCE policy against objectionable, offensive, discriminatory, abusive, sexual, or fraudulent content, as well as users and customers engaging in inappropriate behavior.",
+  "eulaSection1Title": "1. End User License Agreement (EULA)",
+  "eulaSection1Body": "By downloading, registering, or using the Clanship Profesional application, you agree to be bound by these Terms of Service and License Agreement (EULA). If you do not agree to these terms, you must not use the application.",
+  "eulaSection2Title": "2. Community Guidelines & Prohibited Content",
+  "eulaSection2Intro": "As a service provider and platform user, you agree to:",
+  "eulaSection2Bullet1": "Not upload or send sexually explicit, pornographic, violent, or defamatory content.",
+  "eulaSection2Bullet2": "Maintain respectful, professional conduct free from any form of harassment or discrimination.",
+  "eulaSection2Bullet3": "Provide accurate information and authentic documentation regarding your certifications and credentials.",
+  "eulaSection2Bullet4": "Not use the platform for fraudulent purposes or commit scams.",
+  "eulaSection3Title": "3. Reporting & Blocking Tools",
+  "eulaSection3Intro": "To ensure the safety of professionals and users in Clanship:",
+  "eulaSection3Bullet1": "Block abusive customers: You can block any customer immediately from the chat menu. Upon blocking, the conversation closes and they cannot contact you.",
+  "eulaSection3Bullet2": "Report content or chats: You can report any suspicious, offensive, or spam message using the report button.",
+  "eulaSection3Bullet3": "24-Hour Moderation Commitment: Our team reviews every report within 24 hours. Any offending user will be sanctioned or permanently ejected.",
+  "eulaSection4Title": "4. Independent Service Nature",
+  "eulaSection4Body": "Clanship operates as a technology platform for coordination and connection between independent providers and clients. Each service and quote is agreed directly between the parties under their own professional responsibility.",
+  "eulaSection5Title": "5. Privacy & Sensitive Data",
+  "eulaSection5Body": "Your location, profile, and certification data are securely processed in accordance with our Privacy Policy solely to coordinate requests and validate your account.",
+  "eulaWebLink": "View full terms on the official website",
+  "eulaAcceptButton": "I Accept the Terms & EULA Policy",
+  "eulaCloseButton": "Understood & Close",
+  "settingsAssociateCode": "Associate Code",
+  "settingsAssociateCodeSubtitle": "Invite and earn free plan time",
+  "associateCodeTitle": "My Associate Code",
+  "associateCodeDescription": "Share your code with customers or contacts. Every time {target} people register with your code, you will earn {days} days of {plan} for free.",
+  "@associateCodeDescription": {
+    "placeholders": {
+      "target": { "type": "int" },
+      "days": { "type": "int" },
+      "plan": { "type": "String" }
+    }
+  },
+  "associateCodeCopy": "Copy Code",
+  "associateCodeShare": "Share Code",
+  "associateCodeCopied": "Code copied to clipboard!",
+  "associateCodeProgress": "{pending} of {target} registered towards your next reward",
+  "@associateCodeProgress": {
+    "placeholders": {
+      "pending": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "associateCodeTotal": "{total} people have registered with your code",
+  "@associateCodeTotal": {
+    "placeholders": {
+      "total": { "type": "int" }
+    }
+  },
+  "associateCodeShareMessage": "Hello! I invite you to join Clanship. Sign up using my associate code {code} to connect with me and find top home specialists: https://clanship.cl",
+  "@associateCodeShareMessage": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "registerReferralCodeLabel": "Associate or referral code (Optional)",
+  "registerReferralCodeHint": "E.g. CLAN-ABC12",
+  "associateCodeMaxRewardsReached": "You have reached the maximum benefit limit for this program.",
+  "associateCodeRewardsProgress": "{earned} of {max} benefits earned",
+  "@associateCodeRewardsProgress": {
+    "placeholders": {
+      "earned": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "associateCodeMaxReachedBadge": "Maximum goal reached"
 }
 

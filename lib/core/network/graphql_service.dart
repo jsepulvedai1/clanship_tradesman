@@ -79,14 +79,16 @@ class GraphQLService {
                     SessionService.instance.notifySessionInvalidated('Tu sesión ha expirado.');
                   }
                 } else {
-                  await storage.delete(key: 'jwt_token');
-                  await storage.delete(key: 'jwt_refresh_token');
-                  SessionService.instance.notifySessionInvalidated('Tu sesión ha expirado.');
+                  // Solo borrar tokens si el backend respondió explícitamente con un error de GraphQL (token expirado/revocado).
+                  // Si fue linkException (502 Bad Gateway / servidor reiniciándose / timeout), NO borramos tokens.
+                  if (result.exception?.linkException == null) {
+                    await storage.delete(key: 'jwt_token');
+                    await storage.delete(key: 'jwt_refresh_token');
+                    SessionService.instance.notifySessionInvalidated('Tu sesión ha expirado.');
+                  }
                 }
               } catch (e) {
-                await storage.delete(key: 'jwt_token');
-                await storage.delete(key: 'jwt_refresh_token');
-                SessionService.instance.notifySessionInvalidated('Tu sesión ha expirado.');
+                // Error de conexión o socket: NO borrar tokens
               }
             } else {
               await storage.delete(key: 'jwt_token');

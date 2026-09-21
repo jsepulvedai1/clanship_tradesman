@@ -7,7 +7,7 @@ class SupportPage extends StatelessWidget {
 
   // Support contact info
   static const String supportEmail = 'soporte@clanship.cl';
-  static const String supportWhatsApp = '56966547998';
+  static const String supportWhatsApp = '56939261697';
 
   Future<void> _launchEmail(BuildContext context) async {
     final Uri emailUri = Uri(
@@ -101,7 +101,7 @@ class SupportPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   colors: [
                     AppColors.primaryBlue,
                     AppColors.primaryAzure,

@@ -18,6 +18,16 @@ class User extends Equatable {
   final String verificationStatus;
   final String? rejectionReason;
   final bool requiresPlanUpgrade;
+  final String? referralCode;
+  final int referralsTotalCount;
+  final int referralsPendingCount;
+  final int referralsTargetCount;
+  final String? referralRewardPlanName;
+  final int referralRewardDays;
+  final DateTime? planExpiresAt;
+  final int referralsRewardsEarnedCount;
+  final int referralMaxRewardsPerUser;
+  final bool referralHasReachedMaxRewards;
 
   const User({
     required this.id,
@@ -37,6 +47,16 @@ class User extends Equatable {
     this.verificationStatus = 'PENDING',
     this.rejectionReason,
     this.requiresPlanUpgrade = false,
+    this.referralCode,
+    this.referralsTotalCount = 0,
+    this.referralsPendingCount = 0,
+    this.referralsTargetCount = 5,
+    this.referralRewardPlanName = 'Plan Profesional',
+    this.referralRewardDays = 30,
+    this.planExpiresAt,
+    this.referralsRewardsEarnedCount = 0,
+    this.referralMaxRewardsPerUser = 1,
+    this.referralHasReachedMaxRewards = false,
   });
 
   bool get isRejected {
@@ -70,6 +90,16 @@ class User extends Equatable {
     String? verificationStatus,
     String? rejectionReason,
     bool? requiresPlanUpgrade,
+    String? referralCode,
+    int? referralsTotalCount,
+    int? referralsPendingCount,
+    int? referralsTargetCount,
+    String? referralRewardPlanName,
+    int? referralRewardDays,
+    DateTime? planExpiresAt,
+    int? referralsRewardsEarnedCount,
+    int? referralMaxRewardsPerUser,
+    bool? referralHasReachedMaxRewards,
   }) {
     return User(
       id: id ?? this.id,
@@ -89,6 +119,16 @@ class User extends Equatable {
       verificationStatus: verificationStatus ?? this.verificationStatus,
       rejectionReason: rejectionReason ?? this.rejectionReason,
       requiresPlanUpgrade: requiresPlanUpgrade ?? this.requiresPlanUpgrade,
+      referralCode: referralCode ?? this.referralCode,
+      referralsTotalCount: referralsTotalCount ?? this.referralsTotalCount,
+      referralsPendingCount: referralsPendingCount ?? this.referralsPendingCount,
+      referralsTargetCount: referralsTargetCount ?? this.referralsTargetCount,
+      referralRewardPlanName: referralRewardPlanName ?? this.referralRewardPlanName,
+      referralRewardDays: referralRewardDays ?? this.referralRewardDays,
+      planExpiresAt: planExpiresAt ?? this.planExpiresAt,
+      referralsRewardsEarnedCount: referralsRewardsEarnedCount ?? this.referralsRewardsEarnedCount,
+      referralMaxRewardsPerUser: referralMaxRewardsPerUser ?? this.referralMaxRewardsPerUser,
+      referralHasReachedMaxRewards: referralHasReachedMaxRewards ?? this.referralHasReachedMaxRewards,
     );
   }
 
@@ -111,6 +151,16 @@ class User extends Equatable {
         verificationStatus,
         rejectionReason,
         requiresPlanUpgrade,
+        referralCode,
+        referralsTotalCount,
+        referralsPendingCount,
+        referralsTargetCount,
+        referralRewardPlanName,
+        referralRewardDays,
+        planExpiresAt,
+        referralsRewardsEarnedCount,
+        referralMaxRewardsPerUser,
+        referralHasReachedMaxRewards,
       ];
 }
 

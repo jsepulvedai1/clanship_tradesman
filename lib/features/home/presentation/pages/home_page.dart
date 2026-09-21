@@ -13,7 +13,6 @@ import 'package:clanship_mobile_tradesman/features/home/presentation/widgets/hom
 import 'package:clanship_mobile_tradesman/features/home/presentation/widgets/stats_banner.dart';
 import 'package:clanship_mobile_tradesman/features/home/presentation/widgets/stats_grid.dart';
 import 'package:clanship_mobile_tradesman/features/home/presentation/widgets/availability_widget.dart';
-import 'package:clanship_mobile_tradesman/features/home/presentation/widgets/recent_requests_widget.dart';
 import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/navigation_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/pages/completed_requests_page.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/pages/rejected_requests_page.dart';
@@ -25,12 +24,9 @@ import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_b
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
 import 'package:clanship_mobile_tradesman/core/network/firebase_notification_helper.dart';
-import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_bloc.dart';
-import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_event.dart';
 import 'package:clanship_mobile_tradesman/core/network/local_notification_service.dart';
 import '../../../../core/widgets/skeleton_box.dart';
 import 'package:clanship_mobile_tradesman/core/widgets/address_picker_page.dart';
-import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/documents_page.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/rejection_review_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -44,7 +40,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final HomeBloc _homeBloc;
   List<LocalNotificationItem> _localNotifications = [];
-  bool _showAllNotifications = false;
   StreamSubscription? _localNotificationSubscription;
 
   @override
@@ -131,10 +126,10 @@ class _HomePageState extends State<HomePage> {
                       child: Container(
                         height: 72,
                         decoration: BoxDecoration(
-                          color: AppColors.primaryBlue.withOpacity(0.05),
+                          color: AppColors.primaryBlue.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: AppColors.primaryBlue.withOpacity(0.1),
+                            color: AppColors.primaryBlue.withValues(alpha: 0.1),
                             width: 1,
                           ),
                         ),
@@ -152,10 +147,10 @@ class _HomePageState extends State<HomePage> {
                       child: Container(
                         height: 72,
                         decoration: BoxDecoration(
-                          color: AppColors.primaryBlue.withOpacity(0.05),
+                          color: AppColors.primaryBlue.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: AppColors.primaryBlue.withOpacity(0.1),
+                            color: AppColors.primaryBlue.withValues(alpha: 0.1),
                             width: 1,
                           ),
                         ),
@@ -170,10 +165,10 @@ class _HomePageState extends State<HomePage> {
                   child: Container(
                     height: 72,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryBlue.withOpacity(0.05),
+                      color: AppColors.primaryBlue.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppColors.primaryBlue.withOpacity(0.1),
+                        color: AppColors.primaryBlue.withValues(alpha: 0.1),
                         width: 1,
                       ),
                     ),
@@ -189,7 +184,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       leading: CircleAvatar(
                         radius: 18,
-                        backgroundColor: AppColors.primaryBlue.withOpacity(0.1),
+                        backgroundColor: AppColors.primaryBlue.withValues(alpha: 0.1),
                         child: Icon(
                           Icons.notifications_active_rounded,
                           color: AppColors.primaryBlue,
@@ -210,14 +205,14 @@ class _HomePageState extends State<HomePage> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                           fontSize: 11,
                         ),
                       ),
                       trailing: IconButton(
                         icon: Icon(
                           Icons.close_rounded,
-                          color: theme.colorScheme.onSurface.withOpacity(0.4),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                           size: 18,
                         ),
                         onPressed: () async {
@@ -309,10 +304,10 @@ class _HomePageState extends State<HomePage> {
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryBlue.withOpacity(0.05),
+                              color: AppColors.primaryBlue.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: AppColors.primaryBlue.withOpacity(0.1),
+                                color: AppColors.primaryBlue.withValues(alpha: 0.1),
                                 width: 1,
                               ),
                             ),
@@ -329,7 +324,7 @@ class _HomePageState extends State<HomePage> {
                               ),
                               leading: CircleAvatar(
                                 backgroundColor: AppColors.primaryBlue
-                                    .withOpacity(0.1),
+                                    .withValues(alpha: 0.1),
                                 child: Icon(
                                   Icons.notifications_active_rounded,
                                   color: AppColors.primaryBlue,
@@ -348,7 +343,7 @@ class _HomePageState extends State<HomePage> {
                                 style: TextStyle(
                                   color: Theme.of(
                                     context,
-                                  ).colorScheme.onSurface.withOpacity(0.7),
+                                  ).colorScheme.onSurface.withValues(alpha: 0.7),
                                   fontSize: 12,
                                 ),
                               ),
@@ -357,7 +352,7 @@ class _HomePageState extends State<HomePage> {
                                   Icons.close_rounded,
                                   color: Theme.of(
                                     context,
-                                  ).colorScheme.onSurface.withOpacity(0.4),
+                                  ).colorScheme.onSurface.withValues(alpha: 0.4),
                                   size: 20,
                                 ),
                                 onPressed: () async {
@@ -750,7 +745,10 @@ class _LocationWidgetState extends State<_LocationWidget> {
       }
 
       if (permission == LocationPermission.deniedForever) {
-        throw l10n.homeGpsPermissionDeniedPermanent;
+        if (mounted) {
+          _showPermissionSettingsDialog(context);
+        }
+        return;
       }
 
       Position? position;
@@ -794,6 +792,70 @@ class _LocationWidgetState extends State<_LocationWidget> {
     }
   }
 
+  void _showPermissionSettingsDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          l10n.homeGpsPermissionDenied,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          l10n.homeGpsPermissionDeniedPermanent,
+          style: const TextStyle(fontSize: 14, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.requestCancel, style: const TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0D2B45),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              Geolocator.openAppSettings();
+            },
+            child: const Text('Abrir Ajustes'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openAddressPicker(BuildContext context, HomeBloc homeBloc) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await Navigator.push<Map<String, dynamic>?>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddressPickerPage(
+          initialAddress: widget.user.address == l10n.homeGpsCurrentLocationAddress
+              ? ''
+              : widget.user.address,
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      final address = result['address'] as String;
+      final lat = result['latitude'] as double;
+      final lng = result['longitude'] as double;
+      _updateLocationManual(
+        context,
+        homeBloc,
+        address,
+        lat,
+        lng,
+      );
+    }
+  }
+
   Future<void> _updateLocationManual(
     BuildContext context,
     HomeBloc homeBloc,
@@ -829,115 +891,6 @@ class _LocationWidgetState extends State<_LocationWidget> {
         });
       }
     }
-  }
-
-  void _showGpsActualInfoDialog(BuildContext context, HomeBloc homeBloc) {
-    final l10n = AppLocalizations.of(context)!;
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            const Icon(Icons.gps_fixed, color: Color(0xFF0D2B45)),
-            const SizedBox(width: 10),
-            Text(
-              l10n.mapGpsDialogTitle,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Text(
-          l10n.homeGpsDialogInfoContent,
-          style: const TextStyle(fontSize: 14, height: 1.4, color: Color(0xFF2E3135)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(l10n.requestCancel, style: const TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0D2B45),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              _updateLocationWithGPS(context, homeBloc);
-            },
-            child: Text(l10n.homeUseMyGpsBtn),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showFijarDireccionInfoDialog(BuildContext context, HomeBloc homeBloc) {
-    final l10n = AppLocalizations.of(context)!;
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            const Icon(Icons.pin_drop_rounded, color: Color(0xFF0B6E4F)),
-            const SizedBox(width: 10),
-            Text(
-              l10n.mapPinAddressDialogTitle,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Text(
-          l10n.homePinAddressInfoContent,
-          style: const TextStyle(fontSize: 14, height: 1.4, color: Color(0xFF2E3135)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(l10n.requestCancel, style: const TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0B6E4F),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              final result = await Navigator.push<Map<String, dynamic>?>(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AddressPickerPage(
-                    initialAddress: widget.user.address == l10n.homeGpsCurrentLocationAddress
-                        ? ''
-                        : widget.user.address,
-                  ),
-                ),
-              );
-              if (result != null && mounted) {
-                final address = result['address'] as String;
-                final lat = result['latitude'] as double;
-                final lng = result['longitude'] as double;
-                _updateLocationManual(
-                  context,
-                  homeBloc,
-                  address,
-                  lat,
-                  lng,
-                );
-              }
-            },
-            child: Text(l10n.homeSelectOnMapBtn),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -1079,7 +1032,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _showGpsActualInfoDialog(context, homeBloc),
+                    onPressed: () => _updateLocationWithGPS(context, homeBloc),
                     icon: SvgPicture.asset(
                       'assets/icon/icons_ F28C28/dialog.svg',
                       width: isSmallScreen ? 14 : 16,
@@ -1111,7 +1064,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
                 SizedBox(width: isSmallScreen ? 8 : 12),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _showFijarDireccionInfoDialog(context, homeBloc),
+                    onPressed: () => _openAddressPicker(context, homeBloc),
                     icon: SvgPicture.asset(
                       'assets/icon/icons_ F28C28/dialog.svg',
                       width: isSmallScreen ? 14 : 16,

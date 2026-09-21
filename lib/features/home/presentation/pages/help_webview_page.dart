@@ -250,7 +250,7 @@ class _HelpWebViewPageState extends State<HelpWebViewPage> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Sin conexión a Internet',
               style: TextStyle(
                 fontSize: 18,
@@ -274,7 +274,7 @@ class _HelpWebViewPageState extends State<HelpWebViewPage> {
                   label: const Text('Guía Offline'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primaryBlue,
-                    side: const BorderSide(color: AppColors.primaryBlue),
+                    side: BorderSide(color: AppColors.primaryBlue),
                   ),
                 ),
                 const SizedBox(width: 12),

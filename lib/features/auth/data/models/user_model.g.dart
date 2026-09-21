@@ -20,6 +20,20 @@ UserModel _$UserModelFromJson(Map<String, dynamic> json) => UserModel(
   professionalAddress: json['professionalAddress'] as String?,
   professionalLatitude: (json['professionalLatitude'] as num?)?.toDouble(),
   professionalLongitude: (json['professionalLongitude'] as num?)?.toDouble(),
+  isValidated: json['isValidated'] as bool? ?? false,
+  verificationStatus: json['verificationStatus'] as String? ?? 'PENDING',
+  rejectionReason: json['rejectionReason'] as String?,
+  requiresPlanUpgrade: json['requiresPlanUpgrade'] as bool? ?? false,
+  referralCode: json['referralCode'] as String?,
+  referralsTotalCount: (json['referralsTotalCount'] as num?)?.toInt() ?? 0,
+  referralsPendingCount: (json['referralsPendingCount'] as num?)?.toInt() ?? 0,
+  referralsTargetCount: (json['referralsTargetCount'] as num?)?.toInt() ?? 5,
+  referralRewardPlanName:
+      json['referralRewardPlanName'] as String? ?? 'Plan Profesional',
+  referralRewardDays: (json['referralRewardDays'] as num?)?.toInt() ?? 30,
+  planExpiresAt: json['planExpiresAt'] == null
+      ? null
+      : DateTime.parse(json['planExpiresAt'] as String),
 );
 
 Map<String, dynamic> _$UserModelToJson(UserModel instance) => <String, dynamic>{
@@ -36,4 +50,15 @@ Map<String, dynamic> _$UserModelToJson(UserModel instance) => <String, dynamic>{
   'professionalAddress': instance.professionalAddress,
   'professionalLatitude': instance.professionalLatitude,
   'professionalLongitude': instance.professionalLongitude,
+  'isValidated': instance.isValidated,
+  'verificationStatus': instance.verificationStatus,
+  'rejectionReason': instance.rejectionReason,
+  'requiresPlanUpgrade': instance.requiresPlanUpgrade,
+  'referralCode': instance.referralCode,
+  'referralsTotalCount': instance.referralsTotalCount,
+  'referralsPendingCount': instance.referralsPendingCount,
+  'referralsTargetCount': instance.referralsTargetCount,
+  'referralRewardPlanName': instance.referralRewardPlanName,
+  'referralRewardDays': instance.referralRewardDays,
+  'planExpiresAt': instance.planExpiresAt?.toIso8601String(),
 };

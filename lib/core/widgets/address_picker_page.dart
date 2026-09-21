@@ -213,7 +213,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.my_location, color: AppColors.primaryAzure),
+            Icon(Icons.my_location, color: AppColors.primaryAzure),
             const SizedBox(width: 10),
             Text(l10n.mapGpsDialogTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           ],
@@ -240,7 +240,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.pin_drop, color: AppColors.primaryAzure),
+            Icon(Icons.pin_drop, color: AppColors.primaryAzure),
             const SizedBox(width: 10),
             Text(l10n.mapPinAddressDialogTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           ],
@@ -289,9 +289,9 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
           ),
 
           // Central Static Pin Indicator
-          const Center(
+          Center(
             child: Padding(
-              padding: EdgeInsets.only(bottom: 35),
+              padding: const EdgeInsets.only(bottom: 35),
               child: Icon(
                 Icons.location_on,
                 size: 45,
@@ -381,7 +381,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                         itemBuilder: (context, index) {
                           final p = _predictions[index];
                           return ListTile(
-                            leading: const Icon(Icons.location_on_outlined, color: AppColors.primaryAzure),
+                            leading: Icon(Icons.location_on_outlined, color: AppColors.primaryAzure),
                             title: Text(
                               p['description'],
                               style: const TextStyle(fontSize: 14),
@@ -418,7 +418,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                         ),
                       ],
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.info_outline_rounded,
                       size: 20,
                       color: AppColors.primaryAzure,
@@ -431,7 +431,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                   backgroundColor: Colors.white,
                   onPressed: _initializeLocation,
                   tooltip: l10n.mapCurrentGpsTooltip,
-                  child: const Icon(Icons.my_location, color: AppColors.primaryBlue),
+                  child: Icon(Icons.my_location, color: AppColors.primaryBlue),
                 ),
               ],
             ),
@@ -461,14 +461,14 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.pin_drop, color: AppColors.primaryAzure),
+                      Icon(Icons.pin_drop, color: AppColors.primaryAzure),
                       const SizedBox(width: 8),
                       Expanded(
                         child: _isLoadingAddress
-                            ? const LinearProgressIndicator(color: AppColors.primaryAzure)
+                            ? LinearProgressIndicator(color: AppColors.primaryAzure)
                             : Text(
                                 _currentAddress.isNotEmpty ? _currentAddress : l10n.mapSelectLocationHint,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                   color: AppColors.primaryBlue,
@@ -478,7 +478,7 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
                               ),
                       ),
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.info_outline_rounded,
                           color: AppColors.primaryAzure,
                           size: 22,

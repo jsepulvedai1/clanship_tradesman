@@ -8,7 +8,9 @@ import 'package:clanship_mobile_tradesman/features/requests/data/datasources/req
 
 import 'package:clanship_mobile_tradesman/core/network/jobs_websocket_service.dart';
 import 'dart:async';
+import 'package:clanship_mobile_tradesman/core/utils/currency_formatter.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
@@ -26,22 +28,7 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
   StreamSubscription? _socketSubscription;
 
   String _formatPrice(dynamic price) {
-    if (price == null) return 'A convenir';
-    double? parsed;
-    if (price is num) {
-      parsed = price.toDouble();
-    } else if (price is String) {
-      parsed = double.tryParse(price);
-    }
-    if (parsed != null) {
-      final formatter = NumberFormat.currency(
-        locale: 'es_CL',
-        symbol: '',
-        decimalDigits: 0,
-      );
-      return '\$ ${formatter.format(parsed)}';
-    }
-    return '\$$price';
+    return formatCurrency(price, defaultValue: 'A convenir');
   }
 
   @override
@@ -160,8 +147,11 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
   }
 
   void _showProposalDialog(Map<String, dynamic> req) {
+    final initialBudget = req['budget'] != null
+        ? formatCurrency(req['budget'], includeSymbol: false)
+        : '';
     final priceController = TextEditingController(
-      text: req['budget']?.toString() ?? '',
+      text: initialBudget,
     );
     final messageController = TextEditingController();
     DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
@@ -221,9 +211,13 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
                     TextField(
                       controller: priceController,
                       keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        CurrencyInputFormatter(),
+                      ],
                       decoration: InputDecoration(
                         prefixText: '\$ ',
-                        hintText: 'Ej. 25000',
+                        hintText: 'Ej. 25.000',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -336,9 +330,8 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
                           ),
                         ),
                         onPressed: () async {
-                          final double? price = double.tryParse(
-                            priceController.text.trim(),
-                          );
+                          final cleanPrice = priceController.text.replaceAll(RegExp(r'[^0-9]'), '');
+                          final double? price = double.tryParse(cleanPrice);
                           if (price == null || price <= 0) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -784,7 +777,7 @@ class _OpportunitiesPageState extends State<OpportunitiesPage> {
                                       ),
                                       label: Text(
                                         hasSubmitted
-                                            ? '✓ Cotizado (\$${myProp['estimatedPrice'] ?? ''})'
+                                            ? '✓ Cotizado (${_formatPrice(myProp['estimatedPrice'])})'
                                             : 'Cotizar',
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,

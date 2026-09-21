@@ -20,6 +20,7 @@ import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 
 import 'package:clanship_mobile_tradesman/features/requests/presentation/pages/opportunities_page.dart';
 
+import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 import 'package:clanship_mobile_tradesman/core/network/local_notification_service.dart';
 
 class MainShellPage extends StatefulWidget {
@@ -131,28 +132,38 @@ class _MainShellPageState extends State<MainShellPage> {
     _hasShownUpgradeDialog = true;
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) {
-        return WillPopScope(
-          onWillPop: () async => false,
-          child: AlertDialog(
-            title: const Text('Plan Inicial Finalizado'),
-            content: const Text(
-              'Has alcanzado el límite de trabajos finalizados para tu plan inicial. Por favor, selecciona un plan para continuar o escoge el plan gratuito.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _hasShownUpgradeDialog = false;
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => const MyPlanPage()));
-                },
-                child: const Text('Elegir Plan'),
-              ),
-            ],
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Plan Inicial Finalizado'),
+          content: const Text(
+            'Has alcanzado el límite de trabajos para tu plan inicial. Puedes revisar los detalles y beneficios de los planes disponibles.',
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Entendido'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const MyPlanPage()));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryAzure,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text('Ver Planes'),
+            ),
+          ],
         );
       },
     );

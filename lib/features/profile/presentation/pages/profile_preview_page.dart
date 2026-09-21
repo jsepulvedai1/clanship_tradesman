@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
+import 'package:clanship_mobile_tradesman/core/utils/text_formatter.dart';
 import 'package:clanship_mobile_tradesman/features/home/domain/entities/user_entity.dart';
 
 class ProfilePreviewPage extends StatefulWidget {
@@ -115,7 +116,7 @@ class _ProfilePreviewPageState extends State<ProfilePreviewPage> {
                                           child: BackdropFilter(
                                             filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
                                             child: Container(
-                                              color: Colors.black.withOpacity(0.15),
+                                              color: Colors.black.withValues(alpha: 0.15),
                                             ),
                                           ),
                                         ),
@@ -177,8 +178,8 @@ class _ProfilePreviewPageState extends State<ProfilePreviewPage> {
                                 margin: const EdgeInsets.symmetric(horizontal: 4.0),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Colors.white.withOpacity(
-                                    _currentImageIndex == entry.key ? 0.9 : 0.4,
+                                  color: Colors.white.withValues(
+                                    alpha: _currentImageIndex == entry.key ? 0.9 : 0.4,
                                   ),
                                 ),
                               );
@@ -213,7 +214,7 @@ class _ProfilePreviewPageState extends State<ProfilePreviewPage> {
                           const SizedBox(width: 8),
                           Text(
                             '${widget.user.rating.toInt()} (8 opiniones)',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.primaryAzure,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
@@ -225,20 +226,20 @@ class _ProfilePreviewPageState extends State<ProfilePreviewPage> {
                       const SizedBox(height: 12),
 
                       // Distance Row
-                      const Row(
+                      Row(
                         children: [
                           Icon(
                             Icons.location_on_rounded,
                             color: AppColors.primaryAzure,
                             size: 24,
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Text(
                             '1.21 km',
                             style: TextStyle(
                               color: AppColors.primaryAzure,
                               fontWeight: FontWeight.bold,
-                              fontSize: 20,
+                              fontSize: 14,
                             ),
                           ),
                         ],
@@ -249,11 +250,11 @@ class _ProfilePreviewPageState extends State<ProfilePreviewPage> {
                       // Biography / Description
                       Text(
                         widget.user.biography.isNotEmpty
-                            ? widget.user.biography
+                            ? formatBioText(widget.user.biography)
                             : 'El profesional no ha escrito una biografía todavía.',
-                        textAlign: TextAlign.justify,
+                        textAlign: TextAlign.start,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withOpacity(0.8),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                           height: 1.5,
                           fontSize: 15,
                         ),
@@ -301,14 +302,14 @@ class _ProfilePreviewPageState extends State<ProfilePreviewPage> {
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(color: theme.dividerColor),
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
                                 Icon(
                                   Icons.visibility_outlined,
                                   color: AppColors.primaryAzure,
                                   size: 24,
                                 ),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Text(
                                   'Documentos',
                                   style: TextStyle(
@@ -359,7 +360,7 @@ class _ProfilePreviewPageState extends State<ProfilePreviewPage> {
             top: MediaQuery.of(context).padding.top + 10,
             left: 20,
             child: CircleAvatar(
-              backgroundColor: Colors.black.withOpacity(0.3),
+              backgroundColor: Colors.black.withValues(alpha: 0.3),
               radius: 20,
               child: IconButton(
                 icon: const Icon(
@@ -379,11 +380,11 @@ class _ProfilePreviewPageState extends State<ProfilePreviewPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.65),
+                color: Colors.black.withValues(alpha: 0.65),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 8,
                   ),
                 ],
@@ -435,7 +436,7 @@ class _ProfilePreviewPageState extends State<ProfilePreviewPage> {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: hasUrl ? color.withOpacity(0.1) : Colors.transparent,
+          color: hasUrl ? color.withValues(alpha: 0.1) : Colors.transparent,
         ),
         child: FaIcon(
           icon,

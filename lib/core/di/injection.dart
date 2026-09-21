@@ -1,10 +1,13 @@
 import 'package:get_it/get_it.dart';
+import 'package:clanship_mobile_tradesman/core/services/ugc_safety_service.dart';
 import 'package:clanship_mobile_tradesman/features/splash/presentation/bloc/splash_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/navigation_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/home/presentation/bloc/home_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:clanship_mobile_tradesman/core/theme/bloc/theme_bloc.dart';
 import 'package:clanship_mobile_tradesman/core/theme/bloc/language_bloc.dart';
+import 'package:clanship_mobile_tradesman/core/theme/services/seasonal_theme_service.dart';
+import 'package:clanship_mobile_tradesman/core/theme/bloc/seasonal_theme_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:clanship_mobile_tradesman/core/network/graphql_service.dart';
@@ -57,6 +60,7 @@ Future<void> init() async {
   // External
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
+  sl.registerLazySingleton(() => UgcSafetyService(sl()));
 
   // Core Network
   sl.registerLazySingleton(() => GraphQLService(sl()));
@@ -100,7 +104,9 @@ Future<void> init() async {
     ),
   );
 
-  // Core - Theme / Language
+  // Core - Theme / Language / Seasonal
+  sl.registerLazySingleton(() => SeasonalThemeService());
+  sl.registerFactory(() => SeasonalThemeBloc(sl()));
   sl.registerLazySingleton(() => ThemeBloc());
   sl.registerLazySingleton(() => LanguageBloc());
 

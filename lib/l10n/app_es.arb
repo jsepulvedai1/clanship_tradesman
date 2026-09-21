@@ -377,7 +377,89 @@
   "homeNoAddressConfigured": "Sin dirección configurada",
   "homeServiceAreaInfoTitle": "Área de Servicio",
   "homeServiceAreaInfoGps": "• GPS Actual: Utiliza tu ubicación en vivo por GPS para recibir solicitudes cerca de donde te encuentres físicamente.",
-  "homeServiceAreaInfoPin": "• Fijar Dirección: Define un punto fijo o taller en el mapa para recibir solicitudes en ese sector de forma permanente."
+  "homeServiceAreaInfoPin": "• Fijar Dirección: Define un punto fijo o taller en el mapa para recibir solicitudes en ese sector de forma permanente.",
+  "authTermsAndEula": "Términos y EULA",
+  "settingsBlockedUsers": "Usuarios Bloqueados",
+  "settingsBlockedUsersSubtitle": "Gestiona y revisa los usuarios que has bloqueado",
+  "settingsBlockedUsersEmpty": "No tienes usuarios bloqueados.",
+  "settingsUnblock": "Desbloquear",
+  "settingsUnblockConfirmTitle": "¿Desbloquear usuario?",
+  "settingsUnblockConfirmBody": "¿Estás seguro de que deseas desbloquear a este usuario? Podrá volver a contactarte.",
+  "settingsEulaTile": "Términos de Servicio (EULA) y Tolerancia Cero",
+  "chatReportUser": "Reportar usuario o chat",
+  "chatBlockUser": "Bloquear a este cliente",
+  "chatBlockConfirmTitle": "¿Bloquear a este cliente?",
+  "chatBlockConfirmBody": "Al bloquear a este usuario:\n\n• Se cerrará este chat inmediatamente y se ocultará todo su contenido.\n• Este cliente no podrá volver a enviarte solicitudes ni mensajes.\n• Se notificará a nuestro equipo de moderación para revisar su conducta y tomar medidas en un plazo máximo de 24 horas.",
+  "chatBlockConfirmButton": "Bloquear cliente",
+  "chatBlockedSuccess": "Has bloqueado a este usuario. Nuestro equipo actuará en menos de 24 horas.",
+  "eulaTitle": "Términos y Condiciones (EULA)",
+  "eulaSubtitle": "Acuerdo de Licencia de Usuario Final y Moderación",
+  "eulaZeroToleranceTitle": "POLÍTICA DE CERO TOLERANCIA",
+  "eulaZeroToleranceBody": "Clanship mantiene una política estricta de CERO TOLERANCIA frente a contenido objetable, ofensivo, discriminatorio, abusivo, sexual o fraudulento, así como hacia usuarios y clientes que incurran en conductas inapropiadas.",
+  "eulaSection1Title": "1. Acuerdo de Licencia de Usuario Final (EULA)",
+  "eulaSection1Body": "Al descargar, registrarte o usar la aplicación Clanship Profesional, aceptas quedar vinculado por los presentes Términos de Servicio y Acuerdo de Licencia (EULA). Si no estás de acuerdo con estos términos, no debes utilizar la aplicación.",
+  "eulaSection2Title": "2. Normas de la Comunidad y Contenido Prohibido",
+  "eulaSection2Intro": "Como prestador y usuario de la plataforma, te comprometes a:",
+  "eulaSection2Bullet1": "No cargar ni enviar contenido sexualmente explícito, pornográfico, violento o difamatorio.",
+  "eulaSection2Bullet2": "Mantener un trato respetuoso, profesional y libre de cualquier forma de acoso o discriminación.",
+  "eulaSection2Bullet3": "Proporcionar información fidedigna y documentación real sobre tus certificaciones y antecedentes.",
+  "eulaSection2Bullet4": "No utilizar la plataforma con fines fraudulentos ni cometer estafas.",
+  "eulaSection3Title": "3. Herramientas de Reporte y Bloqueo",
+  "eulaSection3Intro": "Para garantizar la seguridad de los profesionales y usuarios en Clanship:",
+  "eulaSection3Bullet1": "Bloquear clientes abusivos: Puedes bloquear a cualquier cliente inmediatamente desde el menú del chat. Al bloquearlo, la conversación se cerrará y no podrá contactarte.",
+  "eulaSection3Bullet2": "Reportar contenido o chats: Puedes denunciar cualquier mensaje sospechoso, ofensivo o spam mediante el botón de reporte.",
+  "eulaSection3Bullet3": "Compromiso de moderación en 24 horas: Nuestro equipo revisa cada reporte dentro de 24 horas. Todo usuario infractor será sancionado o expulsado de manera permanente.",
+  "eulaSection4Title": "4. Naturaleza del Servicio Independiente",
+  "eulaSection4Body": "Clanship opera como una herramienta tecnológica de coordinación y vinculación entre prestadores independientes y clientes. Cada servicio y cotización se acuerda directamente entre las partes bajo su propia responsabilidad profesional.",
+  "eulaSection5Title": "5. Privacidad y Datos Sensibles",
+  "eulaSection5Body": "Tus datos de ubicación, perfil y certificaciones se procesan de manera segura bajo nuestra Política de Privacidad únicamente para coordinar solicitudes y validar tu cuenta.",
+  "eulaWebLink": "Ver términos completos en el sitio web oficial",
+  "eulaAcceptButton": "Acepto los Términos y Política EULA",
+  "eulaCloseButton": "Entendido y Cerrar",
+  "settingsAssociateCode": "Código de Asociado",
+  "settingsAssociateCodeSubtitle": "Invita y gana tiempo de plan gratis",
+  "associateCodeTitle": "Mi Código de Asociado",
+  "associateCodeDescription": "Comparte tu código con clientes o conocidos. Cada vez que {target} personas se inscriban con tu código, ganarás {days} días de {plan} gratis.",
+  "@associateCodeDescription": {
+    "placeholders": {
+      "target": { "type": "int" },
+      "days": { "type": "int" },
+      "plan": { "type": "String" }
+    }
+  },
+  "associateCodeCopy": "Copiar Código",
+  "associateCodeShare": "Compartir Código",
+  "associateCodeCopied": "¡Código copiado al portapapeles!",
+  "associateCodeProgress": "{pending} de {target} inscritos para tu próximo beneficio",
+  "@associateCodeProgress": {
+    "placeholders": {
+      "pending": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "associateCodeTotal": "{total} personas se han inscrito con tu código",
+  "@associateCodeTotal": {
+    "placeholders": {
+      "total": { "type": "int" }
+    }
+  },
+  "associateCodeShareMessage": "¡Hola! Te invito a unirte a Clanship. Regístrate usando mi código de asociado {code} para contactarme y encontrar los mejores especialistas: https://clanship.cl",
+  "@associateCodeShareMessage": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "registerReferralCodeLabel": "Código de asociado o invitación (Opcional)",
+  "registerReferralCodeHint": "Ej: CLAN-ABC12",
+  "associateCodeMaxRewardsReached": "Has alcanzado el límite máximo de beneficios de este programa.",
+  "associateCodeRewardsProgress": "{earned} de {max} beneficios obtenidos",
+  "@associateCodeRewardsProgress": {
+    "placeholders": {
+      "earned": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "associateCodeMaxReachedBadge": "Meta máxima alcanzada"
 }
 
 

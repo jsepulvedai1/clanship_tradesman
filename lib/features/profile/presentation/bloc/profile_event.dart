@@ -139,3 +139,13 @@ class SetAvatarFromUrlEvent extends ProfileEvent {
   List<Object?> get props => [imageUrl];
 }
 
+class LoadReferralContentEvent extends ProfileEvent {
+  final String? language;
+
+  const LoadReferralContentEvent({this.language});
+
+  @override
+  List<Object?> get props => [language];
+}
+
+

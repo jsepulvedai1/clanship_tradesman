@@ -200,4 +200,24 @@ class ProfileRepositoryImpl implements ProfileRepository {
       return Left(ServerFailure(message: e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, AppConfigEntity>> getAppConfig() async {
+    try {
+      final config = await remoteDataSource.getAppConfig();
+      return Right(config);
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ReferralContentEntity>> getReferralProgramContent({String? language}) async {
+    try {
+      final content = await remoteDataSource.getReferralProgramContent(language: language);
+      return Right(content);
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
 }

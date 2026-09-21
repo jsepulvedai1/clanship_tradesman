@@ -145,7 +145,7 @@ class SocialLinkSection extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryBlue),
+                icon: Icon(Icons.edit, size: 18, color: AppColors.primaryBlue),
                 onPressed: () => _showEditDialog(context),
               ),
             ],

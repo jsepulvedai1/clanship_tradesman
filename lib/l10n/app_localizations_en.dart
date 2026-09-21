@@ -1074,4 +1074,193 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get homeServiceAreaInfoPin =>
       '• Set Address: Defines a fixed point or workshop on the map to receive requests in that sector permanently.';
+
+  @override
+  String get authTermsAndEula => 'Terms & EULA';
+
+  @override
+  String get settingsBlockedUsers => 'Blocked Users';
+
+  @override
+  String get settingsBlockedUsersSubtitle =>
+      'Manage and review the users you have blocked';
+
+  @override
+  String get settingsBlockedUsersEmpty => 'No blocked users.';
+
+  @override
+  String get settingsUnblock => 'Unblock';
+
+  @override
+  String get settingsUnblockConfirmTitle => 'Unblock user?';
+
+  @override
+  String get settingsUnblockConfirmBody =>
+      'Are you sure you want to unblock this user? They will be able to contact you again.';
+
+  @override
+  String get settingsEulaTile => 'Terms of Service (EULA) & Zero Tolerance';
+
+  @override
+  String get chatReportUser => 'Report user or chat';
+
+  @override
+  String get chatBlockUser => 'Block customer';
+
+  @override
+  String get chatBlockConfirmTitle => 'Block this customer?';
+
+  @override
+  String get chatBlockConfirmBody =>
+      'By blocking this user:\n\n• This chat will close immediately and all content will be hidden.\n• This customer will no longer be able to send you requests or messages.\n• Our moderation team will be notified to review their conduct and take action within 24 hours.';
+
+  @override
+  String get chatBlockConfirmButton => 'Block customer';
+
+  @override
+  String get chatBlockedSuccess =>
+      'You have blocked this user. Our team will act within 24 hours.';
+
+  @override
+  String get eulaTitle => 'Terms and Conditions (EULA)';
+
+  @override
+  String get eulaSubtitle => 'End User License Agreement & Moderation';
+
+  @override
+  String get eulaZeroToleranceTitle => 'ZERO TOLERANCE POLICY';
+
+  @override
+  String get eulaZeroToleranceBody =>
+      'Clanship enforces a strict ZERO TOLERANCE policy against objectionable, offensive, discriminatory, abusive, sexual, or fraudulent content, as well as users and customers engaging in inappropriate behavior.';
+
+  @override
+  String get eulaSection1Title => '1. End User License Agreement (EULA)';
+
+  @override
+  String get eulaSection1Body =>
+      'By downloading, registering, or using the Clanship Profesional application, you agree to be bound by these Terms of Service and License Agreement (EULA). If you do not agree to these terms, you must not use the application.';
+
+  @override
+  String get eulaSection2Title =>
+      '2. Community Guidelines & Prohibited Content';
+
+  @override
+  String get eulaSection2Intro =>
+      'As a service provider and platform user, you agree to:';
+
+  @override
+  String get eulaSection2Bullet1 =>
+      'Not upload or send sexually explicit, pornographic, violent, or defamatory content.';
+
+  @override
+  String get eulaSection2Bullet2 =>
+      'Maintain respectful, professional conduct free from any form of harassment or discrimination.';
+
+  @override
+  String get eulaSection2Bullet3 =>
+      'Provide accurate information and authentic documentation regarding your certifications and credentials.';
+
+  @override
+  String get eulaSection2Bullet4 =>
+      'Not use the platform for fraudulent purposes or commit scams.';
+
+  @override
+  String get eulaSection3Title => '3. Reporting & Blocking Tools';
+
+  @override
+  String get eulaSection3Intro =>
+      'To ensure the safety of professionals and users in Clanship:';
+
+  @override
+  String get eulaSection3Bullet1 =>
+      'Block abusive customers: You can block any customer immediately from the chat menu. Upon blocking, the conversation closes and they cannot contact you.';
+
+  @override
+  String get eulaSection3Bullet2 =>
+      'Report content or chats: You can report any suspicious, offensive, or spam message using the report button.';
+
+  @override
+  String get eulaSection3Bullet3 =>
+      '24-Hour Moderation Commitment: Our team reviews every report within 24 hours. Any offending user will be sanctioned or permanently ejected.';
+
+  @override
+  String get eulaSection4Title => '4. Independent Service Nature';
+
+  @override
+  String get eulaSection4Body =>
+      'Clanship operates as a technology platform for coordination and connection between independent providers and clients. Each service and quote is agreed directly between the parties under their own professional responsibility.';
+
+  @override
+  String get eulaSection5Title => '5. Privacy & Sensitive Data';
+
+  @override
+  String get eulaSection5Body =>
+      'Your location, profile, and certification data are securely processed in accordance with our Privacy Policy solely to coordinate requests and validate your account.';
+
+  @override
+  String get eulaWebLink => 'View full terms on the official website';
+
+  @override
+  String get eulaAcceptButton => 'I Accept the Terms & EULA Policy';
+
+  @override
+  String get eulaCloseButton => 'Understood & Close';
+
+  @override
+  String get settingsAssociateCode => 'Associate Code';
+
+  @override
+  String get settingsAssociateCodeSubtitle => 'Invite and earn free plan time';
+
+  @override
+  String get associateCodeTitle => 'My Associate Code';
+
+  @override
+  String associateCodeDescription(int target, int days, String plan) {
+    return 'Share your code with customers or contacts. Every time $target people register with your code, you will earn $days days of $plan for free.';
+  }
+
+  @override
+  String get associateCodeCopy => 'Copy Code';
+
+  @override
+  String get associateCodeShare => 'Share Code';
+
+  @override
+  String get associateCodeCopied => 'Code copied to clipboard!';
+
+  @override
+  String associateCodeProgress(int pending, int target) {
+    return '$pending of $target registered towards your next reward';
+  }
+
+  @override
+  String associateCodeTotal(int total) {
+    return '$total people have registered with your code';
+  }
+
+  @override
+  String associateCodeShareMessage(String code) {
+    return 'Hello! I invite you to join Clanship. Sign up using my associate code $code to connect with me and find top home specialists: https://clanship.cl';
+  }
+
+  @override
+  String get registerReferralCodeLabel =>
+      'Associate or referral code (Optional)';
+
+  @override
+  String get registerReferralCodeHint => 'E.g. CLAN-ABC12';
+
+  @override
+  String get associateCodeMaxRewardsReached =>
+      'You have reached the maximum benefit limit for this program.';
+
+  @override
+  String associateCodeRewardsProgress(int earned, int max) {
+    return '$earned of $max benefits earned';
+  }
+
+  @override
+  String get associateCodeMaxReachedBadge => 'Maximum goal reached';
 }

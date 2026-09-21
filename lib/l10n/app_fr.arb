@@ -352,6 +352,88 @@
   "homeNoAddressConfigured": "Aucune adresse configurée",
   "homeServiceAreaInfoTitle": "Zone de Service",
   "homeServiceAreaInfoGps": "• GPS Actuel : Utilise votre position GPS en direct pour recevoir des demandes à proximité de votre emplacement physique.",
-  "homeServiceAreaInfoPin": "• Définir l'adresse : Définit un point fixe ou un atelier sur la carte pour recevoir des demandes dans ce secteur de manière permanente."
+  "homeServiceAreaInfoPin": "• Définir l'adresse : Définit un point fixe ou un atelier sur la carte pour recevoir des demandes dans ce secteur de manière permanente.",
+  "authTermsAndEula": "Conditions & EULA",
+  "settingsBlockedUsers": "Utilisateurs bloqués",
+  "settingsBlockedUsersSubtitle": "Gérer et vérifier les utilisateurs que vous avez bloqués",
+  "settingsBlockedUsersEmpty": "Aucun utilisateur bloqué.",
+  "settingsUnblock": "Débloquer",
+  "settingsUnblockConfirmTitle": "Débloquer l'utilisateur ?",
+  "settingsUnblockConfirmBody": "Êtes-vous sûr de vouloir débloquer cet utilisateur ? Il pourra vous recontacter.",
+  "settingsEulaTile": "Conditions d'utilisation (EULA) et tolérance zéro",
+  "chatReportUser": "Signaler l'utilisateur ou le chat",
+  "chatBlockUser": "Bloquer le client",
+  "chatBlockConfirmTitle": "Bloquer ce client ?",
+  "chatBlockConfirmBody": "En bloquant cet utilisateur :\n\n• Ce chat sera fermé immédiatement et tout le contenu sera masqué.\n• Ce client ne pourra plus vous envoyer de demandes ni de messages.\n• Notre équipe de modération sera informée pour examiner son comportement et prendre des mesures sous 24 heures.",
+  "chatBlockConfirmButton": "Bloquer le client",
+  "chatBlockedSuccess": "Vous avez bloqué cet utilisateur. Notre équipe agira sous 24 heures.",
+  "eulaTitle": "Conditions Générales (EULA)",
+  "eulaSubtitle": "Contrat de Licence Utilisateur Final & Modération",
+  "eulaZeroToleranceTitle": "POLITIQUE DE TOLÉRANCE ZÉRO",
+  "eulaZeroToleranceBody": "Clanship applique une politique stricte de TOLÉRANCE ZÉRO contre tout contenu répréhensible, offensant, discriminatoire, abusif, sexuel ou frauduleux, ainsi que contre les utilisateurs ayant un comportement inapproprié.",
+  "eulaSection1Title": "1. Contrat de Licence Utilisateur Final (EULA)",
+  "eulaSection1Body": "En téléchargeant, en vous inscrivant ou en utilisant l'application Clanship Profesional, vous acceptez d'être lié par ces Conditions d'utilisation et ce Contrat de licence (EULA). Si vous n'acceptez pas ces conditions, vous ne devez pas utiliser l'application.",
+  "eulaSection2Title": "2. Règles de la communauté & Contenu interdit",
+  "eulaSection2Intro": "En tant que prestataire et utilisateur de la plateforme, vous vous engagez à :",
+  "eulaSection2Bullet1": "Ne pas télécharger ni envoyer de contenu sexuellement explicite, pornographique, violent ou diffamatoire.",
+  "eulaSection2Bullet2": "Maintenir une attitude respectueuse, professionnelle et exempte de toute forme de harcèlement ou de discrimination.",
+  "eulaSection2Bullet3": "Fournir des informations exactes et des documents authentiques concernant vos certifications et qualifications.",
+  "eulaSection2Bullet4": "Ne pas utiliser la plateforme à des fins frauduleuses ni commettre d'escroqueries.",
+  "eulaSection3Title": "3. Outils de Signalement & Blocage",
+  "eulaSection3Intro": "Pour garantir la sécurité des professionnels et des utilisateurs sur Clanship :",
+  "eulaSection3Bullet1": "Bloquer les clients abusifs : Vous pouvez bloquer tout client immédiatement depuis le menu du chat. Une fois bloqué, la discussion se ferme et il ne peut plus vous contacter.",
+  "eulaSection3Bullet2": "Signaler un contenu ou un chat : Vous pouvez signaler tout message suspect, offensant ou spam à l'aide du bouton de signalement.",
+  "eulaSection3Bullet3": "Engagement de modération sous 24 heures : Notre équipe examine chaque signalement dans les 24 heures. Tout utilisateur contrevenant sera sanctionné ou définitivement exclu.",
+  "eulaSection4Title": "4. Nature du Service Indépendant",
+  "eulaSection4Body": "Clanship opère en tant qu'outil technologique de coordination et de mise en relation entre prestataires indépendants et clients. Chaque prestation et devis est convenu directement entre les parties sous leur propre responsabilité professionnelle.",
+  "eulaSection5Title": "5. Confidentialité & Données Sensibles",
+  "eulaSection5Body": "Vos données de localisation, de profil et de certifications sont traitées en toute sécurité conformément à notre Politique de confidentialité uniquement pour coordonner les demandes et valider votre compte.",
+  "eulaWebLink": "Consulter les conditions complètes sur le site officiel",
+  "eulaAcceptButton": "J'accepte les conditions et la politique EULA",
+  "eulaCloseButton": "Compris et Fermer",
+  "settingsAssociateCode": "Code d'Associé",
+  "settingsAssociateCodeSubtitle": "Invitez et gagnez du temps de forfait gratuit",
+  "associateCodeTitle": "Mon Code d'Associé",
+  "associateCodeDescription": "Partagez votre code avec des clients ou des proches. Chaque fois que {target} personnes s'inscrivent avec votre code, vous gagnerez {days} jours de {plan} gratuitement.",
+  "@associateCodeDescription": {
+    "placeholders": {
+      "target": { "type": "int" },
+      "days": { "type": "int" },
+      "plan": { "type": "String" }
+    }
+  },
+  "associateCodeCopy": "Copier le Code",
+  "associateCodeShare": "Partager le Code",
+  "associateCodeCopied": "Code copié dans le presse-papiers !",
+  "associateCodeProgress": "{pending} sur {target} inscrits pour votre prochain avantage",
+  "@associateCodeProgress": {
+    "placeholders": {
+      "pending": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "associateCodeTotal": "{total} personnes se sont inscrites avec votre code",
+  "@associateCodeTotal": {
+    "placeholders": {
+      "total": { "type": "int" }
+    }
+  },
+  "associateCodeShareMessage": "Bonjour ! Je vous invite à rejoindre Clanship. Inscrivez-vous avec mon code d'associé {code} pour me contacter et trouver les meilleurs spécialistes : https://clanship.cl",
+  "@associateCodeShareMessage": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "registerReferralCodeLabel": "Code d'associé ou d'invitation (Facultatif)",
+  "registerReferralCodeHint": "Ex : CLAN-ABC12",
+  "associateCodeMaxRewardsReached": "Vous avez atteint la limite maximale d'avantages pour ce programme.",
+  "associateCodeRewardsProgress": "{earned} sur {max} avantages obtenus",
+  "@associateCodeRewardsProgress": {
+    "placeholders": {
+      "earned": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "associateCodeMaxReachedBadge": "Objectif maximal atteint"
 }
 

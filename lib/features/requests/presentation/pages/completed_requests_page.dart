@@ -6,6 +6,7 @@ import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/re
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_state.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
+import 'package:clanship_mobile_tradesman/core/utils/currency_formatter.dart';
 import '../widgets/completed_stats_card.dart';
 import '../widgets/completed_job_card.dart';
 import '../widgets/time_filter_dropdown.dart';
@@ -49,7 +50,7 @@ class _CompletedRequestsViewState extends State<CompletedRequestsView> {
         centerTitle: true,
         title: Text(
           l10n.completedTitle,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: AppColors.primaryBlue,
@@ -71,7 +72,7 @@ class _CompletedRequestsViewState extends State<CompletedRequestsView> {
               final totalEarnings = completedJobs.fold<double>(0, (sum, job) => sum + job.amount);
               
               // Formatting currency
-              final currencyFormat = '\$${totalEarnings.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
+              final currencyFormat = formatCurrency(totalEarnings);
 
               return RefreshIndicator(
                 onRefresh: () async {

@@ -5,6 +5,7 @@ import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/re
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_event.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_state.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
+import 'package:clanship_mobile_tradesman/core/utils/currency_formatter.dart';
 import 'package:clanship_mobile_tradesman/features/requests/domain/entities/active_request_detail_entity.dart';
 
 class RejectedRequestsPage extends StatelessWidget {
@@ -88,9 +89,7 @@ class RejectedRequestsView extends StatelessWidget {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     // Formatting currency
-    final priceStr = request.agreedPrice != null
-        ? '\$${request.agreedPrice!.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}'
-        : '\$0';
+    final priceStr = formatCurrency(request.agreedPrice, defaultValue: '\$0');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -160,7 +159,7 @@ class RejectedRequestsView extends StatelessWidget {
                     if (request.scheduledDate != null) ...[
                       Row(
                         children: [
-                          const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primaryBlue),
+                          Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.primaryBlue),
                           const SizedBox(width: 6),
                           Text(
                             request.scheduledDate!,
@@ -176,7 +175,7 @@ class RejectedRequestsView extends StatelessWidget {
                     if (request.scheduledTime != null) ...[
                       Row(
                         children: [
-                          const Icon(Icons.access_time, size: 16, color: AppColors.primaryBlue),
+                          Icon(Icons.access_time, size: 16, color: AppColors.primaryBlue),
                           const SizedBox(width: 6),
                           Text(
                             request.scheduledTime!,

@@ -26,6 +26,7 @@ abstract class AuthRemoteDataSource {
     List<String>? subtagIds,
     String? bio,
     List<String>? workPhotoPaths,
+    String? referralCode,
   });
   Future<UserModel> getCurrentUser();
   Future<void> logout();
@@ -33,6 +34,8 @@ abstract class AuthRemoteDataSource {
   Future<void> sendPasswordResetEmail(String email);
   Future<List<Map<String, dynamic>>> getAvailableTags();
   Future<Map<String, bool>> checkUserExistence({String? email, String? phoneNumber});
+  Future<Map<String, dynamic>> validateReferralCode(String code);
+  Future<Map<String, String>> getReferralProgramContent({String? language});
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -89,6 +92,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
             latitude
             longitude
             serviceRadius
+            referralCode
+            referralsTotalCount
+            referralsPendingCount
+            referralsTargetCount
+            referralRewardPlanName
+            referralRewardDays
+            planExpiresAt
+            referralsRewardsEarnedCount
+            referralMaxRewardsPerUser
+            referralHasReachedMaxRewards
           }
         }
       }
@@ -170,6 +183,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     List<String>? subtagIds,
     String? bio,
     List<String>? workPhotoPaths,
+    String? referralCode,
   }) async {
     // Clear any existing token to prevent AuthLink from sending an invalid/expired token
     // which causes 'Error decoding signature' on the server.
@@ -178,13 +192,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     await storage.delete(key: 'jwt_refresh_token');
 
     const String registerMutation = r'''
-      mutation RegisterUser($email: String!, $password: String!, $firstName: String!, $lastName: String!, $userType: String!) {
+      mutation RegisterUser($email: String!, $password: String!, $firstName: String!, $lastName: String!, $userType: String!, $referralCode: String) {
         registerUser(
           email: $email, 
           password: $password, 
           firstName: $firstName, 
           lastName: $lastName, 
-          userType: $userType
+          userType: $userType,
+          referralCode: $referralCode
         ) {
           success
           user {
@@ -197,15 +212,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     final cleanEmail = email.trim().toLowerCase();
 
+    final Map<String, dynamic> variables = {
+      'email': cleanEmail,
+      'password': password,
+      'firstName': firstName,
+      'lastName': lastName,
+      'userType': 'PROFESSIONAL',
+    };
+    if (referralCode != null && referralCode.trim().isNotEmpty) {
+      variables['referralCode'] = referralCode.trim();
+    }
+
     final MutationOptions options = MutationOptions(
       document: gql(registerMutation),
-      variables: {
-        'email': cleanEmail,
-        'password': password,
-        'firstName': firstName,
-        'lastName': lastName,
-        'userType': 'PROFESSIONAL',
-      },
+      variables: variables,
       fetchPolicy: FetchPolicy.networkOnly,
     );
 
@@ -462,6 +482,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
             latitude
             longitude
             serviceRadius
+            referralCode
+            referralsTotalCount
+            referralsPendingCount
+            referralsTargetCount
+            referralRewardPlanName
+            referralRewardDays
+            planExpiresAt
+            referralsRewardsEarnedCount
+            referralMaxRewardsPerUser
+            referralHasReachedMaxRewards
           }
         }
       }
@@ -622,5 +652,75 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       'emailExists': data?['emailExists'] as bool? ?? false,
       'phoneExists': data?['phoneExists'] as bool? ?? false,
     };
+  }
+
+  @override
+  Future<Map<String, dynamic>> validateReferralCode(String code) async {
+    const String query = r'''
+      query ValidateReferralCode($code: String!) {
+        validateReferralCode(code: $code) {
+          isValid
+          message
+          referrerName
+        }
+      }
+    ''';
+
+    final QueryOptions options = QueryOptions(
+      document: gql(query),
+      variables: {'code': code.trim().toUpperCase()},
+      fetchPolicy: FetchPolicy.networkOnly,
+    );
+
+    final QueryResult result = await client.query(options);
+
+    if (result.hasException) {
+      return {
+        'isValid': false,
+        'message': 'Error al validar código',
+        'referrerName': null,
+      };
+    }
+
+    final data = result.data?['validateReferralCode'] as Map<String, dynamic>?;
+    return {
+      'isValid': data?['isValid'] as bool? ?? false,
+      'message': data?['message'] as String? ?? '',
+      'referrerName': data?['referrerName'] as String?,
+    };
+  }
+
+  @override
+  Future<Map<String, String>> getReferralProgramContent({String? language}) async {
+    const String query = r'''
+      query GetReferralProgramContent($lang: String) {
+        referralProgramContent(language: $lang) {
+          registrationCodeLabel
+          registrationCodeHint
+        }
+      }
+    ''';
+
+    try {
+      final QueryOptions options = QueryOptions(
+        document: gql(query),
+        variables: {if (language != null) 'lang': language},
+        fetchPolicy: FetchPolicy.networkOnly,
+      );
+
+      final QueryResult result = await client.query(options);
+
+      if (result.hasException || result.data?['referralProgramContent'] == null) {
+        return {};
+      }
+
+      final data = result.data!['referralProgramContent'] as Map<String, dynamic>;
+      return {
+        'label': data['registrationCodeLabel']?.toString() ?? '',
+        'hint': data['registrationCodeHint']?.toString() ?? '',
+      };
+    } catch (_) {
+      return {};
+    }
   }
 }

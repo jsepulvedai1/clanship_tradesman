@@ -157,7 +157,7 @@ class _DocumentsPageViewState extends State<DocumentsPageView> {
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
           if (state is ProfileLoading) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primaryBlue));
+            return Center(child: CircularProgressIndicator(color: AppColors.primaryBlue));
           }
 
           if (state is ProfileLoaded) {
@@ -176,7 +176,7 @@ class _DocumentsPageViewState extends State<DocumentsPageView> {
                         Text(
                           l10n.docsTitle,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.bold,
                             color: AppColors.primaryBlue,
@@ -328,7 +328,7 @@ class _DocumentsPageViewState extends State<DocumentsPageView> {
                   Positioned.fill(
                     child: Container(
                       color: Colors.black26,
-                      child: const Center(
+                      child: Center(
                         child: CircularProgressIndicator(
                           color: AppColors.primaryBlue,
                         ),

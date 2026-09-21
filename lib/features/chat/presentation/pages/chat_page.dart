@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
+import 'package:clanship_mobile_tradesman/core/utils/currency_formatter.dart';
 import 'package:clanship_mobile_tradesman/features/chat/domain/entities/chat_message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,6 +30,8 @@ import 'package:clanship_mobile_tradesman/features/auth/domain/usecases/get_curr
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_state.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_event.dart';
+import 'package:clanship_mobile_tradesman/core/services/ugc_safety_service.dart';
+import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 
 class ChatPage extends StatelessWidget {
   final String roomId;
@@ -172,7 +175,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
           child: Wrap(
             children: [
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.camera_alt_rounded,
                   color: AppColors.primaryBlue,
                 ),
@@ -183,7 +186,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                 },
               ),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.photo_library_rounded,
                   color: AppColors.primaryBlue,
                 ),
@@ -387,7 +390,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                   // Date Picker Row
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.calendar_month_outlined,
                       color: AppColors.primaryBlue,
                     ),
@@ -415,7 +418,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                   // Time Picker Row
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.access_time_rounded,
                       color: AppColors.primaryBlue,
                     ),
@@ -672,8 +675,8 @@ class _ChatPageContentState extends State<_ChatPageContent> {
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: isDark
-              ? Colors.black.withOpacity(0.7)
-              : Colors.white.withOpacity(0.7),
+              ? Colors.black.withValues(alpha: 0.7)
+              : Colors.white.withValues(alpha: 0.7),
           elevation: 0,
           flexibleSpace: ClipRRect(
             child: BackdropFilter(
@@ -760,17 +763,66 @@ class _ChatPageContentState extends State<_ChatPageContent> {
             },
           ),
           actions: [
-            IconButton(
+            PopupMenuButton<String>(
               icon: Icon(
-                Icons.flag_outlined,
+                Icons.more_vert_rounded,
                 color: isDark ? Colors.white70 : Colors.black87,
               ),
-              tooltip: 'Reportar usuario o chat',
-              onPressed: () => _showReportUserDialog(
-                context,
-                widget.customerName ?? 'Cliente',
+              tooltip: 'Opciones de moderación y seguridad',
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
+              onSelected: (value) {
+                if (value == 'report') {
+                  _showReportUserDialog(
+                    context,
+                    widget.customerName ?? 'Cliente',
+                  );
+                } else if (value == 'block') {
+                  _showBlockUserDialog(
+                    context,
+                    widget.customerName ?? 'Cliente',
+                  );
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'report',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.flag_outlined,
+                        color: AppColors.primaryAzure,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(AppLocalizations.of(context)?.chatReportUser ?? 'Reportar usuario o chat'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'block',
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.block_rounded,
+                        color: AppColors.errorRed,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        AppLocalizations.of(context)?.chatBlockUser ?? 'Bloquear cliente',
+                        style: const TextStyle(
+                          color: AppColors.errorRed,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(width: 4),
           ],
         ),
         body: Column(
@@ -910,7 +962,7 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      const Icon(Icons.flag_outlined, color: AppColors.primaryAzure, size: 24),
+                      Icon(Icons.flag_outlined, color: AppColors.primaryAzure, size: 24),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -973,16 +1025,28 @@ class _ChatPageContentState extends State<_ChatPageContent> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
+                        final details = detailController.text.trim();
                         Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Reporte de chat recibido con éxito. El equipo de soporte revisará la conversación dentro de 24 horas.',
-                            ),
-                            backgroundColor: Colors.green,
-                          ),
+
+                        await sl<UgcSafetyService>().reportContent(
+                          targetId: widget.jobId?.toString() ?? widget.roomId,
+                          targetName: targetName,
+                          reason: selectedReason,
+                          details: details.isNotEmpty ? details : null,
+                          targetType: 'CHAT_MESSAGE',
                         );
+
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Reporte recibido con éxito. Nuestro equipo de moderación actuará en un plazo máximo de 24 horas.',
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
                       },
                       child: const Text(
                         'Enviar Reporte',
@@ -998,27 +1062,92 @@ class _ChatPageContentState extends State<_ChatPageContent> {
       },
     );
   }
-}
 
-class CurrencyInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    if (newValue.text.isEmpty) {
-      return newValue.copyWith(text: '');
-    }
+  void _showBlockUserDialog(BuildContext context, String targetName) {
+    final l10n = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.block_rounded, color: AppColors.errorRed, size: 28),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                l10n?.chatBlockConfirmTitle ?? '¿Bloquear a este cliente?',
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Al bloquear a $targetName:',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '• Se cerrará este chat y no recibirás más mensajes ni solicitudes de este cliente.',
+                style: TextStyle(fontSize: 13, height: 1.3),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '• Su interacción y cotizaciones quedarán ocultas de inmediato.',
+                style: TextStyle(fontSize: 13, height: 1.3),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '• Se enviará un reporte automático a moderación para revisar su cuenta y expulsarlo si infringe las políticas (24 horas).',
+                style: TextStyle(fontSize: 13, height: 1.3),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.errorRed,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              final navBloc = context.read<NavigationBloc>();
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
 
-    final int value = int.parse(
-      newValue.text.replaceAll(RegExp(r'[^0-9]'), ''),
-    );
-    final formatter = NumberFormat.decimalPattern('es');
-    final String newText = formatter.format(value);
+              await sl<UgcSafetyService>().blockUser(
+                userId: widget.jobId?.toString() ?? widget.roomId,
+                userName: targetName,
+                reason: 'Bloqueado desde chat por conducta abusiva o contenido objetable',
+              );
 
-    return newValue.copyWith(
-      text: newText,
-      selection: TextSelection.collapsed(offset: newText.length),
+              navBloc.add(const TabChanged(0));
+              navigator.popUntil((route) => route.isFirst);
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Has bloqueado a $targetName. El chat se cerró y nuestro equipo revisará el caso en menos de 24 horas.',
+                  ),
+                  backgroundColor: AppColors.errorRed,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: Text(l10n?.chatBlockConfirmButton ?? 'Bloquear cliente'),
+          ),
+        ],
+      ),
     );
   }
 }
+

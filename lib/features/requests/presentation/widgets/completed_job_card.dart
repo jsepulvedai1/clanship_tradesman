@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
+import 'package:clanship_mobile_tradesman/core/utils/currency_formatter.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
-import 'package:intl/intl.dart';
 import '../../domain/entities/completed_job_entity.dart';
 
 class CompletedJobCard extends StatelessWidget {
@@ -17,14 +17,8 @@ class CompletedJobCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final currencyFormatter = NumberFormat.currency(
-      locale: 'es_CL',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
-
     final amountStr = job.amount > 0
-        ? currencyFormatter.format(job.amount)
+        ? formatCurrency(job.amount)
         : null;
 
     return Container(
@@ -64,7 +58,7 @@ class CompletedJobCard extends StatelessWidget {
                             CircleAvatar(
                               radius: 18,
                               backgroundColor: AppColors.primaryBlue.withAlpha(30),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.person_rounded,
                                 color: AppColors.primaryBlue,
                                 size: 20,

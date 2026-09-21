@@ -23,7 +23,7 @@ class ChatInputBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    const Color brandGreen = AppColors.primaryAzure; 
+    final Color brandGreen = AppColors.primaryAzure; 
     final Color plusBgColor = isDark
         ? const Color(0xFF1E2D27)
         : const Color(0xFFF1F7F4);
@@ -63,7 +63,7 @@ class ChatInputBar extends StatelessWidget {
                   color: plusBgColor,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.add_rounded,
                   color: brandGreen,
                   size: 26,

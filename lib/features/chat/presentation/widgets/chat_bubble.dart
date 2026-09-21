@@ -202,7 +202,7 @@ class ChatBubble extends StatelessWidget {
           ),
           Text(
             '${message.appointmentPrice ?? ''} CLP',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.primaryBlue,
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -374,10 +374,10 @@ class _AudioBubbleContentState extends State<AudioBubbleContent> {
         ? Colors.white
         : (widget.isDark ? Colors.white : Colors.black87);
     final sliderActiveColor =
-        widget.isMe ? Colors.white.withOpacity(0.9) : AppColors.primaryBlue;
+        widget.isMe ? Colors.white.withValues(alpha: 0.9) : AppColors.primaryBlue;
     final sliderInactiveColor = widget.isMe
-        ? Colors.white.withOpacity(0.3)
-        : (widget.isDark ? Colors.white.withOpacity(0.2) : Colors.grey[300]);
+        ? Colors.white.withValues(alpha: 0.3)
+        : (widget.isDark ? Colors.white.withValues(alpha: 0.2) : Colors.grey[300]);
 
     return Container(
       width: 240,
@@ -447,11 +447,11 @@ class _AudioBubbleContentState extends State<AudioBubbleContent> {
                     children: [
                       Text(
                         _formatDuration(_position),
-                        style: TextStyle(color: themeColor.withOpacity(0.7), fontSize: 11),
+                        style: TextStyle(color: themeColor.withValues(alpha: 0.7), fontSize: 11),
                       ),
                       Text(
                         _formatDuration(_duration),
-                        style: TextStyle(color: themeColor.withOpacity(0.7), fontSize: 11),
+                        style: TextStyle(color: themeColor.withValues(alpha: 0.7), fontSize: 11),
                       ),
                     ],
                   ),

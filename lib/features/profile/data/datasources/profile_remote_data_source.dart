@@ -1,6 +1,10 @@
+import 'dart:io';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:clanship_mobile_tradesman/features/home/domain/entities/user_entity.dart';
 import 'package:clanship_mobile_tradesman/features/auth/data/datasources/auth_remote_data_source.dart';
+
+import 'package:clanship_mobile_tradesman/features/settings/data/models/referral_content_model.dart';
 
 abstract class ProfileRemoteDataSource {
   Future<UserEntity> getMyProfile();
@@ -50,6 +54,8 @@ abstract class ProfileRemoteDataSource {
   });
   Future<List<SubscriptionPlanEntity>> getSubscriptionPlans();
   Future<UserEntity> subscribeToPlan({required String planId});
+  Future<AppConfigEntity> getAppConfig();
+  Future<ReferralContentEntity> getReferralProgramContent({String? language});
 }
 
 class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
@@ -89,6 +95,16 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       rating
       hourlyRate
       serviceRadius
+      referralCode
+      referralsTotalCount
+      referralsPendingCount
+      referralsTargetCount
+      referralRewardPlanName
+      referralRewardDays
+      planExpiresAt
+      referralsRewardsEarnedCount
+      referralMaxRewardsPerUser
+      referralHasReachedMaxRewards
       facebookUrl
       instagramUrl
       tiktokUrl
@@ -259,6 +275,31 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       requiresPlanUpgrade: profProfile?['requiresPlanUpgrade'] == true,
       subscriptionPlan: subscriptionPlan,
       planName: subscriptionPlan?.name ?? 'Plan Base',
+      referralCode: profProfile?['referralCode']?.toString(),
+      referralsTotalCount: profProfile?['referralsTotalCount'] is int
+          ? profProfile!['referralsTotalCount']
+          : (int.tryParse(profProfile?['referralsTotalCount']?.toString() ?? '') ?? 0),
+      referralsPendingCount: profProfile?['referralsPendingCount'] is int
+          ? profProfile!['referralsPendingCount']
+          : (int.tryParse(profProfile?['referralsPendingCount']?.toString() ?? '') ?? 0),
+      referralsTargetCount: profProfile?['referralsTargetCount'] is int
+          ? profProfile!['referralsTargetCount']
+          : (int.tryParse(profProfile?['referralsTargetCount']?.toString() ?? '') ?? 5),
+      referralRewardPlanName: profProfile?['referralRewardPlanName']?.toString() ?? 'Plan Profesional',
+      referralRewardDays: profProfile?['referralRewardDays'] is int
+          ? profProfile!['referralRewardDays']
+          : (int.tryParse(profProfile?['referralRewardDays']?.toString() ?? '') ?? 30),
+      planExpiresAt: profProfile?['planExpiresAt'] != null
+          ? DateTime.tryParse(profProfile!['planExpiresAt'].toString())
+          : null,
+      referralsRewardsEarnedCount: profProfile?['referralsRewardsEarnedCount'] is int
+          ? profProfile!['referralsRewardsEarnedCount']
+          : (int.tryParse(profProfile?['referralsRewardsEarnedCount']?.toString() ?? '') ?? 0),
+      referralMaxRewardsPerUser: profProfile?['referralMaxRewardsPerUser'] is int
+          ? profProfile!['referralMaxRewardsPerUser']
+          : (int.tryParse(profProfile?['referralMaxRewardsPerUser']?.toString() ?? '') ?? 1),
+      referralHasReachedMaxRewards: profProfile?['referralHasReachedMaxRewards'] == true ||
+          profProfile?['referralHasReachedMaxRewards'].toString() == 'true',
     );
   }
 
@@ -1146,4 +1187,111 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
 
     return _mapUserEntity(userData);
   }
+
+  @override
+  Future<AppConfigEntity> getAppConfig() async {
+    const String query = '''
+      query GetAppConfig(\$platform: String, \$appVersion: String) {
+        appConfig(platform: \$platform, appVersion: \$appVersion) {
+          subscriptionsEnabledIos
+          subscriptionsEnabledAndroid
+          subscriptionIosLink
+          subscriptionIosMessage
+          maxSpecialtiesPerTradesman
+          subscriptionsMinVersionIos
+          subscriptionsBlockedVersionsIos
+          subscriptionsMinVersionAndroid
+          subscriptionsBlockedVersionsAndroid
+          isSubscriptionsEnabled
+        }
+      }
+    ''';
+
+    try {
+      String appVersion = '';
+      try {
+        final info = await PackageInfo.fromPlatform();
+        appVersion = info.version;
+      } catch (_) {}
+
+      final platform = Platform.isIOS ? 'ios' : 'android';
+
+      final QueryOptions options = QueryOptions(
+        document: gql(query),
+        variables: {
+          'platform': platform,
+          'appVersion': appVersion,
+        },
+        fetchPolicy: FetchPolicy.networkOnly,
+      );
+
+      final QueryResult result = await client.query(options);
+
+      if (result.hasException || result.data?['appConfig'] == null) {
+        return const AppConfigEntity();
+      }
+
+      final data = result.data!['appConfig'] as Map<String, dynamic>;
+      return AppConfigEntity(
+        subscriptionsEnabledIos: data['subscriptionsEnabledIos'] == true,
+        subscriptionsEnabledAndroid: data['subscriptionsEnabledAndroid'] ?? true,
+        subscriptionIosLink: data['subscriptionIosLink']?.toString() ?? 'https://clanship.cl',
+        subscriptionIosMessage: data['subscriptionIosMessage']?.toString() ??
+            'Para una mejor experiencia y conocer cómo mejorar tu plan, revisa en el siguiente link:',
+        maxSpecialtiesPerTradesman: int.tryParse(data['maxSpecialtiesPerTradesman']?.toString() ?? '6') ?? 6,
+        subscriptionsMinVersionIos: data['subscriptionsMinVersionIos']?.toString() ?? '',
+        subscriptionsBlockedVersionsIos: data['subscriptionsBlockedVersionsIos']?.toString() ?? '',
+        subscriptionsMinVersionAndroid: data['subscriptionsMinVersionAndroid']?.toString() ?? '',
+        subscriptionsBlockedVersionsAndroid: data['subscriptionsBlockedVersionsAndroid']?.toString() ?? '',
+        isSubscriptionsEnabled: data['isSubscriptionsEnabled'] as bool?,
+      );
+    } catch (_) {
+      return const AppConfigEntity();
+    }
+  }
+
+  @override
+  Future<ReferralContentEntity> getReferralProgramContent({String? language}) async {
+    const String query = '''
+      query GetReferralProgramContent(\$lang: String) {
+        referralProgramContent(language: \$lang) {
+          language
+          isActive
+          heroTitle
+          heroDescription
+          shareMessage
+          howItWorksTitle
+          step1
+          step2
+          step3
+          bannerTitle
+          bannerSubtitle
+          myPlanInviteText
+          activeBenefitText
+          registrationCodeLabel
+          registrationCodeHint
+        }
+      }
+    ''';
+
+    try {
+      final QueryOptions options = QueryOptions(
+        document: gql(query),
+        variables: {if (language != null) 'lang': language},
+        fetchPolicy: FetchPolicy.networkOnly,
+      );
+
+      final QueryResult result = await client.query(options);
+
+      if (result.hasException || result.data?['referralProgramContent'] == null) {
+        return const ReferralContentEntity();
+      }
+
+      final data = result.data!['referralProgramContent'] as Map<String, dynamic>;
+      return ReferralContentModel.fromJson(data);
+    } catch (_) {
+      return const ReferralContentEntity();
+    }
+  }
 }
+

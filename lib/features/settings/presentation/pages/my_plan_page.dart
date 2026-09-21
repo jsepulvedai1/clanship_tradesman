@@ -1,4 +1,8 @@
+import 'dart:io';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
+import 'package:clanship_mobile_tradesman/core/utils/currency_formatter.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
 import 'package:clanship_mobile_tradesman/features/home/domain/entities/user_entity.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/bloc/profile_bloc.dart';
@@ -11,8 +15,8 @@ import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_b
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
 import 'package:clanship_mobile_tradesman/core/di/injection.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/widgets/tradesman_subtags_sheet.dart';
-
 import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/navigation_bloc.dart';
+import 'associate_code_page.dart';
 
 class MyPlanPage extends StatelessWidget {
   const MyPlanPage({super.key});
@@ -103,7 +107,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
         if (state is! ProfileLoaded) {
           return Scaffold(
             appBar: AppBar(title: Text(l10n.planTitle)),
-            body: const Center(
+            body: Center(
               child: CircularProgressIndicator(color: AppColors.primaryAzure),
             ),
           );
@@ -115,7 +119,13 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
             .where((p) => p.name.toLowerCase() != 'plan inicial')
             .toList();
 
-        final bool isRequired = user.requiresPlanUpgrade;
+        final bool isIOS = Platform.isIOS;
+        final bool isSubscriptionsEnabled = state.appConfig.isSubscriptionsEnabled ??
+            (isIOS
+                ? state.appConfig.subscriptionsEnabledIos
+                : state.appConfig.subscriptionsEnabledAndroid);
+
+        final bool isRequired = user.requiresPlanUpgrade && isSubscriptionsEnabled;
 
         return PopScope(
           canPop: !isRequired,
@@ -158,7 +168,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.amber.shade800.withOpacity(0.3),
+                            color: Colors.amber.shade800.withValues(alpha: 0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -187,72 +197,200 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                     width: double.infinity,
                     child: _buildCurrentPlanCard(
                       context,
-                    currentPlan,
-                    isDark,
-                    l10n,
+                      currentPlan,
+                      isDark,
+                      l10n,
+                      planExpiresAt: user.planExpiresAt,
+                      referralContent: state.referralContent,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 32),
+                  const SizedBox(height: 16),
+                  _buildReferralInviteCard(
+                    context,
+                    user,
+                    isDark,
+                    referralContent: state.referralContent,
+                  ),
+                  const SizedBox(height: 32),
 
-                // Available Plans Section
-                Text(
-                  l10n.planAvailableTitle,
+                  if (!isSubscriptionsEnabled)
+                    _buildIosInfoCard(
+                      context,
+                      state.appConfig,
+                      isDark,
+                    )
+                  else ...[
+                    // Available Plans Section
+                    Text(
+                      l10n.planAvailableTitle,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : AppColors.primaryBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    if (state.isLoadingPlans)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: isDark ? Colors.white : AppColors.primaryAzure,
+                          ),
+                        ),
+                      )
+                    else if (plans.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: Center(
+                          child: Text(
+                            'No hay otros planes disponibles en el servidor',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isDark ? Colors.white60 : Colors.black45,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      ...plans.map((plan) {
+                        final isCurrent =
+                            currentPlan?.id == plan.id ||
+                            (currentPlan == null && plan.price == 0);
+                        return SizedBox(
+                          width: double.infinity,
+                          child: _buildPlanOptionCard(
+                            context: context,
+                            plan: plan,
+                            isCurrent: isCurrent,
+                            isDark: isDark,
+                            l10n: l10n,
+                            isSubscribing: state.isSubscribing,
+                            user: state.user,
+                            availableSpecialties: state.availableSpecialties,
+                          ),
+                        );
+                      }),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildIosInfoCard(
+    BuildContext context,
+    AppConfigEntity config,
+    bool isDark,
+  ) {
+    final link = config.subscriptionIosLink.trim();
+    final message = config.subscriptionIosMessage.trim();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.white10 : AppColors.primaryAzure.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryAzure.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.auto_awesome_rounded,
+                  color: AppColors.primaryAzure,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Planes y Beneficios',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : AppColors.primaryBlue,
                   ),
                 ),
-                const SizedBox(height: 16),
-
-                if (state.isLoadingPlans)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 32),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: isDark ? Colors.white : AppColors.primaryAzure,
-                      ),
-                    ),
-                  )
-                else if (plans.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 32),
-                    child: Center(
-                      child: Text(
-                        'No hay otros planes disponibles en el servidor',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: isDark ? Colors.white60 : Colors.black45,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  ...plans.map((plan) {
-                    final isCurrent =
-                        currentPlan?.id == plan.id ||
-                        (currentPlan == null && plan.price == 0);
-                    return SizedBox(
-                      width: double.infinity,
-                      child: _buildPlanOptionCard(
-                        context: context,
-                        plan: plan,
-                        isCurrent: isCurrent,
-                        isDark: isDark,
-                        l10n: l10n,
-                        isSubscribing: state.isSubscribing,
-                        user: state.user,
-                        availableSpecialties: state.availableSpecialties,
-                      ),
-                    );
-                  }),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message.isNotEmpty
+                ? message
+                : 'Para una mejor experiencia y conocer cómo mejorar tu plan, revisa en el siguiente link:',
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: isDark ? Colors.white70 : AppColors.textDark.withValues(alpha: 0.8),
             ),
           ),
-        ),
-      );
-      },
+          const SizedBox(height: 20),
+          if (link.isNotEmpty)
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  try {
+                    final uri = Uri.parse(
+                      link.startsWith('http') ? link : 'https://$link',
+                    );
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  } catch (e) {
+                    debugPrint('Error abriendo link de suscripción: $e');
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryAzure,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                label: const Text(
+                  'Revisar en el sitio web',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -260,12 +398,15 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
     BuildContext context,
     SubscriptionPlanEntity? plan,
     bool isDark,
-    AppLocalizations l10n,
-  ) {
+    AppLocalizations l10n, {
+    DateTime? planExpiresAt,
+    ReferralContentEntity? referralContent,
+  }) {
     final planName = plan?.name ?? 'Plan Base';
     final planPrice = plan?.price ?? 0.0;
     final planDuration = plan?.durationDays ?? 3650;
     final planDesc = plan?.description ?? 'Plan básico gratuito';
+    final hasActiveReferralReward = planExpiresAt != null && planExpiresAt.isAfter(DateTime.now());
 
     return Container(
       decoration: BoxDecoration(
@@ -277,7 +418,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4364F7).withOpacity(0.3),
+            color: const Color(0xFF4364F7).withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -296,7 +437,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Text(
@@ -320,7 +461,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
           Text(
             l10n.planCurrentTitle,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -338,7 +479,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
           Text(
             planDesc,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: Colors.white.withValues(alpha: 0.9),
               fontSize: 14,
             ),
           ),
@@ -354,7 +495,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                   Text(
                     'PRECIO',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -363,7 +504,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                   Text(
                     planPrice == 0
                         ? l10n.planFree
-                        : '\$${planPrice.toStringAsFixed(0)}',
+                        : formatCurrency(planPrice),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
@@ -378,7 +519,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                   Text(
                     'DURACIÓN',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -398,6 +539,130 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
               ),
             ],
           ),
+          if (hasActiveReferralReward) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white38),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      referralContent != null && referralContent.activeBenefitText.isNotEmpty
+                          ? referralContent.formatActiveBenefit(
+                              date: DateFormat('dd/MM/yyyy').format(planExpiresAt),
+                              fallback: 'Beneficio de asociados activo hasta el ${DateFormat('dd/MM/yyyy').format(planExpiresAt)}',
+                            )
+                          : 'Beneficio de asociados activo hasta el ${DateFormat('dd/MM/yyyy').format(planExpiresAt)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReferralInviteCard(
+    BuildContext context,
+    UserEntity user,
+    bool isDark, {
+    ReferralContentEntity? referralContent,
+  }) {
+    final target = user.referralsTargetCount > 0 ? user.referralsTargetCount : 5;
+    final rewardDays = user.referralRewardDays > 0 ? user.referralRewardDays : 30;
+    final planName = user.referralRewardPlanName ?? 'Plan Profesional';
+
+    final inviteText = (referralContent != null && referralContent.myPlanInviteText.isNotEmpty)
+        ? referralContent.formatMyPlanInvite(
+            target: target,
+            days: rewardDays,
+            plan: planName,
+            fallback: 'Invita $target asociados y gana $rewardDays días gratis de $planName.',
+          )
+        : 'Invita $target asociados y gana $rewardDays días gratis de $planName.';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.primaryAzure.withValues(alpha: 0.25),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primaryAzure.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.card_giftcard_rounded,
+              color: AppColors.primaryAzure,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '¿Quieres sumar más días a tu plan?',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.primaryBlue,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  inviteText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: (isDark ? Colors.white : AppColors.textDark).withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AssociateCodePage()),
+              );
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primaryAzure,
+              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            child: const Text('Ver código'),
+          ),
         ],
       ),
     );
@@ -416,8 +681,8 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
               : (isDark ? Colors.white24 : Colors.grey.shade400))
         : (isWhiteText ? Colors.white : AppColors.primaryAzure);
     final Color textColor = isWhiteText
-        ? Colors.white.withOpacity(0.9)
-        : (isDark ? Colors.white70 : AppColors.textDark.withOpacity(0.8));
+        ? Colors.white.withValues(alpha: 0.9)
+        : (isDark ? Colors.white70 : AppColors.textDark.withValues(alpha: 0.8));
     final Color valColor = isWhiteText
         ? Colors.white
         : (isDark ? Colors.white : AppColors.primaryBlue);
@@ -476,7 +741,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -507,7 +772,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.15),
+                          color: Colors.orange.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.orange.shade400, width: 1),
                         ),
@@ -539,7 +804,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
               fontSize: 14,
               color: isDark
                   ? Colors.white70
-                  : AppColors.textDark.withOpacity(0.7),
+                  : AppColors.textDark.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 16),
@@ -552,7 +817,7 @@ class _MyPlanPageViewState extends State<MyPlanPageView> {
                   Text(
                     plan.price == 0
                         ? l10n.planFree
-                        : '\$${plan.price.toStringAsFixed(0)}',
+                        : formatCurrency(plan.price),
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,

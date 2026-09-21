@@ -25,6 +25,11 @@ class _SplashPageState extends State<SplashPage> {
   }
 
   Future<void> _checkVersion() async {
+    // Iniciar la verificación del token de usuario inmediatamente en paralelo
+    if (mounted) {
+      context.read<SplashBloc>().add(AppStarted());
+    }
+
     String currentVersion = '1.0.0';
     try {
       final info = await PackageInfo.fromPlatform();
@@ -33,16 +38,12 @@ class _SplashPageState extends State<SplashPage> {
       }
     } catch (_) {}
 
-    final bool isBlocked = await AppVersionChecker.checkVersion(
+    await AppVersionChecker.checkVersion(
       context: context,
       appType: 'TRADESMAN',
       currentVersion: currentVersion,
       baseUrl: EnvConfig.instance.baseUrl,
     );
-
-    if (!isBlocked && mounted) {
-      context.read<SplashBloc>().add(AppStarted());
-    }
   }
 
   @override
@@ -71,8 +72,52 @@ class _SplashPageState extends State<SplashPage> {
                 child: SymbolIcon(),
               ),
               const SizedBox(height: 24),
-              const CircularProgressIndicator.adaptive(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00E5FF)),
+              BlocBuilder<SplashBloc, SplashState>(
+                builder: (context, splashState) {
+                  if (splashState is SplashConnectionError) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            splashState.message,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00E5FF),
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                            ),
+                            onPressed: () {
+                              context.read<SplashBloc>().add(AppStarted());
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text(
+                              'Reintentar conexión',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return const CircularProgressIndicator.adaptive(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00E5FF)),
+                  );
+                },
               ),
             ],
           ),

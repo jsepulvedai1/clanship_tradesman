@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
+import 'package:clanship_mobile_tradesman/core/theme/bloc/seasonal_theme_bloc.dart';
 import 'stat_card.dart';
 
 class StatsGrid extends StatelessWidget {
@@ -34,6 +36,8 @@ class StatsGrid extends StatelessWidget {
     final double screenHeight = MediaQuery.of(context).size.height;
     final bool isSmallScreen = screenHeight < 750;
 
+    final seasonalState = context.watch<SeasonalThemeBloc>().state;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16 : 20),
       child: GridView.count(
@@ -47,44 +51,63 @@ class StatsGrid extends StatelessWidget {
           StatCard(
             value: active.toString(),
             label: l10n.homeStatsActive,
-            valueColor: const Color(0xFF2E3135), // Gris grafito
+            valueColor: seasonalState.statCardActiveNumberColor ?? const Color(0xFF2E3135),
+            labelColor: seasonalState.statCardActiveTextColor,
             onTap: onActiveTap,
             hasHighlight: hasUnread,
-            iconColor: const Color(0xFF2E3135),
+            iconColor: seasonalState.statCardActiveIconColor ?? const Color(0xFF2E3135),
             showChevron: false,
-            chevronColor: const Color(0xFF2E3135),
+            chevronColor: seasonalState.statCardActiveIconColor ?? const Color(0xFF2E3135),
             svgIconPath: 'assets/icon/icons_ F28C28/document-add.svg',
+            backgroundColor: seasonalState.statCardActiveBgColor,
+            bgImageUrl: seasonalState.statCardActiveBgImageUrl,
+            imageOpacity: seasonalState.statCardActiveImageOpacity,
           ),
           StatCard(
             value: completed.toString(),
             label: l10n.homeStatsCompleted,
-            valueColor: const Color(0xFF0B6E4F), // Verde esmeralda
+            valueColor: seasonalState.statCardCompletedNumberColor ?? const Color(0xFF0B6E4F),
+            labelColor: seasonalState.statCardCompletedTextColor,
             onTap: onCompletedTap,
-            iconColor: const Color(0xFF0B6E4F),
+            iconColor: seasonalState.statCardCompletedIconColor ?? const Color(0xFF0B6E4F),
             showChevron: true,
-            chevronColor: const Color(0xFF0B6E4F),
+            chevronColor: seasonalState.statCardCompletedIconColor ?? const Color(0xFF0B6E4F),
             svgIconPath: 'assets/icon/icons_ F28C28/document-add.svg',
+            backgroundColor: seasonalState.statCardCompletedBgColor,
+            bgImageUrl: seasonalState.statCardCompletedBgImageUrl,
+            imageOpacity: seasonalState.statCardCompletedImageOpacity,
           ),
           StatCard(
             value: rejected.toString(),
             label: l10n.homeStatsRejected,
-            valueColor: const Color(0xFFEA4335), // Rojo
+            valueColor: seasonalState.statCardRejectedNumberColor ?? const Color(0xFFEA4335),
+            labelColor: seasonalState.statCardRejectedTextColor,
             onTap: onRejectedTap,
-            iconColor: const Color(0xFFEA4335),
+            iconColor: seasonalState.statCardRejectedIconColor ?? const Color(0xFFEA4335),
             showChevron: true,
-            chevronColor: const Color(0xFFEA4335),
+            chevronColor: seasonalState.statCardRejectedIconColor ?? const Color(0xFFEA4335),
             svgIconPath: 'assets/icon/icons_ F28C28/document-add.svg',
+            backgroundColor: seasonalState.statCardRejectedBgColor,
+            bgImageUrl: seasonalState.statCardRejectedBgImageUrl,
+            imageOpacity: seasonalState.statCardRejectedImageOpacity,
           ),
           StatCard(
             value: scheduled.toString(),
             label: l10n.homeStatsScheduled,
-            valueColor: hasScheduledUnread ? const Color(0xFFEF4444) : const Color(0xFFF28C28),
+            valueColor: seasonalState.statCardScheduledNumberColor ??
+                (hasScheduledUnread ? const Color(0xFFEF4444) : const Color(0xFFF28C28)),
+            labelColor: seasonalState.statCardScheduledTextColor,
             onTap: onScheduledTap,
             hasHighlight: hasScheduledUnread,
-            iconColor: hasScheduledUnread ? const Color(0xFFEF4444) : const Color(0xFFF28C28),
+            iconColor: seasonalState.statCardScheduledIconColor ??
+                (hasScheduledUnread ? const Color(0xFFEF4444) : const Color(0xFFF28C28)),
             showChevron: true,
-            chevronColor: hasScheduledUnread ? const Color(0xFFEF4444) : const Color(0xFFF28C28),
+            chevronColor: seasonalState.statCardScheduledIconColor ??
+                (hasScheduledUnread ? const Color(0xFFEF4444) : const Color(0xFFF28C28)),
             svgIconPath: 'assets/icon/icons_ F28C28/document-add.svg',
+            backgroundColor: seasonalState.statCardScheduledBgColor,
+            bgImageUrl: seasonalState.statCardScheduledBgImageUrl,
+            imageOpacity: seasonalState.statCardScheduledImageOpacity,
           ),
         ],
       ),

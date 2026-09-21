@@ -59,7 +59,7 @@ class FirebaseNotificationHelper {
 
       // Listen to token refresh and update backend
       FirebaseMessaging.instance.onTokenRefresh.listen((token) {
-        debugPrint('Tradesman FCM Token refreshed: $token');
+        debugPrint('Tradesman FCM Token refreshed: [REDACTED]');
         _sendTokenToBackend(token);
       });
     } catch (e) {
@@ -109,7 +109,7 @@ class FirebaseNotificationHelper {
 
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null && token.isNotEmpty) {
-        debugPrint('FCM Token obtained: $token. Uploading to backend...');
+        debugPrint('FCM Token obtained: [REDACTED]. Uploading to backend...');
         await _sendTokenToBackend(token);
       }
     } catch (e) {

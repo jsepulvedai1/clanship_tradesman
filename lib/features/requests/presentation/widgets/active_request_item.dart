@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:clanship_mobile_tradesman/core/utils/currency_formatter.dart';
 import '../../domain/entities/active_request_detail_entity.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 
@@ -18,14 +18,8 @@ class ActiveRequestItem extends StatelessWidget {
     final bool isUnread = !request.isRead || request.hasUnreadMessages;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final currencyFormatter = NumberFormat.currency(
-      locale: 'es_CL',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
-
     final amountStr = request.agreedPrice != null && request.agreedPrice! > 0
-        ? currencyFormatter.format(request.agreedPrice!)
+        ? formatCurrency(request.agreedPrice!)
         : null;
 
     final bool isScheduled =
@@ -187,7 +181,7 @@ class ActiveRequestItem extends StatelessWidget {
                     CircleAvatar(
                       radius: 14,
                       backgroundColor: AppColors.primaryBlue.withAlpha(25),
-                      child: const Icon(
+                      child: Icon(
                         Icons.person_rounded,
                         color: AppColors.primaryBlue,
                         size: 16,
@@ -260,7 +254,7 @@ class ActiveRequestItem extends StatelessWidget {
                       Expanded(
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.calendar_today_rounded,
                               size: 14,
                               color: AppColors.primaryBlue,

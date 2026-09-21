@@ -1085,4 +1085,197 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get homeServiceAreaInfoPin =>
       '• Fijar Dirección: Define un punto fijo o taller en el mapa para recibir solicitudes en ese sector de forma permanente.';
+
+  @override
+  String get authTermsAndEula => 'Términos y EULA';
+
+  @override
+  String get settingsBlockedUsers => 'Usuarios Bloqueados';
+
+  @override
+  String get settingsBlockedUsersSubtitle =>
+      'Gestiona y revisa los usuarios que has bloqueado';
+
+  @override
+  String get settingsBlockedUsersEmpty => 'No tienes usuarios bloqueados.';
+
+  @override
+  String get settingsUnblock => 'Desbloquear';
+
+  @override
+  String get settingsUnblockConfirmTitle => '¿Desbloquear usuario?';
+
+  @override
+  String get settingsUnblockConfirmBody =>
+      '¿Estás seguro de que deseas desbloquear a este usuario? Podrá volver a contactarte.';
+
+  @override
+  String get settingsEulaTile =>
+      'Términos de Servicio (EULA) y Tolerancia Cero';
+
+  @override
+  String get chatReportUser => 'Reportar usuario o chat';
+
+  @override
+  String get chatBlockUser => 'Bloquear a este cliente';
+
+  @override
+  String get chatBlockConfirmTitle => '¿Bloquear a este cliente?';
+
+  @override
+  String get chatBlockConfirmBody =>
+      'Al bloquear a este usuario:\n\n• Se cerrará este chat inmediatamente y se ocultará todo su contenido.\n• Este cliente no podrá volver a enviarte solicitudes ni mensajes.\n• Se notificará a nuestro equipo de moderación para revisar su conducta y tomar medidas en un plazo máximo de 24 horas.';
+
+  @override
+  String get chatBlockConfirmButton => 'Bloquear cliente';
+
+  @override
+  String get chatBlockedSuccess =>
+      'Has bloqueado a este usuario. Nuestro equipo actuará en menos de 24 horas.';
+
+  @override
+  String get eulaTitle => 'Términos y Condiciones (EULA)';
+
+  @override
+  String get eulaSubtitle =>
+      'Acuerdo de Licencia de Usuario Final y Moderación';
+
+  @override
+  String get eulaZeroToleranceTitle => 'POLÍTICA DE CERO TOLERANCIA';
+
+  @override
+  String get eulaZeroToleranceBody =>
+      'Clanship mantiene una política estricta de CERO TOLERANCIA frente a contenido objetable, ofensivo, discriminatorio, abusivo, sexual o fraudulento, así como hacia usuarios y clientes que incurran en conductas inapropiadas.';
+
+  @override
+  String get eulaSection1Title =>
+      '1. Acuerdo de Licencia de Usuario Final (EULA)';
+
+  @override
+  String get eulaSection1Body =>
+      'Al descargar, registrarte o usar la aplicación Clanship Profesional, aceptas quedar vinculado por los presentes Términos de Servicio y Acuerdo de Licencia (EULA). Si no estás de acuerdo con estos términos, no debes utilizar la aplicación.';
+
+  @override
+  String get eulaSection2Title =>
+      '2. Normas de la Comunidad y Contenido Prohibido';
+
+  @override
+  String get eulaSection2Intro =>
+      'Como prestador y usuario de la plataforma, te comprometes a:';
+
+  @override
+  String get eulaSection2Bullet1 =>
+      'No cargar ni enviar contenido sexualmente explícito, pornográfico, violento o difamatorio.';
+
+  @override
+  String get eulaSection2Bullet2 =>
+      'Mantener un trato respetuoso, profesional y libre de cualquier forma de acoso o discriminación.';
+
+  @override
+  String get eulaSection2Bullet3 =>
+      'Proporcionar información fidedigna y documentación real sobre tus certificaciones y antecedentes.';
+
+  @override
+  String get eulaSection2Bullet4 =>
+      'No utilizar la plataforma con fines fraudulentos ni cometer estafas.';
+
+  @override
+  String get eulaSection3Title => '3. Herramientas de Reporte y Bloqueo';
+
+  @override
+  String get eulaSection3Intro =>
+      'Para garantizar la seguridad de los profesionales y usuarios en Clanship:';
+
+  @override
+  String get eulaSection3Bullet1 =>
+      'Bloquear clientes abusivos: Puedes bloquear a cualquier cliente inmediatamente desde el menú del chat. Al bloquearlo, la conversación se cerrará y no podrá contactarte.';
+
+  @override
+  String get eulaSection3Bullet2 =>
+      'Reportar contenido o chats: Puedes denunciar cualquier mensaje sospechoso, ofensivo o spam mediante el botón de reporte.';
+
+  @override
+  String get eulaSection3Bullet3 =>
+      'Compromiso de moderación en 24 horas: Nuestro equipo revisa cada reporte dentro de 24 horas. Todo usuario infractor será sancionado o expulsado de manera permanente.';
+
+  @override
+  String get eulaSection4Title => '4. Naturaleza del Servicio Independiente';
+
+  @override
+  String get eulaSection4Body =>
+      'Clanship opera como una herramienta tecnológica de coordinación y vinculación entre prestadores independientes y clientes. Cada servicio y cotización se acuerda directamente entre las partes bajo su propia responsabilidad profesional.';
+
+  @override
+  String get eulaSection5Title => '5. Privacidad y Datos Sensibles';
+
+  @override
+  String get eulaSection5Body =>
+      'Tus datos de ubicación, perfil y certificaciones se procesan de manera segura bajo nuestra Política de Privacidad únicamente para coordinar solicitudes y validar tu cuenta.';
+
+  @override
+  String get eulaWebLink => 'Ver términos completos en el sitio web oficial';
+
+  @override
+  String get eulaAcceptButton => 'Acepto los Términos y Política EULA';
+
+  @override
+  String get eulaCloseButton => 'Entendido y Cerrar';
+
+  @override
+  String get settingsAssociateCode => 'Código de Asociado';
+
+  @override
+  String get settingsAssociateCodeSubtitle =>
+      'Invita y gana tiempo de plan gratis';
+
+  @override
+  String get associateCodeTitle => 'Mi Código de Asociado';
+
+  @override
+  String associateCodeDescription(int target, int days, String plan) {
+    return 'Comparte tu código con clientes o conocidos. Cada vez que $target personas se inscriban con tu código, ganarás $days días de $plan gratis.';
+  }
+
+  @override
+  String get associateCodeCopy => 'Copiar Código';
+
+  @override
+  String get associateCodeShare => 'Compartir Código';
+
+  @override
+  String get associateCodeCopied => '¡Código copiado al portapapeles!';
+
+  @override
+  String associateCodeProgress(int pending, int target) {
+    return '$pending de $target inscritos para tu próximo beneficio';
+  }
+
+  @override
+  String associateCodeTotal(int total) {
+    return '$total personas se han inscrito con tu código';
+  }
+
+  @override
+  String associateCodeShareMessage(String code) {
+    return '¡Hola! Te invito a unirte a Clanship. Regístrate usando mi código de asociado $code para contactarme y encontrar los mejores especialistas: https://clanship.cl';
+  }
+
+  @override
+  String get registerReferralCodeLabel =>
+      'Código de asociado o invitación (Opcional)';
+
+  @override
+  String get registerReferralCodeHint => 'Ej: CLAN-ABC12';
+
+  @override
+  String get associateCodeMaxRewardsReached =>
+      'Has alcanzado el límite máximo de beneficios de este programa.';
+
+  @override
+  String associateCodeRewardsProgress(int earned, int max) {
+    return '$earned de $max beneficios obtenidos';
+  }
+
+  @override
+  String get associateCodeMaxReachedBadge => 'Meta máxima alcanzada';
 }

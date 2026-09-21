@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 import 'package:clanship_mobile_tradesman/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:clanship_mobile_tradesman/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:clanship_mobile_tradesman/features/profile/presentation/bloc/profile_state.dart';
 import 'package:clanship_mobile_tradesman/features/settings/presentation/pages/my_plan_page.dart';
 
 class TradesmanSubtagsSheet extends StatefulWidget {
@@ -356,13 +360,14 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
     return Icons.work_outline_rounded;
   }
 
-  Color _parseHexColor(String? colorHex, {Color defaultColor = AppColors.primaryBlue}) {
-    if (colorHex == null || colorHex.trim().isEmpty) return defaultColor;
+  Color _parseHexColor(String? colorHex, {Color? defaultColor}) {
+    final fallback = defaultColor ?? AppColors.primaryBlue;
+    if (colorHex == null || colorHex.trim().isEmpty) return fallback;
     try {
       final hex = colorHex.trim().replaceAll('#', '');
       return Color(int.parse('FF$hex', radix: 16));
     } catch (_) {
-      return defaultColor;
+      return fallback;
     }
   }
 
@@ -404,7 +409,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
   Color _getSpecialtyColor(String name, String? colorHex) {
     if (colorHex != null && colorHex.trim().isNotEmpty) {
       final base = _parseHexColor(colorHex);
-      return base.withOpacity(0.12);
+      return base.withValues(alpha: 0.12);
     }
     final n = name.toLowerCase();
     if (n.contains('elec')) return const Color(0xFFE2FBE9);
@@ -493,22 +498,36 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
   void _showLimitWarning() {
     final remaining = _maxLimit - _totalCount;
     final String message = remaining <= 0
-        ? 'Has alcanzado el límite de $_maxLimit categorías/servicios de tu plan.'
+        ? 'Has alcanzado el límite de $_maxLimit categorías/servicios.'
         : 'Solo te quedan $remaining cupo(s) disponible(s).';
+    bool showAction = !Platform.isIOS;
+    try {
+      final profileBloc = context.read<ProfileBloc?>();
+      if (profileBloc != null && profileBloc.state is ProfileLoaded) {
+        final loaded = profileBloc.state as ProfileLoaded;
+        showAction = loaded.appConfig.isSubscriptionsEnabled ??
+            (Platform.isIOS
+                ? loaded.appConfig.subscriptionsEnabledIos
+                : loaded.appConfig.subscriptionsEnabledAndroid);
+      }
+    } catch (_) {}
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.deepOrange,
-        action: SnackBarAction(
-          label: 'Mejorar Plan',
-          textColor: Colors.white,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const MyPlanPage()),
-            );
-          },
-        ),
+        action: !showAction
+            ? null
+            : SnackBarAction(
+                label: 'Mejorar Plan',
+                textColor: Colors.white,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MyPlanPage()),
+                  );
+                },
+              ),
       ),
     );
   }
@@ -658,7 +677,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                   _selectedSubtagIds.clear();
                 });
               },
-              child: const Text(
+              child: Text(
                 'Limpiar todo',
                 style: TextStyle(
                   color: AppColors.primaryBlue,
@@ -681,17 +700,17 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
             '$parent ',
             style: TextStyle(
               fontSize: 13,
-              color: theme.colorScheme.onSurface.withOpacity(0.4),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),
           ),
           Icon(
             Icons.arrow_forward_ios_rounded,
             size: 10,
-            color: theme.colorScheme.onSurface.withOpacity(0.4),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
           ),
           Text(
             ' $child',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
               color: AppColors.primaryBlue,
@@ -708,7 +727,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.info_outline_rounded,
             color: AppColors.primaryBlue,
             size: 18,
@@ -721,7 +740,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                   : 'Selecciona las especializaciones que manejas. Máximo $_maxLimit en total.',
               style: TextStyle(
                 fontSize: 12,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ),
@@ -760,7 +779,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: theme.colorScheme.onSurface.withOpacity(0.1),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                 ),
               ),
               child: Row(
@@ -807,7 +826,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                           '${tags.length} subcategorías',
                           style: TextStyle(
                             fontSize: 12,
-                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                           ),
                         ),
                       ],
@@ -816,7 +835,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                   if (selectedCount > 0) ...[
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppColors.primaryBlue,
                         shape: BoxShape.circle,
                       ),
@@ -834,7 +853,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                   Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 14,
-                    color: theme.colorScheme.onSurface.withOpacity(0.3),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
                   ),
                 ],
               ),
@@ -881,7 +900,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: theme.colorScheme.onSurface.withOpacity(0.1),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
                 ),
               ),
               child: Row(
@@ -901,7 +920,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: AppColors.primaryBlue.withOpacity(0.1),
+                      color: AppColors.primaryBlue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
@@ -928,7 +947,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                           subtags.isEmpty ? 'Servicio General' : '${subtags.length} servicios',
                           style: TextStyle(
                             fontSize: 12,
-                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                           ),
                         ),
                       ],
@@ -938,7 +957,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                     if (selectedCount > 0) ...[
                       Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppColors.primaryBlue,
                           shape: BoxShape.circle,
                         ),
@@ -956,7 +975,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                     Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 14,
-                      color: theme.colorScheme.onSurface.withOpacity(0.3),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
                     ),
                   ],
                 ],
@@ -995,8 +1014,8 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isSelected
-                      ? AppColors.primaryBlue.withOpacity(0.5)
-                      : theme.colorScheme.onSurface.withOpacity(0.1),
+                      ? AppColors.primaryBlue.withValues(alpha: 0.5)
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.1),
                   width: isSelected ? 1.5 : 1.0,
                 ),
               ),
@@ -1052,7 +1071,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
         color: theme.colorScheme.surface,
         border: Border(
           top: BorderSide(
-            color: theme.colorScheme.onSurface.withOpacity(0.1),
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
           ),
         ),
       ),
@@ -1061,7 +1080,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
         children: [
           Text(
             countText,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
               color: AppColors.primaryBlue,
@@ -1098,7 +1117,7 @@ class _TradesmanSubtagsSheetState extends State<TradesmanSubtagsSheet> {
               child: Text(
                 cancelText,
                 style: TextStyle(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   fontWeight: FontWeight.w600,
                 ),
               ),

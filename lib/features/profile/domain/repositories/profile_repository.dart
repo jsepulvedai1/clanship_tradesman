@@ -54,4 +54,6 @@ abstract class ProfileRepository {
   });
   Future<Either<Failure, List<SubscriptionPlanEntity>>> getSubscriptionPlans();
   Future<Either<Failure, UserEntity>> subscribeToPlan({required String planId});
+  Future<Either<Failure, AppConfigEntity>> getAppConfig();
+  Future<Either<Failure, ReferralContentEntity>> getReferralProgramContent({String? language});
 }

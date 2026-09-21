@@ -67,6 +67,7 @@ class RegisterRequested extends AuthEvent {
   final List<String>? subtagIds;
   final String? bio;
   final List<String>? workPhotoPaths;
+  final String? referralCode;
 
   const RegisterRequested({
     required this.email,
@@ -87,6 +88,7 @@ class RegisterRequested extends AuthEvent {
     this.subtagIds,
     this.bio,
     this.workPhotoPaths,
+    this.referralCode,
   });
 
   @override
@@ -108,6 +110,7 @@ class RegisterRequested extends AuthEvent {
         subtagIds ?? [],
         bio ?? '',
         workPhotoPaths ?? [],
+        referralCode ?? '',
       ];
 }
 

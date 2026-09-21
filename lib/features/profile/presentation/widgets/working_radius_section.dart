@@ -66,7 +66,7 @@ class _WorkingRadiusSectionState extends State<WorkingRadiusSection> {
                         : AppColors.primaryAzure.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.location_on_rounded,
                       color: AppColors.primaryAzure,
@@ -118,7 +118,7 @@ class _WorkingRadiusSectionState extends State<WorkingRadiusSection> {
                 const SizedBox(width: 12),
                 Text(
                   _currentRadius.toInt().toString(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primaryAzure,

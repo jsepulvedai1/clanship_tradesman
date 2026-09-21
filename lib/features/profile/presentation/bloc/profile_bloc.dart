@@ -2,6 +2,9 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
+import 'package:fpdart/fpdart.dart';
+import 'package:clanship_mobile_tradesman/core/error/failures.dart';
+import 'package:clanship_mobile_tradesman/features/home/domain/entities/user_entity.dart';
 import 'profile_event.dart';
 import 'profile_state.dart';
 
@@ -24,6 +27,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<LoadSubscriptionPlansEvent>(_onLoadSubscriptionPlans);
     on<SubscribeToPlanEvent>(_onSubscribeToPlan);
     on<SetAvatarFromUrlEvent>(_onSetAvatarFromUrl);
+    on<LoadReferralContentEvent>(_onLoadReferralContent);
   }
 
   void _onLoadProfileData(LoadProfileData event, Emitter<ProfileState> emit) async {
@@ -43,6 +47,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           add(LoadTagsEvent());
           add(LoadSpecialtiesEvent());
           add(LoadSubscriptionPlansEvent());
+          add(const LoadReferralContentEvent());
         }
       },
     );
@@ -255,21 +260,38 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   Future<void> _onLoadSubscriptionPlans(LoadSubscriptionPlansEvent event, Emitter<ProfileState> emit) async {
     if (state is ProfileLoaded) {
       emit((state as ProfileLoaded).copyWith(isLoadingPlans: true));
-      final result = await profileRepository.getSubscriptionPlans();
-      result.fold(
-        (failure) {
-          final current = state;
-          if (current is ProfileLoaded) {
-            emit(current.copyWith(isLoadingPlans: false, errorMessage: failure.message));
-          }
-        },
-        (plans) {
-          final current = state;
-          if (current is ProfileLoaded) {
-            emit(current.copyWith(availablePlans: plans, isLoadingPlans: false, errorMessage: ''));
-          }
-        },
-      );
+
+      final results = await Future.wait([
+        profileRepository.getSubscriptionPlans(),
+        profileRepository.getAppConfig(),
+      ]);
+
+      final plansResult = results[0] as Either<Failure, List<SubscriptionPlanEntity>>;
+      final configResult = results[1] as Either<Failure, AppConfigEntity>;
+
+      final current = state;
+      if (current is ProfileLoaded) {
+        AppConfigEntity appConfig = current.appConfig;
+        configResult.fold((_) {}, (cfg) => appConfig = cfg);
+
+        plansResult.fold(
+          (failure) {
+            emit(current.copyWith(
+              isLoadingPlans: false,
+              appConfig: appConfig,
+              errorMessage: failure.message,
+            ));
+          },
+          (plans) {
+            emit(current.copyWith(
+              availablePlans: plans,
+              appConfig: appConfig,
+              isLoadingPlans: false,
+              errorMessage: '',
+            ));
+          },
+        );
+      }
     }
   }
 
@@ -331,6 +353,26 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       } catch (e) {
         if (!isClosed) emit(currentState.copyWith(isAvatarUploading: false));
       }
+    }
+  }
+
+  Future<void> _onLoadReferralContent(
+    LoadReferralContentEvent event,
+    Emitter<ProfileState> emit,
+  ) async {
+    final current = state;
+    if (current is ProfileLoaded) {
+      final result = await profileRepository.getReferralProgramContent(
+        language: event.language,
+      );
+      result.fold(
+        (_) {},
+        (content) {
+          if (!isClosed && state is ProfileLoaded) {
+            emit((state as ProfileLoaded).copyWith(referralContent: content));
+          }
+        },
+      );
     }
   }
 }

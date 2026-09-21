@@ -99,16 +99,16 @@ class _RejectionReviewPageViewState extends State<RejectionReviewPageView> {
                 ),
                 const SizedBox(height: 16),
                 ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFEFF6FF),
+                  leading: CircleAvatar(
+                    backgroundColor: const Color(0xFFEFF6FF),
                     child: Icon(Icons.camera_alt_rounded, color: AppColors.primaryBlue),
                   ),
                   title: const Text('Tomar Foto con la Cámara'),
                   onTap: () => Navigator.pop(ctx, ImageSource.camera),
                 ),
                 ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFEFF6FF),
+                  leading: CircleAvatar(
+                    backgroundColor: const Color(0xFFEFF6FF),
                     child: Icon(Icons.photo_library_rounded, color: AppColors.primaryBlue),
                   ),
                   title: const Text('Elegir de la Galería'),
@@ -299,7 +299,7 @@ class _RejectionReviewPageViewState extends State<RejectionReviewPageView> {
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
           if (state is ProfileLoading) {
-            return const Center(
+            return Center(
               child: CircularProgressIndicator(color: AppColors.primaryBlue),
             );
           }

@@ -104,7 +104,7 @@ class _PortfolioItem extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.account_circle, color: AppColors.primaryBlue),
+                leading: Icon(Icons.account_circle, color: AppColors.primaryBlue),
                 title: const Text('Establecer como foto de perfil'),
                 onTap: () {
                   Navigator.pop(context);

@@ -23,6 +23,16 @@ class UserModel extends User {
     super.verificationStatus = 'PENDING',
     super.rejectionReason,
     super.requiresPlanUpgrade = false,
+    super.referralCode,
+    super.referralsTotalCount = 0,
+    super.referralsPendingCount = 0,
+    super.referralsTargetCount = 5,
+    super.referralRewardPlanName = 'Plan Profesional',
+    super.referralRewardDays = 30,
+    super.planExpiresAt,
+    super.referralsRewardsEarnedCount = 0,
+    super.referralMaxRewardsPerUser = 1,
+    super.referralHasReachedMaxRewards = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -52,6 +62,17 @@ class UserModel extends User {
     bool isVal = data['isValidated'] == true || data['isVerified'] == true;
     String vStatus = data['verificationStatus']?.toString() ?? 'PENDING';
     String? rReason = data['rejectionReason']?.toString();
+    String? refCode;
+    int refTotal = 0;
+    int refPending = 0;
+    int refTarget = 5;
+    String? refPlanName = 'Plan Profesional';
+    int refDays = 30;
+    DateTime? pExpiresAt;
+
+    int refRewardsEarned = 0;
+    int refMaxRewards = 1;
+    bool refReachedMax = false;
 
     // Map professionalProfile address and coordinates independently
     if (data['professionalProfile'] != null &&
@@ -76,6 +97,34 @@ class UserModel extends User {
       if (prof['requiresPlanUpgrade'] == true || prof['requiresPlanUpgrade'] == 'true') {
         data['requiresPlanUpgrade'] = true;
       }
+      refCode = prof['referralCode']?.toString();
+      if (prof['referralsTotalCount'] != null) {
+        refTotal = prof['referralsTotalCount'] is int ? prof['referralsTotalCount'] : (int.tryParse(prof['referralsTotalCount'].toString()) ?? 0);
+      }
+      if (prof['referralsPendingCount'] != null) {
+        refPending = prof['referralsPendingCount'] is int ? prof['referralsPendingCount'] : (int.tryParse(prof['referralsPendingCount'].toString()) ?? 0);
+      }
+      if (prof['referralsTargetCount'] != null) {
+        refTarget = prof['referralsTargetCount'] is int ? prof['referralsTargetCount'] : (int.tryParse(prof['referralsTargetCount'].toString()) ?? 5);
+      }
+      if (prof['referralRewardPlanName'] != null) {
+        refPlanName = prof['referralRewardPlanName']?.toString();
+      }
+      if (prof['referralRewardDays'] != null) {
+        refDays = prof['referralRewardDays'] is int ? prof['referralRewardDays'] : (int.tryParse(prof['referralRewardDays'].toString()) ?? 30);
+      }
+      if (prof['planExpiresAt'] != null) {
+        pExpiresAt = DateTime.tryParse(prof['planExpiresAt'].toString());
+      }
+      if (prof['referralsRewardsEarnedCount'] != null) {
+        refRewardsEarned = prof['referralsRewardsEarnedCount'] is int ? prof['referralsRewardsEarnedCount'] : (int.tryParse(prof['referralsRewardsEarnedCount'].toString()) ?? 0);
+      }
+      if (prof['referralMaxRewardsPerUser'] != null) {
+        refMaxRewards = prof['referralMaxRewardsPerUser'] is int ? prof['referralMaxRewardsPerUser'] : (int.tryParse(prof['referralMaxRewardsPerUser'].toString()) ?? 1);
+      }
+      if (prof['referralHasReachedMaxRewards'] != null) {
+        refReachedMax = prof['referralHasReachedMaxRewards'] == true || prof['referralHasReachedMaxRewards'].toString() == 'true';
+      }
     }
     
     final user = _$UserModelFromJson(data);
@@ -84,6 +133,16 @@ class UserModel extends User {
       verificationStatus: vStatus,
       rejectionReason: rReason,
       requiresPlanUpgrade: data['requiresPlanUpgrade'] ?? false,
+      referralCode: refCode,
+      referralsTotalCount: refTotal,
+      referralsPendingCount: refPending,
+      referralsTargetCount: refTarget,
+      referralRewardPlanName: refPlanName,
+      referralRewardDays: refDays,
+      planExpiresAt: pExpiresAt,
+      referralsRewardsEarnedCount: refRewardsEarned,
+      referralMaxRewardsPerUser: refMaxRewards,
+      referralHasReachedMaxRewards: refReachedMax,
     );
   }
 
@@ -108,6 +167,16 @@ class UserModel extends User {
     String? verificationStatus,
     String? rejectionReason,
     bool? requiresPlanUpgrade,
+    String? referralCode,
+    int? referralsTotalCount,
+    int? referralsPendingCount,
+    int? referralsTargetCount,
+    String? referralRewardPlanName,
+    int? referralRewardDays,
+    DateTime? planExpiresAt,
+    int? referralsRewardsEarnedCount,
+    int? referralMaxRewardsPerUser,
+    bool? referralHasReachedMaxRewards,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -127,6 +196,16 @@ class UserModel extends User {
       verificationStatus: verificationStatus ?? this.verificationStatus,
       rejectionReason: rejectionReason ?? this.rejectionReason,
       requiresPlanUpgrade: requiresPlanUpgrade ?? this.requiresPlanUpgrade,
+      referralCode: referralCode ?? this.referralCode,
+      referralsTotalCount: referralsTotalCount ?? this.referralsTotalCount,
+      referralsPendingCount: referralsPendingCount ?? this.referralsPendingCount,
+      referralsTargetCount: referralsTargetCount ?? this.referralsTargetCount,
+      referralRewardPlanName: referralRewardPlanName ?? this.referralRewardPlanName,
+      referralRewardDays: referralRewardDays ?? this.referralRewardDays,
+      planExpiresAt: planExpiresAt ?? this.planExpiresAt,
+      referralsRewardsEarnedCount: referralsRewardsEarnedCount ?? this.referralsRewardsEarnedCount,
+      referralMaxRewardsPerUser: referralMaxRewardsPerUser ?? this.referralMaxRewardsPerUser,
+      referralHasReachedMaxRewards: referralHasReachedMaxRewards ?? this.referralHasReachedMaxRewards,
     );
   }
 }

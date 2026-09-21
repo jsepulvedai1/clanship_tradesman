@@ -10,9 +10,9 @@ import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
 import '../widgets/profile_app_bar.dart';
 import '../widgets/subscription_banner.dart';
+import '../widgets/associate_code_banner.dart';
 import '../widgets/bio_section.dart';
 import '../widgets/portfolio_gallery.dart';
-import '../widgets/section_header.dart';
 import '../widgets/services_header_banner.dart';
 import '../widgets/working_radius_section.dart';
 import '../widgets/profile_skeleton.dart';
@@ -54,8 +54,8 @@ class _ProfilePageState extends State<ProfilePage> {
         if (specName.isEmpty) return const SizedBox.shrink();
         return Chip(
           label: Text(specName),
-          backgroundColor: AppColors.primaryBlue.withOpacity(0.12),
-          side: const BorderSide(
+          backgroundColor: AppColors.primaryBlue.withValues(alpha: 0.12),
+          side: BorderSide(
             color: AppColors.primaryBlue,
             width: 1.5,
           ),
@@ -68,7 +68,7 @@ class _ProfilePageState extends State<ProfilePage> {
           .map((tagName) {
             return Chip(
               label: Text(tagName),
-              backgroundColor: Colors.grey.withOpacity(0.1),
+              backgroundColor: Colors.grey.withValues(alpha: 0.1),
               side: BorderSide(
                 color: Colors.grey.shade300,
               ),
@@ -81,8 +81,8 @@ class _ProfilePageState extends State<ProfilePage> {
           label: Text(
             tagName.isNotEmpty ? '$tagName > $subtagName' : subtagName,
           ),
-          backgroundColor: AppColors.primaryBlue.withOpacity(0.08),
-          side: const BorderSide(
+          backgroundColor: AppColors.primaryBlue.withValues(alpha: 0.08),
+          side: BorderSide(
             color: AppColors.primaryBlue,
           ),
         );
@@ -115,13 +115,13 @@ class _ProfilePageState extends State<ProfilePage> {
         ActionChip(
           label: Text(
             '+$remaining más',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.primaryBlue,
               fontWeight: FontWeight.bold,
             ),
           ),
-          backgroundColor: AppColors.primaryBlue.withOpacity(0.15),
-          side: const BorderSide(
+          backgroundColor: AppColors.primaryBlue.withValues(alpha: 0.15),
+          side: BorderSide(
             color: AppColors.primaryBlue,
             width: 1.5,
           ),
@@ -143,7 +143,7 @@ class _ProfilePageState extends State<ProfilePage> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          backgroundColor: Colors.grey.withOpacity(0.15),
+          backgroundColor: Colors.grey.withValues(alpha: 0.15),
           side: BorderSide(
             color: Colors.grey.shade400,
           ),
@@ -421,7 +421,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 children: [
                                   Text(
                                     l10n.profileWhoAmI,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: AppColors.primaryBlue,
                                       fontSize: 28,
                                       fontWeight: FontWeight.bold,
@@ -464,6 +464,31 @@ class _ProfilePageState extends State<ProfilePage> {
                               planName: user.planName,
                               daysRemaining: user.daysRemaining,
                             ),
+                            if (user.referralCode != null && user.referralCode!.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              AssociateCodeBanner(
+                                referralCode: user.referralCode!,
+                                pendingCount: user.referralsPendingCount,
+                                targetCount: user.referralsTargetCount,
+                                hasReachedMaxRewards: user.referralHasReachedMaxRewards,
+                                rewardsEarnedCount: user.referralsRewardsEarnedCount,
+                                maxRewardsPerUser: user.referralMaxRewardsPerUser,
+                                customTitle: state.referralContent.bannerTitle.isNotEmpty
+                                    ? state.referralContent.bannerTitle
+                                    : null,
+                                customSubtitle: state.referralContent.bannerSubtitle.isNotEmpty
+                                    ? state.referralContent.formatBannerSubtitle(
+                                        target: user.referralsTargetCount > 0 ? user.referralsTargetCount : 5,
+                                        days: user.referralRewardDays > 0 ? user.referralRewardDays : 30,
+                                        plan: user.referralRewardPlanName ?? 'Plan',
+                                        fallback: 'Invita ${user.referralsTargetCount > 0 ? user.referralsTargetCount : 5} asociados y gana un plan gratis',
+                                      )
+                                    : null,
+                                customShareMessage: state.referralContent.shareMessage.isNotEmpty
+                                    ? state.referralContent.shareMessage
+                                    : null,
+                              ),
+                            ],
                             const SizedBox(height: 24),
                             BioSection(
                               biography: user.biography,
@@ -571,7 +596,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   Positioned.fill(
                                     child: Container(
                                       color: Colors.black12,
-                                      child: const Center(
+                                      child: Center(
                                         child: CircularProgressIndicator(
                                           color: AppColors.primaryBlue,
                                         ),

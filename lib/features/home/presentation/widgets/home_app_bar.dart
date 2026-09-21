@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
+import 'package:clanship_mobile_tradesman/core/theme/widgets/seasonal_logo_badge.dart';
+import 'package:clanship_mobile_tradesman/core/theme/widgets/seasonal_top_garland.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 import 'package:clanship_mobile_tradesman/features/home/presentation/pages/help_webview_page.dart';
 import '../../domain/entities/user_entity.dart';
@@ -33,188 +36,209 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color textColor = isDark ? Colors.white : const Color(0xFF2E3135);
-    final Color nameColor = isDark ? Colors.white : const Color(0xFF0D2B45);
+    final Color textColor = isDark ? Colors.white : AppColors.textDark;
+    final Color nameColor = isDark ? Colors.white : AppColors.primaryBlue;
 
     return Container(
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 8,
-        left: 16,
-        right: 16,
-        bottom: 12,
-      ),
       decoration: const BoxDecoration(color: Color(0xFFF7F7F5)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // LADO IZQUIERDO: Saludo
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+          Padding(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 8,
+              left: 16,
+              right: 16,
+              bottom: 12,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  l10n.homeWelcomePrefix,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: textColor.withValues(alpha: 0.8),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                // LADO IZQUIERDO: Saludo
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l10n.homeWelcomePrefix,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: textColor.withValues(alpha: 0.8),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_toTitleCase(user.name)}!',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: nameColor,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${_toTitleCase(user.name)}!',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: nameColor,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                const SizedBox(width: 8),
+                // LADO DERECHO: Ayuda Maestro, Notificaciones & Foto Perfil
+                Row(
+                  children: [
+                    // Icono de Ayuda / Guía Maestro (WebView)
+                    GestureDetector(
+                      onTap: () => HelpWebViewPage.show(context),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.help_outline_rounded,
+                          color: AppColors.primaryBlue,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Icono Notificación con punto verde
+                    GestureDetector(
+                      onTap: onSyncTap,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/icon/icons_ F28C28/bell.svg',
+                              width: 20,
+                              height: 20,
+                              colorFilter: ColorFilter.mode(
+                                AppColors.primaryBlue,
+                                BlendMode.srcIn,
+                              ),
+                            ),
+                            // Punto verde (Notificación activa)
+                            if (hasNotifications)
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF00FF7F),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Foto de Perfil con Insignia Festiva (Chupalla, Calabaza, Gorro)
+                    SeasonalLogoBadge(
+                      badgeAlignment: Alignment.topRight,
+                      offset: const Offset(8, -8),
+                      child: GestureDetector(
+                        onTap: isAvatarUploading ? null : onAvatarTap,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                border: Border.all(
+                                  color: AppColors.primaryBlue,
+                                  width: 1.5,
+                                ),
+                                image:
+                                    user.profileImageUrl != null &&
+                                        user.profileImageUrl!.isNotEmpty
+                                    ? DecorationImage(
+                                        image:
+                                            (user.profileImageUrl!.startsWith(
+                                                  'http://',
+                                                ) ||
+                                                user.profileImageUrl!.startsWith(
+                                                  'https://',
+                                                ))
+                                            ? NetworkImage(user.profileImageUrl!)
+                                                  as ImageProvider
+                                            : FileImage(File(user.profileImageUrl!)),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child:
+                                  user.profileImageUrl == null ||
+                                      user.profileImageUrl!.isEmpty
+                                  ? Icon(
+                                      Icons.person_outline_rounded,
+                                      color: AppColors.primaryBlue,
+                                      size: 22,
+                                    )
+                                  : null,
+                            ),
+                            if (isAvatarUploading)
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: const BoxDecoration(
+                                  color: Colors.black45,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Center(
+                                  child: SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          // LADO DERECHO: Ayuda Maestro, Notificaciones & Foto Perfil
-          Row(
-            children: [
-              // Icono de Ayuda / Guía Maestro (WebView)
-              GestureDetector(
-                onTap: () => HelpWebViewPage.show(context),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                    border: Border.all(
-                      color: const Color(0xFFE2E8F0),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.help_outline_rounded,
-                    color: Color(0xFF0D2B45),
-                    size: 22,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Icono Notificación con punto verde
-              GestureDetector(
-                onTap: onSyncTap,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                    border: Border.all(
-                      color: const Color(0xFFE2E8F0),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SvgPicture.asset(
-                        'assets/icon/icons_ F28C28/bell.svg',
-                        width: 20,
-                        height: 20,
-                        colorFilter: const ColorFilter.mode(
-                          Color(0xFF0D2B45),
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      // Punto verde (Notificación activa)
-                      if (hasNotifications)
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF00FF7F),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Foto de Perfil
-              GestureDetector(
-                onTap: isAvatarUploading ? null : onAvatarTap,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        border: Border.all(
-                          color: const Color(0xFF0D2B45),
-                          width: 1.5,
-                        ),
-                        image:
-                            user.profileImageUrl != null &&
-                                user.profileImageUrl!.isNotEmpty
-                            ? DecorationImage(
-                                image:
-                                    (user.profileImageUrl!.startsWith(
-                                          'http://',
-                                        ) ||
-                                        user.profileImageUrl!.startsWith(
-                                          'https://',
-                                        ))
-                                    ? NetworkImage(user.profileImageUrl!)
-                                          as ImageProvider
-                                    : FileImage(File(user.profileImageUrl!)),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                      ),
-                      child:
-                          user.profileImageUrl == null ||
-                              user.profileImageUrl!.isEmpty
-                          ? const Icon(
-                              Icons.person_outline_rounded,
-                              color: Color(0xFF0D2B45),
-                              size: 22,
-                            )
-                          : null,
-                    ),
-                    if (isAvatarUploading)
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: const BoxDecoration(
-                          color: Colors.black45,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
+          // Guirnalda Festiva Superior Colgante
+          Positioned(
+            top: MediaQuery.of(context).padding.top,
+            left: 0,
+            right: 0,
+            child: const SeasonalTopGarland(
+              height: 24,
+              slot: GarlandSlot.top,
+            ),
           ),
         ],
       ),

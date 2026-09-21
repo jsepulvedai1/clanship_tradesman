@@ -2085,6 +2085,324 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'• Set Address: Defines a fixed point or workshop on the map to receive requests in that sector permanently.'**
   String get homeServiceAreaInfoPin;
+
+  /// No description provided for @authTermsAndEula.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & EULA'**
+  String get authTermsAndEula;
+
+  /// No description provided for @settingsBlockedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked Users'**
+  String get settingsBlockedUsers;
+
+  /// No description provided for @settingsBlockedUsersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage and review the users you have blocked'**
+  String get settingsBlockedUsersSubtitle;
+
+  /// No description provided for @settingsBlockedUsersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No blocked users.'**
+  String get settingsBlockedUsersEmpty;
+
+  /// No description provided for @settingsUnblock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get settingsUnblock;
+
+  /// No description provided for @settingsUnblockConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock user?'**
+  String get settingsUnblockConfirmTitle;
+
+  /// No description provided for @settingsUnblockConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to unblock this user? They will be able to contact you again.'**
+  String get settingsUnblockConfirmBody;
+
+  /// No description provided for @settingsEulaTile.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service (EULA) & Zero Tolerance'**
+  String get settingsEulaTile;
+
+  /// No description provided for @chatReportUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Report user or chat'**
+  String get chatReportUser;
+
+  /// No description provided for @chatBlockUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Block customer'**
+  String get chatBlockUser;
+
+  /// No description provided for @chatBlockConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Block this customer?'**
+  String get chatBlockConfirmTitle;
+
+  /// No description provided for @chatBlockConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'By blocking this user:\n\n• This chat will close immediately and all content will be hidden.\n• This customer will no longer be able to send you requests or messages.\n• Our moderation team will be notified to review their conduct and take action within 24 hours.'**
+  String get chatBlockConfirmBody;
+
+  /// No description provided for @chatBlockConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Block customer'**
+  String get chatBlockConfirmButton;
+
+  /// No description provided for @chatBlockedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You have blocked this user. Our team will act within 24 hours.'**
+  String get chatBlockedSuccess;
+
+  /// No description provided for @eulaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms and Conditions (EULA)'**
+  String get eulaTitle;
+
+  /// No description provided for @eulaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'End User License Agreement & Moderation'**
+  String get eulaSubtitle;
+
+  /// No description provided for @eulaZeroToleranceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ZERO TOLERANCE POLICY'**
+  String get eulaZeroToleranceTitle;
+
+  /// No description provided for @eulaZeroToleranceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Clanship enforces a strict ZERO TOLERANCE policy against objectionable, offensive, discriminatory, abusive, sexual, or fraudulent content, as well as users and customers engaging in inappropriate behavior.'**
+  String get eulaZeroToleranceBody;
+
+  /// No description provided for @eulaSection1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'1. End User License Agreement (EULA)'**
+  String get eulaSection1Title;
+
+  /// No description provided for @eulaSection1Body.
+  ///
+  /// In en, this message translates to:
+  /// **'By downloading, registering, or using the Clanship Profesional application, you agree to be bound by these Terms of Service and License Agreement (EULA). If you do not agree to these terms, you must not use the application.'**
+  String get eulaSection1Body;
+
+  /// No description provided for @eulaSection2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'2. Community Guidelines & Prohibited Content'**
+  String get eulaSection2Title;
+
+  /// No description provided for @eulaSection2Intro.
+  ///
+  /// In en, this message translates to:
+  /// **'As a service provider and platform user, you agree to:'**
+  String get eulaSection2Intro;
+
+  /// No description provided for @eulaSection2Bullet1.
+  ///
+  /// In en, this message translates to:
+  /// **'Not upload or send sexually explicit, pornographic, violent, or defamatory content.'**
+  String get eulaSection2Bullet1;
+
+  /// No description provided for @eulaSection2Bullet2.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintain respectful, professional conduct free from any form of harassment or discrimination.'**
+  String get eulaSection2Bullet2;
+
+  /// No description provided for @eulaSection2Bullet3.
+  ///
+  /// In en, this message translates to:
+  /// **'Provide accurate information and authentic documentation regarding your certifications and credentials.'**
+  String get eulaSection2Bullet3;
+
+  /// No description provided for @eulaSection2Bullet4.
+  ///
+  /// In en, this message translates to:
+  /// **'Not use the platform for fraudulent purposes or commit scams.'**
+  String get eulaSection2Bullet4;
+
+  /// No description provided for @eulaSection3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'3. Reporting & Blocking Tools'**
+  String get eulaSection3Title;
+
+  /// No description provided for @eulaSection3Intro.
+  ///
+  /// In en, this message translates to:
+  /// **'To ensure the safety of professionals and users in Clanship:'**
+  String get eulaSection3Intro;
+
+  /// No description provided for @eulaSection3Bullet1.
+  ///
+  /// In en, this message translates to:
+  /// **'Block abusive customers: You can block any customer immediately from the chat menu. Upon blocking, the conversation closes and they cannot contact you.'**
+  String get eulaSection3Bullet1;
+
+  /// No description provided for @eulaSection3Bullet2.
+  ///
+  /// In en, this message translates to:
+  /// **'Report content or chats: You can report any suspicious, offensive, or spam message using the report button.'**
+  String get eulaSection3Bullet2;
+
+  /// No description provided for @eulaSection3Bullet3.
+  ///
+  /// In en, this message translates to:
+  /// **'24-Hour Moderation Commitment: Our team reviews every report within 24 hours. Any offending user will be sanctioned or permanently ejected.'**
+  String get eulaSection3Bullet3;
+
+  /// No description provided for @eulaSection4Title.
+  ///
+  /// In en, this message translates to:
+  /// **'4. Independent Service Nature'**
+  String get eulaSection4Title;
+
+  /// No description provided for @eulaSection4Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Clanship operates as a technology platform for coordination and connection between independent providers and clients. Each service and quote is agreed directly between the parties under their own professional responsibility.'**
+  String get eulaSection4Body;
+
+  /// No description provided for @eulaSection5Title.
+  ///
+  /// In en, this message translates to:
+  /// **'5. Privacy & Sensitive Data'**
+  String get eulaSection5Title;
+
+  /// No description provided for @eulaSection5Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Your location, profile, and certification data are securely processed in accordance with our Privacy Policy solely to coordinate requests and validate your account.'**
+  String get eulaSection5Body;
+
+  /// No description provided for @eulaWebLink.
+  ///
+  /// In en, this message translates to:
+  /// **'View full terms on the official website'**
+  String get eulaWebLink;
+
+  /// No description provided for @eulaAcceptButton.
+  ///
+  /// In en, this message translates to:
+  /// **'I Accept the Terms & EULA Policy'**
+  String get eulaAcceptButton;
+
+  /// No description provided for @eulaCloseButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Understood & Close'**
+  String get eulaCloseButton;
+
+  /// No description provided for @settingsAssociateCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Associate Code'**
+  String get settingsAssociateCode;
+
+  /// No description provided for @settingsAssociateCodeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite and earn free plan time'**
+  String get settingsAssociateCodeSubtitle;
+
+  /// No description provided for @associateCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Associate Code'**
+  String get associateCodeTitle;
+
+  /// No description provided for @associateCodeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your code with customers or contacts. Every time {target} people register with your code, you will earn {days} days of {plan} for free.'**
+  String associateCodeDescription(int target, int days, String plan);
+
+  /// No description provided for @associateCodeCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Code'**
+  String get associateCodeCopy;
+
+  /// No description provided for @associateCodeShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Code'**
+  String get associateCodeShare;
+
+  /// No description provided for @associateCodeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Code copied to clipboard!'**
+  String get associateCodeCopied;
+
+  /// No description provided for @associateCodeProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{pending} of {target} registered towards your next reward'**
+  String associateCodeProgress(int pending, int target);
+
+  /// No description provided for @associateCodeTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{total} people have registered with your code'**
+  String associateCodeTotal(int total);
+
+  /// No description provided for @associateCodeShareMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello! I invite you to join Clanship. Sign up using my associate code {code} to connect with me and find top home specialists: https://clanship.cl'**
+  String associateCodeShareMessage(String code);
+
+  /// No description provided for @registerReferralCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Associate or referral code (Optional)'**
+  String get registerReferralCodeLabel;
+
+  /// No description provided for @registerReferralCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'E.g. CLAN-ABC12'**
+  String get registerReferralCodeHint;
+
+  /// No description provided for @associateCodeMaxRewardsReached.
+  ///
+  /// In en, this message translates to:
+  /// **'You have reached the maximum benefit limit for this program.'**
+  String get associateCodeMaxRewardsReached;
+
+  /// No description provided for @associateCodeRewardsProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{earned} of {max} benefits earned'**
+  String associateCodeRewardsProgress(int earned, int max);
+
+  /// No description provided for @associateCodeMaxReachedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum goal reached'**
+  String get associateCodeMaxReachedBadge;
 }
 
 class _AppLocalizationsDelegate

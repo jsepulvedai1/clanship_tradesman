@@ -34,6 +34,230 @@ class ProfessionalDocumentEntity extends Equatable {
   List<Object?> get props => [id, name, fileUrl, isVisible, status, rejectionReason];
 }
 
+class AppConfigEntity extends Equatable {
+  final bool subscriptionsEnabledIos;
+  final bool subscriptionsEnabledAndroid;
+  final String subscriptionIosLink;
+  final String subscriptionIosMessage;
+  final int maxSpecialtiesPerTradesman;
+  final String subscriptionsMinVersionIos;
+  final String subscriptionsBlockedVersionsIos;
+  final String subscriptionsMinVersionAndroid;
+  final String subscriptionsBlockedVersionsAndroid;
+  final bool? isSubscriptionsEnabled;
+
+  const AppConfigEntity({
+    this.subscriptionsEnabledIos = false,
+    this.subscriptionsEnabledAndroid = true,
+    this.subscriptionIosLink = 'https://clanship.cl',
+    this.subscriptionIosMessage =
+        'Para una mejor experiencia y conocer cómo mejorar tu plan, revisa en el siguiente link:',
+    this.maxSpecialtiesPerTradesman = 6,
+    this.subscriptionsMinVersionIos = '',
+    this.subscriptionsBlockedVersionsIos = '',
+    this.subscriptionsMinVersionAndroid = '',
+    this.subscriptionsBlockedVersionsAndroid = '',
+    this.isSubscriptionsEnabled,
+  });
+
+  /// Determina si las suscripciones están habilitadas para la versión y plataforma dada.
+  bool isEnabledForVersion(String appVersion, {required bool isIOS}) {
+    if (isSubscriptionsEnabled != null) {
+      return isSubscriptionsEnabled!;
+    }
+
+    final bool masterEnabled =
+        isIOS ? subscriptionsEnabledIos : subscriptionsEnabledAndroid;
+    if (!masterEnabled) return false;
+
+    if (appVersion.isEmpty) return masterEnabled;
+
+    final String rawVersion = appVersion.trim();
+    final String cleanVersion =
+        rawVersion.split('+').first.split('-').first.trim();
+    final String blockedStr = isIOS
+        ? subscriptionsBlockedVersionsIos
+        : subscriptionsBlockedVersionsAndroid;
+    final String minVerStr =
+        (isIOS ? subscriptionsMinVersionIos : subscriptionsMinVersionAndroid)
+            .trim();
+
+    final blockedList = blockedStr
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty);
+
+    for (final blocked in blockedList) {
+      final cleanBlocked = blocked.split('+').first.split('-').first.trim();
+      if (rawVersion == blocked || cleanVersion == cleanBlocked) {
+        return false;
+      }
+    }
+
+    if (minVerStr.isNotEmpty) {
+      List<int> parseVer(String v) {
+        try {
+          final c = v.split('+').first.split('-').first.trim();
+          final parts = c.split('.').map((p) => int.tryParse(p) ?? 0).toList();
+          while (parts.length < 3) {
+            parts.add(0);
+          }
+          return parts.take(3).toList();
+        } catch (_) {
+          return [0, 0, 0];
+        }
+      }
+
+      final curParts = parseVer(cleanVersion);
+      final minParts = parseVer(minVerStr);
+
+      for (int i = 0; i < 3; i++) {
+        if (curParts[i] < minParts[i]) return false;
+        if (curParts[i] > minParts[i]) break;
+      }
+    }
+
+    return true;
+  }
+
+  @override
+  List<Object?> get props => [
+        subscriptionsEnabledIos,
+        subscriptionsEnabledAndroid,
+        subscriptionIosLink,
+        subscriptionIosMessage,
+        maxSpecialtiesPerTradesman,
+        subscriptionsMinVersionIos,
+        subscriptionsBlockedVersionsIos,
+        subscriptionsMinVersionAndroid,
+        subscriptionsBlockedVersionsAndroid,
+        isSubscriptionsEnabled,
+      ];
+}
+
+class ReferralContentEntity extends Equatable {
+  final String language;
+  final bool isActive;
+  final String heroTitle;
+  final String heroDescription;
+  final String shareMessage;
+  final String howItWorksTitle;
+  final String step1;
+  final String step2;
+  final String step3;
+  final String bannerTitle;
+  final String bannerSubtitle;
+  final String myPlanInviteText;
+  final String activeBenefitText;
+  final String registrationCodeLabel;
+  final String registrationCodeHint;
+
+  const ReferralContentEntity({
+    this.language = 'es',
+    this.isActive = true,
+    this.heroTitle = '',
+    this.heroDescription = '',
+    this.shareMessage = '',
+    this.howItWorksTitle = '',
+    this.step1 = '',
+    this.step2 = '',
+    this.step3 = '',
+    this.bannerTitle = '',
+    this.bannerSubtitle = '',
+    this.myPlanInviteText = '',
+    this.activeBenefitText = '',
+    this.registrationCodeLabel = '',
+    this.registrationCodeHint = '',
+  });
+
+  String formatHeroDescription({
+    required int target,
+    required int days,
+    required String plan,
+    required String fallback,
+  }) {
+    if (heroDescription.trim().isEmpty) return fallback;
+    return heroDescription
+        .replaceAll('{target}', '$target')
+        .replaceAll('{days}', '$days')
+        .replaceAll('{plan}', plan);
+  }
+
+  String formatShareMessage({
+    required String code,
+    required String fallback,
+  }) {
+    if (shareMessage.trim().isEmpty) return fallback;
+    return shareMessage.replaceAll('{code}', code);
+  }
+
+  String formatStep3({
+    required int target,
+    required int days,
+    required String plan,
+    required String fallback,
+  }) {
+    if (step3.trim().isEmpty) return fallback;
+    return step3
+        .replaceAll('{target}', '$target')
+        .replaceAll('{days}', '$days')
+        .replaceAll('{plan}', plan);
+  }
+
+  String formatBannerSubtitle({
+    required int target,
+    required int days,
+    required String plan,
+    required String fallback,
+  }) {
+    if (bannerSubtitle.trim().isEmpty) return fallback;
+    return bannerSubtitle
+        .replaceAll('{target}', '$target')
+        .replaceAll('{days}', '$days')
+        .replaceAll('{plan}', plan);
+  }
+
+  String formatMyPlanInvite({
+    required int target,
+    required int days,
+    required String plan,
+    required String fallback,
+  }) {
+    if (myPlanInviteText.trim().isEmpty) return fallback;
+    return myPlanInviteText
+        .replaceAll('{target}', '$target')
+        .replaceAll('{days}', '$days')
+        .replaceAll('{plan}', plan);
+  }
+
+  String formatActiveBenefit({
+    required String date,
+    required String fallback,
+  }) {
+    if (activeBenefitText.trim().isEmpty) return fallback;
+    return activeBenefitText.replaceAll('{date}', date);
+  }
+
+  @override
+  List<Object?> get props => [
+        language,
+        isActive,
+        heroTitle,
+        heroDescription,
+        shareMessage,
+        howItWorksTitle,
+        step1,
+        step2,
+        step3,
+        bannerTitle,
+        bannerSubtitle,
+        myPlanInviteText,
+        activeBenefitText,
+        registrationCodeLabel,
+        registrationCodeHint,
+      ];
+}
+
 class SubscriptionPlanEntity extends Equatable {
   final String id;
   final String name;
@@ -135,6 +359,16 @@ class UserEntity extends Equatable {
   final String verificationStatus;
   final String? rejectionReason;
   final bool requiresPlanUpgrade;
+  final String? referralCode;
+  final int referralsTotalCount;
+  final int referralsPendingCount;
+  final int referralsTargetCount;
+  final String? referralRewardPlanName;
+  final int referralRewardDays;
+  final DateTime? planExpiresAt;
+  final int referralsRewardsEarnedCount;
+  final int referralMaxRewardsPerUser;
+  final bool referralHasReachedMaxRewards;
 
   const UserEntity({
     required this.id,
@@ -177,6 +411,16 @@ class UserEntity extends Equatable {
     this.verificationStatus = 'PENDING',
     this.rejectionReason,
     this.requiresPlanUpgrade = false,
+    this.referralCode,
+    this.referralsTotalCount = 0,
+    this.referralsPendingCount = 0,
+    this.referralsTargetCount = 5,
+    this.referralRewardPlanName = 'Plan Profesional',
+    this.referralRewardDays = 30,
+    this.planExpiresAt,
+    this.referralsRewardsEarnedCount = 0,
+    this.referralMaxRewardsPerUser = 1,
+    this.referralHasReachedMaxRewards = false,
   });
 
   bool get isRejected {
@@ -243,6 +487,16 @@ class UserEntity extends Equatable {
     String? verificationStatus,
     String? rejectionReason,
     bool? requiresPlanUpgrade,
+    String? referralCode,
+    int? referralsTotalCount,
+    int? referralsPendingCount,
+    int? referralsTargetCount,
+    String? referralRewardPlanName,
+    int? referralRewardDays,
+    DateTime? planExpiresAt,
+    int? referralsRewardsEarnedCount,
+    int? referralMaxRewardsPerUser,
+    bool? referralHasReachedMaxRewards,
   }) {
     return UserEntity(
       id: id ?? this.id,
@@ -285,6 +539,16 @@ class UserEntity extends Equatable {
       verificationStatus: verificationStatus ?? this.verificationStatus,
       rejectionReason: rejectionReason ?? this.rejectionReason,
       requiresPlanUpgrade: requiresPlanUpgrade ?? this.requiresPlanUpgrade,
+      referralCode: referralCode ?? this.referralCode,
+      referralsTotalCount: referralsTotalCount ?? this.referralsTotalCount,
+      referralsPendingCount: referralsPendingCount ?? this.referralsPendingCount,
+      referralsTargetCount: referralsTargetCount ?? this.referralsTargetCount,
+      referralRewardPlanName: referralRewardPlanName ?? this.referralRewardPlanName,
+      referralRewardDays: referralRewardDays ?? this.referralRewardDays,
+      planExpiresAt: planExpiresAt ?? this.planExpiresAt,
+      referralsRewardsEarnedCount: referralsRewardsEarnedCount ?? this.referralsRewardsEarnedCount,
+      referralMaxRewardsPerUser: referralMaxRewardsPerUser ?? this.referralMaxRewardsPerUser,
+      referralHasReachedMaxRewards: referralHasReachedMaxRewards ?? this.referralHasReachedMaxRewards,
     );
   }
 
@@ -330,6 +594,16 @@ class UserEntity extends Equatable {
         verificationStatus,
         rejectionReason,
         requiresPlanUpgrade,
+        referralCode,
+        referralsTotalCount,
+        referralsPendingCount,
+        referralsTargetCount,
+        referralRewardPlanName,
+        referralRewardDays,
+        planExpiresAt,
+        referralsRewardsEarnedCount,
+        referralMaxRewardsPerUser,
+        referralHasReachedMaxRewards,
       ];
 }
 

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/documents_page.dart';
@@ -18,8 +17,12 @@ import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
 import 'package:clanship_mobile_tradesman/features/profile/domain/usecases/update_profile_usecase.dart';
 import 'package:clanship_mobile_tradesman/core/theme/bloc/language_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:clanship_mobile_tradesman/core/services/ugc_safety_service.dart';
+import 'package:clanship_mobile_tradesman/features/auth/presentation/widgets/terms_and_eula_dialog.dart';
+import 'package:clanship_mobile_tradesman/features/profile/domain/repositories/profile_repository.dart';
 import 'personal_info_page.dart';
 import 'my_plan_page.dart';
+import 'associate_code_page.dart';
 import 'support_page.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -34,11 +37,28 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _isAvatarLoading = false;
   String _appVersion = '1.0.3';
   String _buildNumber = '8';
+  bool _subscriptionsEnabled = !Platform.isIOS;
 
   @override
   void initState() {
     super.initState();
     _loadPackageInfo();
+    _checkSubscriptionFeatureFlag();
+  }
+
+  Future<void> _checkSubscriptionFeatureFlag() async {
+    try {
+      final repository = di.sl<ProfileRepository>();
+      final result = await repository.getAppConfig();
+      result.fold((_) {}, (config) {
+        if (mounted) {
+          setState(() {
+            _subscriptionsEnabled = config.isSubscriptionsEnabled ??
+                config.isEnabledForVersion(_appVersion, isIOS: Platform.isIOS);
+          });
+        }
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadPackageInfo() async {
@@ -187,21 +207,22 @@ class _SettingsPageState extends State<SettingsPage> {
                   },
                 ),
 
-                _SettingsItem(
-                  icon: Icons.desktop_windows_outlined,
-                  title: l10n.settingsMyPlan,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => BlocProvider(
-                          create: (_) => di.sl<ProfileBloc>(),
-                          child: const MyPlanPage(),
+                if (_subscriptionsEnabled)
+                  _SettingsItem(
+                    icon: Icons.desktop_windows_outlined,
+                    title: l10n.settingsMyPlan,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BlocProvider(
+                            create: (_) => di.sl<ProfileBloc>(),
+                            child: const MyPlanPage(),
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
                 _SettingsItem(
                   icon: Icons.folder_open_rounded,
                   title: l10n.settingsMyDocs,
@@ -210,6 +231,54 @@ class _SettingsPageState extends State<SettingsPage> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const DocumentsPage(),
+                      ),
+                    );
+                  },
+                ),
+                _SettingsItem(
+                  icon: Icons.card_giftcard_rounded,
+                  iconColor: AppColors.primaryAzure,
+                  title: l10n.settingsAssociateCode,
+                  trailing: BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, authState) {
+                      String? code;
+                      if (authState is AuthAuthenticated) {
+                        code = authState.user.referralCode;
+                      }
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (code != null && code.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              margin: const EdgeInsets.only(right: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryAzure.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                code,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryAzure,
+                                ),
+                              ),
+                            ),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 14,
+                            color: (isDark ? Colors.white : AppColors.textDark).withValues(alpha: 0.24),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AssociateCodePage(),
                       ),
                     );
                   },
@@ -292,7 +361,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         style: TextStyle(
                           fontSize: 14,
                           color: (isDark ? Colors.white : AppColors.textDark)
-                              .withOpacity(0.7),
+                              .withValues(alpha: 0.7),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -301,7 +370,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         Icons.arrow_forward_ios_rounded,
                         size: 14,
                         color: (isDark ? Colors.white : AppColors.textDark)
-                            .withOpacity(0.24),
+                            .withValues(alpha: 0.24),
                       ),
                     ],
                   ),
@@ -348,6 +417,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   onTap: () => _showReportContentDialog(context),
                 ),
                 _SettingsItem(
+                  icon: Icons.block_rounded,
+                  title: l10n.settingsBlockedUsers,
+                  iconColor: AppColors.errorRed,
+                  onTap: () => _showBlockedUsersDialog(context),
+                ),
+                _SettingsItem(
                   icon: Icons.info_outline_rounded,
                   title: l10n.settingsAppVersion,
                   iconColor: AppColors.primaryAzure,
@@ -355,7 +430,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     'v$_appVersion ($_buildNumber)',
                     style: TextStyle(
                       fontSize: 14,
-                      color: (isDark ? Colors.white : AppColors.textDark).withOpacity(0.6),
+                      color: (isDark ? Colors.white : AppColors.textDark).withValues(alpha: 0.6),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -383,16 +458,12 @@ class _SettingsPageState extends State<SettingsPage> {
 
             const SizedBox(height: 32),
             TextButton(
-              onPressed: () async {
-                final Uri url = Uri.parse('https://clanship.cl/terminos-y-condiciones');
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                }
-              },
+              onPressed: () => TermsAndEulaDialog.show(context),
               child: Text(
-                l10n.settingsTerms,
-                style: const TextStyle(
+                l10n.settingsEulaTile,
+                style: TextStyle(
                   color: AppColors.primaryBlue,
+                  fontWeight: FontWeight.bold,
                   decoration: TextDecoration.underline,
                 ),
               ),
@@ -402,7 +473,7 @@ class _SettingsPageState extends State<SettingsPage> {
               l10n.settingsFooterVersion(_appVersion, _buildNumber),
               style: TextStyle(
                 fontSize: 12,
-                color: (isDark ? Colors.white : AppColors.textDark).withOpacity(0.4),
+                color: (isDark ? Colors.white : AppColors.textDark).withValues(alpha: 0.4),
               ),
             ),
             const SizedBox(height: 32),
@@ -676,16 +747,34 @@ class _SettingsPageState extends State<SettingsPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
+                        final details = detailController.text.trim();
                         Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              l10n.settingsReportSubmittedSuccess,
-                            ),
-                            backgroundColor: Colors.green,
-                          ),
+
+                        final authState = context.read<AuthBloc>().state;
+                        String currentUserId = 'anonymous';
+                        if (authState is AuthAuthenticated) {
+                          currentUserId = authState.user.id;
+                        }
+
+                        await di.sl<UgcSafetyService>().reportContent(
+                          targetId: currentUserId,
+                          targetName: 'Reporte General de Prestador',
+                          reason: selectedReason,
+                          details: details.isNotEmpty ? details : null,
+                          targetType: 'GENERAL_REPORT',
                         );
+
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                l10n.settingsReportSubmittedSuccess,
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
                       },
                       child: Text(
                         l10n.settingsReportSubmitBtn,
@@ -693,6 +782,182 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                     ),
                   ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showBlockedUsersDialog(BuildContext context) {
+    final ugcService = di.sl<UgcSafetyService>();
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final bool isDark = theme.brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.trueBlack : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final blockedMap = ugcService.getBlockedUsersDetails();
+            final blockedEntries = blockedMap.entries.toList();
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.65,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Icon(Icons.block_rounded, color: AppColors.errorRed, size: 24),
+                      const SizedBox(width: 10),
+                      Text(
+                        l10n.settingsBlockedUsers,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.settingsBlockedUsersSubtitle,
+                    style: TextStyle(fontSize: 13, color: isDark ? Colors.white60 : Colors.grey[600]),
+                  ),
+                  const Divider(height: 24),
+                  if (blockedEntries.isEmpty)
+                    Expanded(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.check_circle_outline_rounded,
+                              size: 48,
+                              color: isDark ? Colors.white38 : Colors.grey[400],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              l10n.settingsBlockedUsersEmpty,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDark ? Colors.white60 : Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: blockedEntries.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final item = blockedEntries[index];
+                          final name = item.value['name']?.toString() ?? 'Cliente';
+                          final reason = item.value['reason']?.toString() ?? 'Conducta abusiva';
+                          final blockedAt = item.value['blockedAt']?.toString() ?? '';
+
+                          String formattedDate = '';
+                          if (blockedAt.isNotEmpty) {
+                            try {
+                              final dt = DateTime.parse(blockedAt);
+                              formattedDate = '${dt.day}/${dt.month}/${dt.year}';
+                            } catch (_) {}
+                          }
+
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              backgroundColor: AppColors.errorRed.withValues(alpha: 0.1),
+                              child: const Icon(Icons.person_off_rounded, color: AppColors.errorRed, size: 20),
+                            ),
+                            title: Text(
+                              name,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                            ),
+                            subtitle: Text(
+                              '$reason${formattedDate.isNotEmpty ? ' • $formattedDate' : ''}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? Colors.white60 : Colors.grey[600],
+                              ),
+                            ),
+                            trailing: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: AppColors.primaryAzure),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              ),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (unblockCtx) => AlertDialog(
+                                    title: Text(l10n.settingsUnblockConfirmTitle),
+                                    content: Text(l10n.settingsUnblockConfirmBody),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(unblockCtx),
+                                        child: Text(l10n.requestCancel),
+                                      ),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.primaryAzure,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                        onPressed: () async {
+                                          Navigator.pop(unblockCtx);
+                                          await ugcService.unblockUser(item.key);
+                                          setModalState(() {});
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Usuario $name desbloqueado.'),
+                                                backgroundColor: AppColors.successGreen,
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: Text(l10n.settingsUnblock),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                l10n.settingsUnblock,
+                                style: TextStyle(
+                                  color: AppColors.primaryAzure,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                 ],
               ),
             );
@@ -919,7 +1184,7 @@ class _SettingsPageState extends State<SettingsPage> {
             width: isSelected ? 2 : 1,
           ),
           color: isSelected
-              ? AppColors.primaryAzure.withOpacity(0.05)
+              ? AppColors.primaryAzure.withValues(alpha: 0.05)
               : Colors.transparent,
         ),
         child: Row(
@@ -936,7 +1201,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             if (isSelected)
-              const Icon(
+              Icon(
                 Icons.check_circle_rounded,
                 color: AppColors.primaryAzure,
               ),
