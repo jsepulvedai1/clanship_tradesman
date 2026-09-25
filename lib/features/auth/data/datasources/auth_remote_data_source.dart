@@ -192,12 +192,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     await storage.delete(key: 'jwt_refresh_token');
 
     const String registerMutation = r'''
-      mutation RegisterUser($email: String!, $password: String!, $firstName: String!, $lastName: String!, $userType: String!, $referralCode: String) {
+      mutation RegisterUser($email: String!, $password: String!, $firstName: String!, $lastName: String!, $phoneNumber: String!, $userType: String!, $referralCode: String) {
         registerUser(
           email: $email, 
           password: $password, 
           firstName: $firstName, 
-          lastName: $lastName, 
+          lastName: $lastName,
+          phoneNumber: $phoneNumber,
           userType: $userType,
           referralCode: $referralCode
         ) {
@@ -217,6 +218,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       'password': password,
       'firstName': firstName,
       'lastName': lastName,
+      'phoneNumber': phoneNumber ?? '',
       'userType': 'PROFESSIONAL',
     };
     if (referralCode != null && referralCode.trim().isNotEmpty) {

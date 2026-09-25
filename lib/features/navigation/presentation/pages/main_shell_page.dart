@@ -22,6 +22,7 @@ import 'package:clanship_mobile_tradesman/features/requests/presentation/pages/o
 
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 import 'package:clanship_mobile_tradesman/core/network/local_notification_service.dart';
+import 'package:clanship_mobile_tradesman/core/utils/tutorial_keys.dart';
 
 class MainShellPage extends StatefulWidget {
   const MainShellPage({super.key});
@@ -315,9 +316,19 @@ class _PremiumBottomNavBar extends StatelessWidget {
         children: List.generate(items.length, (index) {
           final item = items[index];
           final bool isActive = currentIndex == index;
+          
+          Key? itemKey;
+          switch (index) {
+            case 0: itemKey = TutorialKeys.navInicioKey; break;
+            case 1: itemKey = TutorialKeys.navSolicitudesKey; break;
+            case 2: itemKey = TutorialKeys.navBuscaKey; break;
+            case 3: itemKey = TutorialKeys.navProfileKey; break;
+            case 4: itemKey = TutorialKeys.navAjustesKey; break;
+          }
 
           return Expanded(
             child: GestureDetector(
+              key: itemKey,
               behavior: HitTestBehavior.opaque,
               onTap: () => onTap(index),
               child: Column(

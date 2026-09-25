@@ -28,9 +28,11 @@ import 'package:clanship_mobile_tradesman/core/network/local_notification_servic
 import '../../../../core/widgets/skeleton_box.dart';
 import 'package:clanship_mobile_tradesman/core/widgets/address_picker_page.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/rejection_review_page.dart';
+import 'package:clanship_mobile_tradesman/core/utils/tutorial_keys.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
-
   const HomePage({super.key});
 
   @override
@@ -41,6 +43,7 @@ class _HomePageState extends State<HomePage> {
   late final HomeBloc _homeBloc;
   List<LocalNotificationItem> _localNotifications = [];
   StreamSubscription? _localNotificationSubscription;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -48,14 +51,253 @@ class _HomePageState extends State<HomePage> {
     _homeBloc = context.read<HomeBloc>()..add(LoadUserData());
     FirebaseNotificationHelper.uploadFcmToken();
 
-
-
     _loadLocalNotifications();
     _localNotificationSubscription = LocalNotificationService
         .onNotificationAdded
         .listen((_) {
           _loadLocalNotifications();
         });
+  }
+
+  late TutorialCoachMark _tutorialCoachMark;
+  List<TargetFocus> _targets = [];
+
+  Future<void> _checkAndShowTutorial() async {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) return;
+    
+    final userId = authState.user.id;
+    final prefs = await SharedPreferences.getInstance();
+    final prefsKey = 'hasSeenHomeTutorial_$userId';
+    final hasSeenTutorial = prefs.getBool(prefsKey) ?? false;
+
+    if (!hasSeenTutorial && mounted) {
+      _initTargets();
+      prefs.setBool(prefsKey, true);
+      _showTutorial();
+    }
+  }
+
+  void _showTutorial() {
+    _tutorialCoachMark = TutorialCoachMark(
+      targets: _targets,
+      colorShadow: const Color(0xFF1A1A1A),
+      textSkip: "Omitir",
+      paddingFocus: 10,
+      opacityShadow: 0.85,
+      onFinish: () => debugPrint("Tutorial completado"),
+      onSkip: () => true,
+      onClickTarget: (target) {
+        if (target.identify == "scheduledKey") {
+          _scrollToBottom();
+        }
+      },
+      onClickOverlay: (target) {
+        if (target.identify == "scheduledKey") {
+          _scrollToBottom();
+        }
+      },
+    );
+
+    _tutorialCoachMark.show(context: context);
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _initTargets() {
+    _targets = [
+      TargetFocus(
+        identify: "questionKey",
+        keyTarget: TutorialKeys.homeQuestionKey,
+        alignSkip: Alignment.bottomRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _buildTooltipContent(
+              title: "Ayuda y Soporte",
+              description:
+                  "Si tienes dudas, presiona aquí para consultar la guía o contactar a soporte.",
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "activeKey",
+        keyTarget: TutorialKeys.homeActiveRequestsKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 16,
+        alignSkip: Alignment.bottomRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _buildTooltipContent(
+              title: "Solicitudes de Trabajo",
+              description:
+                  "Aquí verás las solicitudes de trabajo nuevas o en curso.",
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "completedKey",
+        keyTarget: TutorialKeys.homeCompletedRequestsKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 16,
+        alignSkip: Alignment.bottomRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _buildTooltipContent(
+              title: "Trabajos Completados",
+              description:
+                  "Revisa el historial de los servicios que ya has finalizado con éxito.",
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "scheduledKey",
+        keyTarget: TutorialKeys.homeScheduledRequestsKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 16,
+        alignSkip: Alignment.bottomRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            builder: (context, controller) => _buildTooltipContent(
+              title: "Solicitudes Programadas",
+              description:
+                  "Tus visitas y trabajos agendados para fechas futuras aparecerán aquí.",
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "locationKey",
+        keyTarget: TutorialKeys.homeLocationKey,
+        shape: ShapeLightFocus.RRect,
+        radius: 16,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) => _buildTooltipContent(
+              title: "Tu Ubicación",
+              description:
+                  "Puedes actualizar tu dirección actual o activar la ubicación in movimiento para conseguir trabajos cercanos.",
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "navInicioKey",
+        keyTarget: TutorialKeys.navInicioKey,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) => _buildTooltipContent(
+              title: "Inicio",
+              description:
+                  "Tu panel principal donde ves tus estadísticas y estado actual.",
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "navSolicitudesKey",
+        keyTarget: TutorialKeys.navSolicitudesKey,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) => _buildTooltipContent(
+              title: "Solicitudes",
+              description:
+                  "Aquí administras todas tus visitas y trabajos en curso.",
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "navBuscaKey",
+        keyTarget: TutorialKeys.navBuscaKey,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) => _buildTooltipContent(
+              title: "Oportunidades",
+              description:
+                  "Explora nuevas oportunidades de trabajo cercanas a ti.",
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "navProfileKey",
+        keyTarget: TutorialKeys.navProfileKey,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) => _buildTooltipContent(
+              title: "Tu Perfil",
+              description:
+                  "Visualiza y actualiza tu información profesional y fotos.",
+            ),
+          ),
+        ],
+      ),
+      TargetFocus(
+        identify: "navAjustesKey",
+        keyTarget: TutorialKeys.navAjustesKey,
+        alignSkip: Alignment.topRight,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            builder: (context, controller) => _buildTooltipContent(
+              title: "Ajustes",
+              description:
+                  "Configura tu cuenta, tu plan y más. ¡Puedes repetir este tutorial desde allí!",
+            ),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  Widget _buildTooltipContent({
+    required String title,
+    required String description,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            fontSize: 22.0,
+          ),
+        ),
+        const SizedBox(height: 10.0),
+        Text(
+          description,
+          style: const TextStyle(color: Colors.white70, fontSize: 16.0),
+        ),
+      ],
+    );
   }
 
   Future<void> _loadLocalNotifications() async {
@@ -69,6 +311,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _localNotificationSubscription?.cancel();
     super.dispose();
   }
@@ -184,7 +427,9 @@ class _HomePageState extends State<HomePage> {
                       ),
                       leading: CircleAvatar(
                         radius: 18,
-                        backgroundColor: AppColors.primaryBlue.withValues(alpha: 0.1),
+                        backgroundColor: AppColors.primaryBlue.withValues(
+                          alpha: 0.1,
+                        ),
                         child: Icon(
                           Icons.notifications_active_rounded,
                           color: AppColors.primaryBlue,
@@ -205,14 +450,18 @@ class _HomePageState extends State<HomePage> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
                           fontSize: 11,
                         ),
                       ),
                       trailing: IconButton(
                         icon: Icon(
                           Icons.close_rounded,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.4,
+                          ),
                           size: 18,
                         ),
                         onPressed: () async {
@@ -304,10 +553,14 @@ class _HomePageState extends State<HomePage> {
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryBlue.withValues(alpha: 0.05),
+                              color: AppColors.primaryBlue.withValues(
+                                alpha: 0.05,
+                              ),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: AppColors.primaryBlue.withValues(alpha: 0.1),
+                                color: AppColors.primaryBlue.withValues(
+                                  alpha: 0.1,
+                                ),
                                 width: 1,
                               ),
                             ),
@@ -341,18 +594,16 @@ class _HomePageState extends State<HomePage> {
                               subtitle: Text(
                                 notif.body,
                                 style: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.7),
                                   fontSize: 12,
                                 ),
                               ),
                               trailing: IconButton(
                                 icon: Icon(
                                   Icons.close_rounded,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface.withValues(alpha: 0.4),
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.4),
                                   size: 20,
                                 ),
                                 onPressed: () async {
@@ -387,132 +638,155 @@ class _HomePageState extends State<HomePage> {
           hasNotifications: _localNotifications.isNotEmpty,
           onNotificationsTap: _showLocalNotificationsBottomSheet,
         ),
-        body: BlocConsumer<HomeBloc, HomeState>(
-          listener: (context, state) {
-            if (state is HomeDataLoaded) {
-              final authState = context.read<AuthBloc>().state;
-              if (authState is AuthAuthenticated &&
-                  authState.user.isValidated != state.user.isValidated) {
-                final updatedUser = authState.user.copyWith(
-                  isValidated: state.user.isValidated,
-                );
-                context.read<AuthBloc>().add(ProfileUpdated(updatedUser));
+        body: BlocListener<NavigationBloc, NavigationState>(
+          listener: (context, navState) {
+            if (navState.currentIndex == 0) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _checkAndShowTutorial();
+              });
+            }
+          },
+          child: BlocConsumer<HomeBloc, HomeState>(
+            listener: (context, state) {
+              if (state is HomeDataLoaded) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _checkAndShowTutorial();
+                });
+
+                final authState = context.read<AuthBloc>().state;
+                if (authState is AuthAuthenticated &&
+                    authState.user.isValidated != state.user.isValidated) {
+                  final updatedUser = authState.user.copyWith(
+                    isValidated: state.user.isValidated,
+                  );
+                  context.read<AuthBloc>().add(ProfileUpdated(updatedUser));
+                }
               }
-            }
-          },
-          builder: (context, state) {
-            if (state is HomeDataLoaded) {
-              final double screenHeight = MediaQuery.of(context).size.height;
-              final bool isSmallScreen = screenHeight < 750;
-              final double spacing = isSmallScreen ? 6.0 : 10.0;
+            },
+            builder: (context, state) {
+              if (state is HomeDataLoaded) {
+                final double screenHeight = MediaQuery.of(context).size.height;
+                final bool isSmallScreen = screenHeight < 750;
+                final double spacing = isSmallScreen ? 6.0 : 10.0;
 
-              return RefreshIndicator(
-                onRefresh: () async {
-                  _homeBloc.add(LoadUserData());
-                  await Future.delayed(const Duration(seconds: 1));
-                },
-                child: ListView(
-                  padding: EdgeInsets.only(
-                    top: isSmallScreen ? 6 : 10,
-                    bottom: isSmallScreen ? 20 : 40,
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    _homeBloc.add(LoadUserData());
+                    await Future.delayed(const Duration(seconds: 1));
+                  },
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.only(
+                      top: isSmallScreen ? 6 : 10,
+                      bottom: isSmallScreen
+                          ? 80
+                          : 120, // Aumentado para dar espacio al scroll sobre el Navbar
+                    ),
+                    child: Column(
+                      children: [
+                        StatsBanner(
+                          rating: state.user.rating,
+                          reviewsCount: state.user.reviewsCount,
+                          onServicesTap: () {
+                            context.read<NavigationBloc>().add(
+                              const TabChanged(3, scrollToServices: false),
+                            );
+                          },
+                        ),
+                        SizedBox(height: spacing),
+                        _buildNotificationsSection(spacing),
+                        StatsGrid(
+                          active: state.user.activeJobs,
+                          completed: state.user.completedJobs,
+                          rejected: state.user.rejectedJobs,
+                          scheduled: state.user.scheduledJobs,
+                          hasUnread: state.recentRequests.any(
+                            (r) => !r.isRead && r.status == 'REQUESTED',
+                          ),
+                          hasScheduledUnread: state.recentRequests.any(
+                            (r) =>
+                                !r.isRead &&
+                                (r.status == 'AGREED' ||
+                                    r.status == 'SCHEDULED' ||
+                                    r.status == 'IN_VISIT'),
+                          ),
+                          onActiveTap: () {
+                            context.read<NavigationBloc>().add(
+                              const TabChanged(1, subIndex: 0),
+                            );
+                          },
+                          onCompletedTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const CompletedRequestsPage(),
+                              ),
+                            );
+                          },
+                          onScheduledTap: () {
+                            context.read<NavigationBloc>().add(
+                              const TabChanged(1, subIndex: 1),
+                            );
+                          },
+                          onRejectedTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const RejectedRequestsPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        SizedBox(height: spacing),
+                        AvailabilityWidget(
+                          isAvailable: state.user.isAvailable,
+                          isUrgencyModeActive: state.user.isEmergency,
+                          isValidated: state.user.isValidated,
+                          isRejected: state.user.isRejected,
+                          rejectionReason: state.user.effectiveRejectionReason,
+                          onReuploadDocuments: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const RejectionReviewPage(),
+                              ),
+                            );
+                            _homeBloc.add(LoadUserData());
+                          },
+                          onToggleAvailability: (bool value) {
+                            _homeBloc.add(ToggleAvailability(value));
+                          },
+                          onToggleUrgencyMode: (bool value) {
+                            _homeBloc.add(ToggleUrgency(value));
+                          },
+                        ),
+
+                        SizedBox(height: spacing),
+
+                        SizedBox(height: spacing),
+                        _LocationWidget(
+                          key: TutorialKeys.homeLocationKey,
+                          user: state.user,
+                        ),
+                        SizedBox(height: spacing),
+                        // RecentRequestsWidget(
+                        //   requests: state.recentRequests,
+                        //   onRequestTap: (request) {
+                        //     context.read<NavigationBloc>().add(const TabChanged(1));
+                        //   },
+                        // ),
+                      ],
+                    ),
                   ),
-                  children: [
-                    StatsBanner(
-                      rating: state.user.rating,
-                      reviewsCount: state.user.reviewsCount,
-                      onServicesTap: () {
-                        context.read<NavigationBloc>().add(
-                          const TabChanged(3, scrollToServices: false),
-                        );
-                      },
-                    ),
-                    SizedBox(height: spacing),
-                    _buildNotificationsSection(spacing),
-                    StatsGrid(
-                      active: state.user.activeJobs,
-                      completed: state.user.completedJobs,
-                      rejected: state.user.rejectedJobs,
-                      scheduled: state.user.scheduledJobs,
-                      hasUnread: state.recentRequests.any(
-                        (r) => !r.isRead && r.status == 'REQUESTED',
-                      ),
-                      hasScheduledUnread: state.recentRequests.any(
-                        (r) =>
-                            !r.isRead &&
-                            (r.status == 'AGREED' ||
-                                r.status == 'SCHEDULED' ||
-                                r.status == 'IN_VISIT'),
-                      ),
-                      onActiveTap: () {
-                        context.read<NavigationBloc>().add(
-                          const TabChanged(1, subIndex: 0),
-                        );
-                      },
-                      onCompletedTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CompletedRequestsPage(),
-                          ),
-                        );
-                      },
-                      onScheduledTap: () {
-                        context.read<NavigationBloc>().add(
-                          const TabChanged(1, subIndex: 1),
-                        );
-                      },
-                      onRejectedTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RejectedRequestsPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    SizedBox(height: spacing),
-                    AvailabilityWidget(
-                      isAvailable: state.user.isAvailable,
-                      isUrgencyModeActive: state.user.isEmergency,
-                      isValidated: state.user.isValidated,
-                      isRejected: state.user.isRejected,
-                      rejectionReason: state.user.effectiveRejectionReason,
-                      onReuploadDocuments: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RejectionReviewPage(),
-                          ),
-                        );
-                        _homeBloc.add(LoadUserData());
-
-                      },
-                      onToggleAvailability: (bool value) {
-                        _homeBloc.add(ToggleAvailability(value));
-                      },
-                      onToggleUrgencyMode: (bool value) {
-                        _homeBloc.add(ToggleUrgency(value));
-                      },
-                    ),
-
-
-                    SizedBox(height: spacing),
-
-                    SizedBox(height: spacing),
-                    _LocationWidget(user: state.user),
-                    SizedBox(height: spacing),
-                    // RecentRequestsWidget(
-                    //   requests: state.recentRequests,
-                    //   onRequestTap: (request) {
-                    //     context.read<NavigationBloc>().add(const TabChanged(1));
-                    //   },
-                    // ),
-                  ],
-                ),
-              );
-            }
-            return const HomeSkeleton();
-          },
+                );
+              }
+              return const HomeSkeleton();
+            },
+          ),
         ),
       ),
     );
@@ -690,7 +964,7 @@ class _AppBarLoaderState extends State<_AppBarLoader> {
 class _LocationWidget extends StatefulWidget {
   final dynamic user;
 
-  const _LocationWidget({required this.user});
+  const _LocationWidget({super.key, required this.user});
 
   @override
   State<_LocationWidget> createState() => _LocationWidgetState();
@@ -758,11 +1032,15 @@ class _LocationWidgetState extends State<_LocationWidget> {
 
       if (position == null) {
         try {
-          position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.low,
-          ).timeout(const Duration(seconds: 5), onTimeout: () {
-            throw 'Location timeout';
-          });
+          position =
+              await Geolocator.getCurrentPosition(
+                desiredAccuracy: LocationAccuracy.low,
+              ).timeout(
+                const Duration(seconds: 5),
+                onTimeout: () {
+                  throw 'Location timeout';
+                },
+              );
         } catch (_) {}
       }
 
@@ -809,7 +1087,10 @@ class _LocationWidgetState extends State<_LocationWidget> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text(l10n.requestCancel, style: const TextStyle(color: Colors.grey)),
+            child: Text(
+              l10n.requestCancel,
+              style: const TextStyle(color: Colors.grey),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -830,13 +1111,17 @@ class _LocationWidgetState extends State<_LocationWidget> {
     );
   }
 
-  Future<void> _openAddressPicker(BuildContext context, HomeBloc homeBloc) async {
+  Future<void> _openAddressPicker(
+    BuildContext context,
+    HomeBloc homeBloc,
+  ) async {
     final l10n = AppLocalizations.of(context)!;
     final result = await Navigator.push<Map<String, dynamic>?>(
       context,
       MaterialPageRoute(
         builder: (context) => AddressPickerPage(
-          initialAddress: widget.user.address == l10n.homeGpsCurrentLocationAddress
+          initialAddress:
+              widget.user.address == l10n.homeGpsCurrentLocationAddress
               ? ''
               : widget.user.address,
         ),
@@ -846,13 +1131,7 @@ class _LocationWidgetState extends State<_LocationWidget> {
       final address = result['address'] as String;
       final lat = result['latitude'] as double;
       final lng = result['longitude'] as double;
-      _updateLocationManual(
-        context,
-        homeBloc,
-        address,
-        lat,
-        lng,
-      );
+      _updateLocationManual(context, homeBloc, address, lat, lng);
     }
   }
 
@@ -961,7 +1240,10 @@ class _LocationWidgetState extends State<_LocationWidget> {
                       ),
                       title: Row(
                         children: [
-                          const Icon(Icons.map_rounded, color: Color(0xFF0D2B45)),
+                          const Icon(
+                            Icons.map_rounded,
+                            color: Color(0xFF0D2B45),
+                          ),
                           const SizedBox(width: 10),
                           Text(
                             l10n.homeServiceAreaInfoTitle,

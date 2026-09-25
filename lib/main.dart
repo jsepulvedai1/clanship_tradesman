@@ -34,13 +34,32 @@ class AntiGravityApp extends StatefulWidget {
   State<AntiGravityApp> createState() => _AntiGravityAppState();
 }
 
-class _AntiGravityAppState extends State<AntiGravityApp> {
+import 'package:clanship_mobile_tradesman/core/config/shorebird_update_manager.dart';
+
+class _AntiGravityAppState extends State<AntiGravityApp> with WidgetsBindingObserver {
   StreamSubscription<String>? _sessionSub;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _sessionSub?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final context = navigatorKey.currentContext;
+      if (context != null) {
+        ShorebirdUpdateManager.checkForUpdate(context);
+      }
+    }
   }
 
   void _listenSessionInvalidation(BuildContext context) {

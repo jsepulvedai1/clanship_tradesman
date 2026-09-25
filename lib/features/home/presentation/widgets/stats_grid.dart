@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 import 'package:clanship_mobile_tradesman/core/theme/bloc/seasonal_theme_bloc.dart';
+import 'package:clanship_mobile_tradesman/core/utils/tutorial_keys.dart';
 import 'stat_card.dart';
 
 class StatsGrid extends StatelessWidget {
@@ -49,6 +50,7 @@ class StatsGrid extends StatelessWidget {
         childAspectRatio: isSmallScreen ? 1.95 : 1.6,
         children: [
           StatCard(
+            key: TutorialKeys.homeActiveRequestsKey,
             value: active.toString(),
             label: l10n.homeStatsActive,
             valueColor: seasonalState.statCardActiveNumberColor ?? const Color(0xFF2E3135),
@@ -64,6 +66,7 @@ class StatsGrid extends StatelessWidget {
             imageOpacity: seasonalState.statCardActiveImageOpacity,
           ),
           StatCard(
+            key: TutorialKeys.homeCompletedRequestsKey,
             value: completed.toString(),
             label: l10n.homeStatsCompleted,
             valueColor: seasonalState.statCardCompletedNumberColor ?? const Color(0xFF0B6E4F),
@@ -92,6 +95,7 @@ class StatsGrid extends StatelessWidget {
             imageOpacity: seasonalState.statCardRejectedImageOpacity,
           ),
           StatCard(
+            key: TutorialKeys.homeScheduledRequestsKey,
             value: scheduled.toString(),
             label: l10n.homeStatsScheduled,
             valueColor: seasonalState.statCardScheduledNumberColor ??

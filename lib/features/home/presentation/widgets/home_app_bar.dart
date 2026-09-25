@@ -6,6 +6,7 @@ import 'package:clanship_mobile_tradesman/core/theme/widgets/seasonal_logo_badge
 import 'package:clanship_mobile_tradesman/core/theme/widgets/seasonal_top_garland.dart';
 import 'package:clanship_mobile_tradesman/l10n/app_localizations.dart';
 import 'package:clanship_mobile_tradesman/features/home/presentation/pages/help_webview_page.dart';
+import 'package:clanship_mobile_tradesman/core/utils/tutorial_keys.dart';
 import '../../domain/entities/user_entity.dart';
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -92,6 +93,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
                     GestureDetector(
                       onTap: () => HelpWebViewPage.show(context),
                       child: Container(
+                        key: TutorialKeys.homeQuestionKey,
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(

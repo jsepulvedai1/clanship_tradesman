@@ -7,6 +7,9 @@ import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/documents_page.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/rejection_review_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/navigation_bloc.dart';
+import 'package:clanship_mobile_tradesman/features/home/presentation/bloc/home_bloc.dart';
 
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
@@ -390,6 +393,32 @@ class _SettingsPageState extends State<SettingsPage> {
                     onChanged: (val) => setState(() => _isDarkMode = val),
                     activeColor: AppColors.primaryAzure,
                   ),
+                ),
+                _SettingsItem(
+                  icon: Icons.replay_circle_filled_outlined,
+                  title: "Repetir Tutorial",
+                  iconColor: AppColors.primaryBlue,
+                  onTap: () async {
+                    final authState = context.read<AuthBloc>().state;
+                    if (authState is! AuthAuthenticated) return;
+                    
+                    final userId = authState.user.id;
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.remove('hasSeenHomeTutorial_$userId');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Iniciando tutorial...'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                      // Force reload user data to emit a new HomeDataLoaded state 
+                      // which will trigger the tutorial listener
+                      context.read<HomeBloc>().add(LoadUserData());
+                      // Navigate back to the home tab
+                      context.read<NavigationBloc>().add(const TabChanged(0));
+                    }
+                  },
                 ),
               ],
             ),
