@@ -62,6 +62,7 @@ class ChatPage extends StatelessWidget {
       ),
     );
   }
+
 }
 
 class _ChatPageContent extends StatefulWidget {
@@ -84,6 +85,7 @@ class _ChatPageContent extends StatefulWidget {
 class _ChatPageContentState extends State<_ChatPageContent> {
   final TextEditingController _controller = TextEditingController();
   String? _currentStatus;
+  String? _lastCounterOfferHandledId;
   String? _pendingStatusChange;
   final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecording = false;
@@ -661,11 +663,20 @@ class _ChatPageContentState extends State<_ChatPageContent> {
         ),
         BlocListener<ChatMessagesBloc, ChatMessagesState>(
           listener: (context, state) {
-            if (state is ChatMessagesLoaded && state.jobStatus != null) {
-              if (state.jobStatus != _currentStatus) {
+            if (state is ChatMessagesLoaded) {
+              if (state.jobStatus != null && state.jobStatus != _currentStatus) {
                 setState(() {
                   _currentStatus = state.jobStatus;
                 });
+              }
+              if (state.messages.isNotEmpty) {
+                final lastMsg = state.messages.last;
+                if (!lastMsg.isMe && lastMsg.text.startsWith('Contraoferta de visita | Precio:')) {
+                  if (_lastCounterOfferHandledId != lastMsg.id && _currentStatus == 'REQUESTED') {
+                    _lastCounterOfferHandledId = lastMsg.id;
+                    _showCounterOfferPopup(context, lastMsg.text);
+                  }
+                }
               }
             }
           },
@@ -1144,6 +1155,70 @@ class _ChatPageContentState extends State<_ChatPageContent> {
               );
             },
             child: Text(l10n?.chatBlockConfirmButton ?? 'Bloquear cliente'),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  void _showCounterOfferPopup(BuildContext context, String text) {
+    final parts = text.split('| Precio:');
+    final priceStr = parts.length > 1 ? parts[1].trim() : '';
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.handshake_rounded, color: Colors.orange),
+            const SizedBox(width: 8),
+            const Text('Nueva Contraoferta', style: TextStyle(fontSize: 18)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('El cliente quiere renegociar el valor de la visita.'),
+            const SizedBox(height: 12),
+            if (priceStr.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Precio propuesto:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(priceStr, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 18)),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cerrar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0C243B),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _onScheduleTap();
+            },
+            child: const Text('Responder'),
           ),
         ],
       ),

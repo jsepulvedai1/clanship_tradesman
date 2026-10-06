@@ -57,3 +57,20 @@ class ScheduleJobVisitEvent extends RequestsEvent {
   @override
   List<Object?> get props => [jobId, scheduledDate, scheduledTime, notificationLeadMinutes, agreedPrice];
 }
+
+class CompleteJobEvent extends RequestsEvent {
+  final int jobId;
+  final double? finalPrice;
+  final String? tradesmanComments;
+  final List<String>? finishedPhotosBase64;
+
+  const CompleteJobEvent({
+    required this.jobId,
+    this.finalPrice,
+    this.tradesmanComments,
+    this.finishedPhotosBase64,
+  });
+
+  @override
+  List<Object?> get props => [jobId, finalPrice, tradesmanComments, finishedPhotosBase64];
+}

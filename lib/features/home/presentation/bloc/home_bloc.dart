@@ -6,6 +6,9 @@ import 'package:clanship_mobile_tradesman/features/profile/domain/usecases/get_m
 import 'package:clanship_mobile_tradesman/features/profile/domain/usecases/update_availability_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/get_pending_requests_usecase.dart';
 import 'package:clanship_mobile_tradesman/core/usecases/usecase.dart';
+import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
+import 'package:clanship_mobile_tradesman/features/requests/data/datasources/requests_remote_data_source.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Events
 abstract class HomeEvent extends Equatable {
@@ -28,6 +31,8 @@ class ToggleUrgency extends HomeEvent {
   List<Object> get props => [isEmergency];
 }
 
+class MarkOpportunitiesAsSeen extends HomeEvent {}
+
 // States
 abstract class HomeState extends Equatable {
   @override
@@ -39,11 +44,12 @@ class HomeLoading extends HomeState {}
 class HomeDataLoaded extends HomeState {
   final UserEntity user;
   final List<JobRequestEntity> recentRequests;
+  final int openOpportunitiesCount;
 
-  HomeDataLoaded(this.user, this.recentRequests);
+  HomeDataLoaded(this.user, this.recentRequests, {this.openOpportunitiesCount = 0});
 
   @override
-  List<Object> get props => [user, recentRequests];
+  List<Object> get props => [user, recentRequests, openOpportunitiesCount];
 }
 
 class HomeError extends HomeState {
@@ -67,6 +73,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<LoadUserData>(_onLoadUserData);
     on<ToggleAvailability>(_onToggleAvailability);
     on<ToggleUrgency>(_onToggleUrgency);
+    on<MarkOpportunitiesAsSeen>(_onMarkOpportunitiesAsSeen);
   }
 
   Future<void> _onLoadUserData(LoadUserData event, Emitter<HomeState> emit) async {
@@ -77,6 +84,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final result = await getMyProfileUseCase(NoParams());
     
     List<JobRequestEntity> requestsList = [];
+    int openOpportunitiesCount = 0;
     try {
       final pendingRequests = await getPendingRequestsUseCase();
       requestsList = pendingRequests.map((req) {
@@ -95,6 +103,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // Registrar el error pero continuar para mostrar al menos el perfil cargado
       print('Error al cargar solicitudes reales para HomeBloc: $e');
     }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final seenList = prefs.getStringList('seen_opportunities') ?? [];
+      final dataSource = di.sl<RequestsRemoteDataSource>();
+      final list = await dataSource.getOpenPublicJobRequests();
+      openOpportunitiesCount = list.where((req) => !seenList.contains(req['id'].toString())).length;
+    } catch (e) {
+      print('Error al cargar oportunidades: $e');
+    }
     
     result.fold(
       (failure) {
@@ -103,7 +121,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       },
       (user) {
         print('HomeBloc: _onLoadUserData actualizado exitosamente (activeJobs: ${user.activeJobs}, rejectedJobs: ${user.rejectedJobs}, scheduledJobs: ${user.scheduledJobs}, completedJobs: ${user.completedJobs})');
-        emit(HomeDataLoaded(user, requestsList));
+        emit(HomeDataLoaded(user, requestsList, openOpportunitiesCount: openOpportunitiesCount));
       },
     );
   }
@@ -123,7 +141,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         isAvailable: newAvailable,
         isEmergency: newEmergency,
       );
-      emit(HomeDataLoaded(optimisticUser, currentState.recentRequests));
+      emit(HomeDataLoaded(optimisticUser, currentState.recentRequests, openOpportunitiesCount: currentState.openOpportunitiesCount));
 
       final result = await updateAvailabilityUseCase(UpdateAvailabilityParams(
         isAvailable: newAvailable,
@@ -131,12 +149,33 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       ));
       result.fold(
         (failure) {
-          emit(HomeDataLoaded(currentState.user, currentState.recentRequests));
+          emit(HomeDataLoaded(currentState.user, currentState.recentRequests, openOpportunitiesCount: currentState.openOpportunitiesCount));
         },
         (updatedUser) {
-          emit(HomeDataLoaded(updatedUser, currentState.recentRequests));
+          emit(HomeDataLoaded(updatedUser, currentState.recentRequests, openOpportunitiesCount: currentState.openOpportunitiesCount));
         },
       );
+    }
+  }
+
+  Future<void> _onMarkOpportunitiesAsSeen(
+      MarkOpportunitiesAsSeen event, Emitter<HomeState> emit) async {
+    final currentState = state;
+    if (currentState is HomeDataLoaded) {
+      try {
+        final dataSource = di.sl<RequestsRemoteDataSource>();
+        final list = await dataSource.getOpenPublicJobRequests();
+        final newSeen = list.map((e) => e['id'].toString()).toList();
+        final prefs = await SharedPreferences.getInstance();
+        final existing = prefs.getStringList('seen_opportunities') ?? [];
+        final combined = {...existing, ...newSeen}.toList();
+        await prefs.setStringList('seen_opportunities', combined);
+        emit(HomeDataLoaded(
+          currentState.user,
+          currentState.recentRequests,
+          openOpportunitiesCount: 0,
+        ));
+      } catch (_) {}
     }
   }
 
@@ -155,7 +194,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         isAvailable: newAvailable,
         isEmergency: newEmergency,
       );
-      emit(HomeDataLoaded(optimisticUser, currentState.recentRequests));
+      emit(HomeDataLoaded(optimisticUser, currentState.recentRequests, openOpportunitiesCount: currentState.openOpportunitiesCount));
 
       final result = await updateAvailabilityUseCase(UpdateAvailabilityParams(
         isAvailable: newAvailable,
@@ -163,10 +202,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       ));
       result.fold(
         (failure) {
-          emit(HomeDataLoaded(currentState.user, currentState.recentRequests));
+          emit(HomeDataLoaded(currentState.user, currentState.recentRequests, openOpportunitiesCount: currentState.openOpportunitiesCount));
         },
         (updatedUser) {
-          emit(HomeDataLoaded(updatedUser, currentState.recentRequests));
+          emit(HomeDataLoaded(updatedUser, currentState.recentRequests, openOpportunitiesCount: currentState.openOpportunitiesCount));
         },
       );
     }

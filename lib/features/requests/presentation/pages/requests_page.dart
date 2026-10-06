@@ -428,7 +428,7 @@ class _RequestsPageState extends State<RequestsPage> {
           return ActiveRequestItem(
             request: request,
             onTap: () async {
-              if (!request.isRead) {
+              if (!request.isRead || request.hasUnreadMessages) {
                 final intId = int.tryParse(request.id) ?? 0;
                 if (intId > 0) {
                   context.read<RequestsBloc>().add(MarkRequestAsReadEvent(jobId: intId));

@@ -11,6 +11,7 @@ class CompletedJobEntity extends Equatable {
   final bool isUrgent;
   final int? rating;
   final String? reviewComment;
+  final DateTime? createdAt;
 
   const CompletedJobEntity({
     required this.id,
@@ -23,19 +24,21 @@ class CompletedJobEntity extends Equatable {
     this.isUrgent = false,
     this.rating,
     this.reviewComment,
+    this.createdAt,
   });
 
   @override
   List<Object?> get props => [
-        id,
-        category,
-        description,
-        clientName,
-        date,
-        time,
-        amount,
-        isUrgent,
-        rating,
-        reviewComment,
-      ];
+    id,
+    category,
+    description,
+    clientName,
+    date,
+    time,
+    amount,
+    isUrgent,
+    rating,
+    reviewComment,
+    createdAt,
+  ];
 }

@@ -15,6 +15,7 @@ import '../widgets/bio_section.dart';
 import '../widgets/portfolio_gallery.dart';
 import '../widgets/services_header_banner.dart';
 import '../widgets/working_radius_section.dart';
+import '../widgets/service_area_widget.dart';
 import '../widgets/profile_skeleton.dart';
 import '../widgets/social_link_section.dart';
 import '../widgets/profile_action_button.dart';
@@ -557,7 +558,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               },
                             ),
                             const SizedBox(height: 24),
-
+                            ServiceAreaWidget(user: user),
                             const SizedBox(height: 24),
                             Stack(
                               children: [

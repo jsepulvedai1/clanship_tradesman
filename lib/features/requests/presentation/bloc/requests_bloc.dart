@@ -8,6 +8,8 @@ import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/get_
 import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/update_job_status_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/mark_job_as_read_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/schedule_job_visit_usecase.dart';
+import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/complete_job_usecase.dart';
+
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_event.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_state.dart';
 
@@ -18,6 +20,8 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
   final UpdateJobStatusUseCase updateJobStatus;
   final MarkJobAsReadUseCase markJobAsRead;
   final ScheduleJobVisitUseCase scheduleJobVisit;
+  final CompleteJobUseCase completeJob;
+
   RequestsBloc({
     required this.getPendingRequests,
     required this.getCompletedRequests,
@@ -25,6 +29,8 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
     required this.updateJobStatus,
     required this.markJobAsRead,
     required this.scheduleJobVisit,
+    required this.completeJob,
+
   }) : super(RequestsInitial()) {
     on<LoadPendingRequests>(_onLoadPendingRequests);
     on<LoadCompletedRequests>(_onLoadCompletedRequests);
@@ -33,6 +39,8 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
     on<UpdateJobStatusEvent>(_onUpdateJobStatus);
     on<MarkRequestAsReadEvent>(_onMarkRequestAsRead);
     on<ScheduleJobVisitEvent>(_onScheduleJobVisit);
+    on<CompleteJobEvent>(_onCompleteJob);
+
   }
 
   void _onRefreshCurrentRequests(
@@ -123,7 +131,7 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
         final currentRequests = (state as RequestsLoaded).requests;
         final updatedRequests = currentRequests.map((r) {
           if (r.id == event.jobId.toString()) {
-            return r.copyWith(isRead: true);
+            return r.copyWith(isRead: true, hasUnreadMessages: false);
           }
           return r;
         }).toList();
@@ -156,5 +164,26 @@ class RequestsBloc extends Bloc<RequestsEvent, RequestsState> {
       emit(RequestsError(sanitizeErrorForUser(e)));
     }
   }
-}
 
+
+  Future<void> _onCompleteJob(
+    CompleteJobEvent event,
+    Emitter<RequestsState> emit,
+  ) async {
+    if (state is! RequestsLoaded && state is! CompletedRequestsLoaded && state is! RejectedRequestsLoaded) {
+      emit(RequestsLoading());
+    }
+    try {
+      await completeJob(
+        event.jobId,
+        finalPrice: event.finalPrice,
+        tradesmanComments: event.tradesmanComments,
+        finishedPhotosBase64: event.finishedPhotosBase64,
+      );
+      final requests = await getPendingRequests();
+      emit(RequestsLoaded(requests));
+    } catch (e) {
+      emit(RequestsError(sanitizeErrorForUser(e)));
+    }
+}
+}

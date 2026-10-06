@@ -123,7 +123,15 @@ class ChatBubble extends StatelessWidget {
                   ),
                   body: Center(
                     child: InteractiveViewer(
-                      child: Image.network(fileUrl),
+                      child: Image.network(
+                        fileUrl,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(
+                            child: CircularProgressIndicator(color: Colors.white),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
@@ -136,6 +144,22 @@ class ChatBubble extends StatelessWidget {
                 fileUrl,
                 width: 220,
                 fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    width: 220,
+                    height: 150,
+                    color: Colors.grey[300],
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                (loadingProgress.expectedTotalBytes ?? 1)
+                            : null,
+                      ),
+                    ),
+                  );
+                },
                 errorBuilder: (context, error, stackTrace) => Container(
                   width: 220,
                   height: 150,

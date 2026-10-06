@@ -44,7 +44,10 @@ class _CompletedRequestsViewState extends State<CompletedRequestsView> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: isDark ? Colors.white : AppColors.trueBlack),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: isDark ? Colors.white : AppColors.trueBlack,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
@@ -65,12 +68,27 @@ class _CompletedRequestsViewState extends State<CompletedRequestsView> {
             } else if (state is RequestsError) {
               return Center(child: Text('Error: ${state.message}'));
             } else if (state is CompletedRequestsLoaded) {
-              final completedJobs = state.completedJobs;
-              
-              // Calculate stats dynamically
-              final totalJobs = completedJobs.length;
-              final totalEarnings = completedJobs.fold<double>(0, (sum, job) => sum + job.amount);
-              
+              final now = DateTime.now();
+
+              final filteredJobs = state.completedJobs.where((job) {
+                final jobDate = job.createdAt ?? DateTime.tryParse(job.date);
+                if (jobDate == null)
+                  return true; // Show if we can't determine the date
+
+                final diff = now.difference(jobDate).inDays;
+                if (_selectedFilter == 'week') return diff <= 7;
+                if (_selectedFilter == 'month') return diff <= 30;
+                if (_selectedFilter == 'year') return diff <= 365;
+                return true;
+              }).toList();
+
+              // Calculate stats dynamically using the filtered jobs
+              final totalJobs = filteredJobs.length;
+              final totalEarnings = filteredJobs.fold<double>(
+                0,
+                (sum, job) => sum + job.amount,
+              );
+
               // Formatting currency
               final currencyFormat = formatCurrency(totalEarnings);
 
@@ -86,9 +104,9 @@ class _CompletedRequestsViewState extends State<CompletedRequestsView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 16),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Filter Row
                       Wrap(
                         alignment: WrapAlignment.center,
@@ -97,32 +115,39 @@ class _CompletedRequestsViewState extends State<CompletedRequestsView> {
                         children: [
                           Text(
                             l10n.completedFilterPrefix,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                           TimeFilterDropdown(
                             selectedValue: _selectedFilter,
-                            onChanged: (val) => setState(() => _selectedFilter = val!),
+                            onChanged: (val) =>
+                                setState(() => _selectedFilter = val!),
                           ),
                           Text(
                             l10n.completedFilterSuffix,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Stats Cards
                       Row(
                         children: [
-                           Expanded(
+                          Expanded(
                             child: CompletedStatsCard(
                               value: totalJobs.toString(),
                               label: l10n.completedJobsLabel,
                             ),
                           ),
                           const SizedBox(width: 16),
-                           Expanded(
+                          Expanded(
                             child: CompletedStatsCard(
                               value: currencyFormat,
                               label: l10n.completedGeneratedLabel,
@@ -130,9 +155,9 @@ class _CompletedRequestsViewState extends State<CompletedRequestsView> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Section Title
                       Text(
                         l10n.completedSectionTitle,
@@ -142,10 +167,10 @@ class _CompletedRequestsViewState extends State<CompletedRequestsView> {
                           color: isDark ? Colors.white70 : Colors.black87,
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
-                      if (completedJobs.isEmpty)
+
+                      if (filteredJobs.isEmpty)
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 40.0),
                           child: Center(
@@ -153,8 +178,10 @@ class _CompletedRequestsViewState extends State<CompletedRequestsView> {
                           ),
                         )
                       else
-                        ...completedJobs.map((job) => CompletedJobCard(job: job)),
-                      
+                        ...filteredJobs.map(
+                          (job) => CompletedJobCard(job: job),
+                        ),
+
                       const SizedBox(height: 40),
                     ],
                   ),

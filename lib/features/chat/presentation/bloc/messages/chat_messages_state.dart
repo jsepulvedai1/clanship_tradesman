@@ -16,11 +16,12 @@ class ChatMessagesLoaded extends ChatMessagesState {
   final List<ChatMessage> messages;
   final String? jobStatus;
   final String? cancellationReason;
+  final bool isSendingAttachment;
 
-  const ChatMessagesLoaded(this.messages, {this.jobStatus, this.cancellationReason});
+  const ChatMessagesLoaded(this.messages, {this.jobStatus, this.cancellationReason, this.isSendingAttachment = false});
 
   @override
-  List<Object?> get props => [messages, jobStatus, cancellationReason];
+  List<Object?> get props => [messages, jobStatus, cancellationReason, isSendingAttachment];
 }
 
 class ChatMessagesError extends ChatMessagesState {

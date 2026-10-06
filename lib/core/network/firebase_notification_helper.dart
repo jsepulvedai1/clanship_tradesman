@@ -8,6 +8,10 @@ import 'package:clanship_mobile_tradesman/firebase_options.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_event.dart';
 import 'package:clanship_mobile_tradesman/core/network/local_notification_service.dart';
+import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/navigation_bloc.dart';
+import 'package:flutter/material.dart';
+import 'package:clanship_mobile_tradesman/features/chat/presentation/pages/chat_page.dart';
+import 'package:clanship_mobile_tradesman/main.dart';
 
 class FirebaseNotificationHelper {
   static Future<void> initialize() async {
@@ -25,7 +29,9 @@ class FirebaseNotificationHelper {
         sound: true,
       );
 
-      debugPrint('User granted notification permission: ${settings.authorizationStatus}');
+      debugPrint(
+        'User granted notification permission: ${settings.authorizationStatus}',
+      );
 
       // Habilitar alertas/popups/sonidos cuando la app está abierta en primer plano (foreground)
       await messaging.setForegroundNotificationPresentationOptions(
@@ -36,26 +42,32 @@ class FirebaseNotificationHelper {
 
       // Handle foreground messages
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint('Foreground push notification received: ${message.notification?.title} - ${message.notification?.body}');
-        _handleIncomingMessage(message);
+        debugPrint(
+          'Foreground push notification received: ${message.notification?.title} - ${message.notification?.body}',
+        );
+        _handleIncomingMessage(message, openedFromTray: false);
       });
 
       // Handle notification taps when app is in background but not terminated
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
         debugPrint('Notification opened app: ${message.messageId}');
-        _handleIncomingMessage(message);
+        _handleIncomingMessage(message, openedFromTray: true);
       });
 
       // Check if the app was opened by a notification tap from terminated state
       messaging.getInitialMessage().then((RemoteMessage? message) {
         if (message != null) {
-          debugPrint('App opened from terminated state via notification: ${message.messageId}');
-          _handleIncomingMessage(message);
+          debugPrint(
+            'App opened from terminated state via notification: ${message.messageId}',
+          );
+          _handleIncomingMessage(message, openedFromTray: true);
         }
       });
 
       // Handle background/terminated state messages
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
 
       // Listen to token refresh and update backend
       FirebaseMessaging.instance.onTokenRefresh.listen((token) {
@@ -67,23 +79,85 @@ class FirebaseNotificationHelper {
     }
   }
 
-  static void _handleIncomingMessage(RemoteMessage message) {
-    final title = message.notification?.title ?? message.data['title'] ?? 'Notificación';
-    final body = message.notification?.body ?? message.data['body'] ?? 'Tienes un nuevo mensaje';
-    LocalNotificationService.saveNotification(title, body);
+  static void _handleIncomingMessage(
+    RemoteMessage message, {
+    bool openedFromTray = false,
+  }) {
+    final title =
+        message.notification?.title ?? message.data['title'] ?? 'Notificación';
+    final body =
+        message.notification?.body ??
+        message.data['body'] ??
+        'Tienes un nuevo mensaje';
+    LocalNotificationService.saveNotification(title, body, data: message.data);
 
     try {
       di.sl<RequestsBloc>().add(RefreshCurrentRequests());
+
+      if (openedFromTray) {
+        final event = message.data['event'];
+
+        if (event == 'job_proposal_rejected_taken') {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            final context = navigatorKey.currentContext;
+            if (context != null) {
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: Text(title),
+                  content: Text(body),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Entendido'),
+                    ),
+                  ],
+                ),
+              );
+            }
+          });
+        }
+
+        if (event == 'chat_message') {
+          final roomId = message.data['room_id']?.toString() ?? '';
+          final jobIdStr = message.data['job_id']?.toString();
+          final jobId = jobIdStr != null && jobIdStr.isNotEmpty
+              ? int.tryParse(jobIdStr)
+              : null;
+
+          if (roomId.isNotEmpty) {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              final navigator = navigatorKey.currentState;
+              if (navigator != null) {
+                navigator.push(
+                  MaterialPageRoute(
+                    builder: (_) => ChatPage(roomId: roomId, jobId: jobId),
+                  ),
+                );
+              }
+            });
+          }
+        }
+      }
     } catch (_) {}
   }
 
-  static Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  static Future<void> _firebaseMessagingBackgroundHandler(
+    RemoteMessage message,
+  ) async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
     debugPrint('Background message received: ${message.messageId}');
-    final title = message.notification?.title ?? message.data['title'] ?? 'Notificación';
-    final body = message.notification?.body ?? message.data['body'] ?? 'Tienes un nuevo mensaje';
+    final title =
+        message.notification?.title ?? message.data['title'] ?? 'Notificación';
+    final body =
+        message.notification?.body ??
+        message.data['body'] ??
+        'Tienes un nuevo mensaje';
     await LocalNotificationService.saveNotification(title, body);
   }
 
@@ -101,9 +175,13 @@ class FirebaseNotificationHelper {
         }
 
         if (apnsToken != null) {
-          debugPrint('APNS token obtained: $apnsToken. Proceeding to fetch FCM token.');
+          debugPrint(
+            'APNS token obtained: $apnsToken. Proceeding to fetch FCM token.',
+          );
         } else {
-          debugPrint('APNS token check timed out, proceeding to fetch FCM token anyway.');
+          debugPrint(
+            'APNS token check timed out, proceeding to fetch FCM token anyway.',
+          );
         }
       }
 
@@ -142,7 +220,9 @@ class FirebaseNotificationHelper {
 
       final result = await client.mutate(options);
       if (result.hasException) {
-        debugPrint('Failed to delete FCM token: ${result.exception.toString()}');
+        debugPrint(
+          'Failed to delete FCM token: ${result.exception.toString()}',
+        );
       } else {
         debugPrint('FCM Token deleted successfully from backend.');
       }
@@ -170,7 +250,9 @@ class FirebaseNotificationHelper {
 
       final result = await client.mutate(options);
       if (result.hasException) {
-        debugPrint('Failed to upload FCM token: ${result.exception.toString()}');
+        debugPrint(
+          'Failed to upload FCM token: ${result.exception.toString()}',
+        );
       } else {
         debugPrint('FCM Token uploaded successfully.');
       }
@@ -179,4 +261,3 @@ class FirebaseNotificationHelper {
     }
   }
 }
-

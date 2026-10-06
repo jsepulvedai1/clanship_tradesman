@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:clanship_mobile_tradesman/core/config/shorebird_update_manager.dart';
 import 'package:flutter/material.dart';
 // import 'main_dev.dart' as dev;
 import 'main_prod.dart' as dev;
@@ -33,8 +34,6 @@ class AntiGravityApp extends StatefulWidget {
   @override
   State<AntiGravityApp> createState() => _AntiGravityAppState();
 }
-
-import 'package:clanship_mobile_tradesman/core/config/shorebird_update_manager.dart';
 
 class _AntiGravityAppState extends State<AntiGravityApp> with WidgetsBindingObserver {
   StreamSubscription<String>? _sessionSub;

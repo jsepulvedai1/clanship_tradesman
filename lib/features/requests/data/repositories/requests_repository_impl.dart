@@ -98,6 +98,7 @@ class RequestsRepositoryImpl implements RequestsRepository {
         isUrgent: false,
         rating: model.rating,
         reviewComment: model.reviewComment,
+        createdAt: model.createdAt,
       );
     }).toList();
   }
@@ -139,6 +140,21 @@ class RequestsRepositoryImpl implements RequestsRepository {
       jobId,
       newStatus,
       cancellationReason: cancellationReason,
+    );
+  }
+
+  @override
+  Future<void> completeJob(
+    int jobId, {
+    double? finalPrice,
+    String? tradesmanComments,
+    List<String>? finishedPhotosBase64,
+  }) async {
+    await remoteDataSource.completeJob(
+      jobId,
+      finalPrice: finalPrice,
+      tradesmanComments: tradesmanComments,
+      finishedPhotosBase64: finishedPhotosBase64,
     );
   }
 

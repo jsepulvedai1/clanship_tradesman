@@ -1,3 +1,4 @@
+import 'package:clanship_mobile_tradesman/features/home/presentation/pages/notifications_page.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -10,7 +11,7 @@ import 'package:clanship_mobile_tradesman/core/di/injection.dart' as di;
 import 'package:clanship_mobile_tradesman/core/theme/app_colors.dart';
 import 'package:clanship_mobile_tradesman/features/home/presentation/bloc/home_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/home/presentation/widgets/home_app_bar.dart';
-import 'package:clanship_mobile_tradesman/features/home/presentation/widgets/stats_banner.dart';
+import 'package:clanship_mobile_tradesman/features/home/presentation/widgets/home_banner_carousel.dart';
 import 'package:clanship_mobile_tradesman/features/home/presentation/widgets/stats_grid.dart';
 import 'package:clanship_mobile_tradesman/features/home/presentation/widgets/availability_widget.dart';
 import 'package:clanship_mobile_tradesman/features/navigation/presentation/bloc/navigation_bloc.dart';
@@ -27,6 +28,7 @@ import 'package:clanship_mobile_tradesman/core/network/firebase_notification_hel
 import 'package:clanship_mobile_tradesman/core/network/local_notification_service.dart';
 import '../../../../core/widgets/skeleton_box.dart';
 import 'package:clanship_mobile_tradesman/core/widgets/address_picker_page.dart';
+import 'package:clanship_mobile_tradesman/features/profile/presentation/widgets/service_area_widget.dart';
 import 'package:clanship_mobile_tradesman/features/profile/presentation/pages/rejection_review_page.dart';
 import 'package:clanship_mobile_tradesman/core/utils/tutorial_keys.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
@@ -417,9 +419,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     child: ListTile(
                       onTap: () {
-                        context.read<NavigationBloc>().add(
-                          const TabChanged(1, subIndex: 0),
-                        );
+                        _showLocalNotificationsBottomSheet();
                       },
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -483,149 +483,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showLocalNotificationsBottomSheet() {
-    final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
-              ),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        l10n.homeNotificationsTitle,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                          await LocalNotificationService.clearAll();
-                          await _loadLocalNotifications();
-                          setSheetState(() {});
-                        },
-                        child: Text(
-                          l10n.homeClearAllNotifications,
-                          style: TextStyle(
-                            color: AppColors.primaryBlue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (_localNotifications.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 40),
-                      child: Center(
-                        child: Text(
-                          l10n.homeNoNewNotifications,
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                      ),
-                    )
-                  else
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height * 0.5,
-                      ),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: _localNotifications.length,
-                        itemBuilder: (context, index) {
-                          final notif = _localNotifications[index];
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryBlue.withValues(
-                                alpha: 0.05,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: AppColors.primaryBlue.withValues(
-                                  alpha: 0.1,
-                                ),
-                                width: 1,
-                              ),
-                            ),
-                            child: ListTile(
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                context.read<NavigationBloc>().add(
-                                  const TabChanged(1, subIndex: 0),
-                                );
-                              },
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 4,
-                              ),
-                              leading: CircleAvatar(
-                                backgroundColor: AppColors.primaryBlue
-                                    .withValues(alpha: 0.1),
-                                child: Icon(
-                                  Icons.notifications_active_rounded,
-                                  color: AppColors.primaryBlue,
-                                  size: 20,
-                                ),
-                              ),
-                              title: Text(
-                                notif.title,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              subtitle: Text(
-                                notif.body,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurface
-                                      .withValues(alpha: 0.7),
-                                  fontSize: 12,
-                                ),
-                              ),
-                              trailing: IconButton(
-                                icon: Icon(
-                                  Icons.close_rounded,
-                                  color: Theme.of(context).colorScheme.onSurface
-                                      .withValues(alpha: 0.4),
-                                  size: 20,
-                                ),
-                                onPressed: () async {
-                                  await LocalNotificationService.deleteNotification(
-                                    notif.id,
-                                  );
-                                  await _loadLocalNotifications();
-                                  setSheetState(() {});
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const NotificationsPage()),
+    ).then((_) {
+      _loadLocalNotifications();
+    });
   }
 
   @override
@@ -641,9 +504,12 @@ class _HomePageState extends State<HomePage> {
         body: BlocListener<NavigationBloc, NavigationState>(
           listener: (context, navState) {
             if (navState.currentIndex == 0) {
+              context.read<HomeBloc>().add(LoadUserData());
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _checkAndShowTutorial();
               });
+            } else if (navState.currentIndex == 2) {
+              context.read<HomeBloc>().add(MarkOpportunitiesAsSeen());
             }
           },
           child: BlocConsumer<HomeBloc, HomeState>(
@@ -685,15 +551,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     child: Column(
                       children: [
-                        StatsBanner(
-                          rating: state.user.rating,
-                          reviewsCount: state.user.reviewsCount,
-                          onServicesTap: () {
-                            context.read<NavigationBloc>().add(
-                              const TabChanged(3, scrollToServices: false),
-                            );
-                          },
-                        ),
+                        const HomeBannerCarousel(),
                         SizedBox(height: spacing),
                         _buildNotificationsSection(spacing),
                         StatsGrid(
@@ -701,16 +559,17 @@ class _HomePageState extends State<HomePage> {
                           completed: state.user.completedJobs,
                           rejected: state.user.rejectedJobs,
                           scheduled: state.user.scheduledJobs,
-                          hasUnread: state.recentRequests.any(
+                          unreadActiveCount: state.recentRequests.where(
                             (r) => !r.isRead && r.status == 'REQUESTED',
-                          ),
-                          hasScheduledUnread: state.recentRequests.any(
+                          ).length,
+                          unreadScheduledCount: state.recentRequests.where(
                             (r) =>
                                 !r.isRead &&
                                 (r.status == 'AGREED' ||
                                     r.status == 'SCHEDULED' ||
                                     r.status == 'IN_VISIT'),
-                          ),
+                          ).length,
+                          openOpportunitiesCount: state.openOpportunitiesCount,
                           onActiveTap: () {
                             context.read<NavigationBloc>().add(
                               const TabChanged(1, subIndex: 0),
@@ -737,6 +596,12 @@ class _HomePageState extends State<HomePage> {
                                 builder: (context) =>
                                     const RejectedRequestsPage(),
                               ),
+                            );
+                          },
+                          onCotizacionesTap: () {
+                            context.read<HomeBloc>().add(MarkOpportunitiesAsSeen());
+                            context.read<NavigationBloc>().add(
+                              const TabChanged(2),
                             );
                           },
                         ),
@@ -768,9 +633,12 @@ class _HomePageState extends State<HomePage> {
                         SizedBox(height: spacing),
 
                         SizedBox(height: spacing),
-                        _LocationWidget(
-                          key: TutorialKeys.homeLocationKey,
-                          user: state.user,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: ServiceAreaWidget(
+                            key: TutorialKeys.homeLocationKey,
+                            user: state.user,
+                          ),
                         ),
                         SizedBox(height: spacing),
                         // RecentRequestsWidget(
@@ -961,430 +829,4 @@ class _AppBarLoaderState extends State<_AppBarLoader> {
   }
 }
 
-class _LocationWidget extends StatefulWidget {
-  final dynamic user;
 
-  const _LocationWidget({super.key, required this.user});
-
-  @override
-  State<_LocationWidget> createState() => _LocationWidgetState();
-}
-
-class _LocationWidgetState extends State<_LocationWidget> {
-  bool _isLoading = false;
-
-  void _showError(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.errorRed,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _showSuccess(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.successGreen,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  Future<void> _updateLocationWithGPS(
-    BuildContext context,
-    HomeBloc homeBloc,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        throw l10n.homeGpsDisabledError;
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw l10n.homeGpsPermissionDenied;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        if (mounted) {
-          _showPermissionSettingsDialog(context);
-        }
-        return;
-      }
-
-      Position? position;
-      try {
-        position = await Geolocator.getLastKnownPosition();
-      } catch (_) {}
-
-      if (position == null) {
-        try {
-          position =
-              await Geolocator.getCurrentPosition(
-                desiredAccuracy: LocationAccuracy.low,
-              ).timeout(
-                const Duration(seconds: 5),
-                onTimeout: () {
-                  throw 'Location timeout';
-                },
-              );
-        } catch (_) {}
-      }
-
-      if (position == null) {
-        throw l10n.homeGpsLocationFetchError;
-      }
-
-      final profileRepo = di.sl<ProfileRepository>();
-      final result = await profileRepo.updateProfessionalProfile(
-        address: l10n.homeGpsCurrentLocationAddress,
-        latitude: position.latitude,
-        longitude: position.longitude,
-      );
-
-      result.fold((failure) => _showError(failure.message), (_) {
-        homeBloc.add(LoadUserData());
-        _showSuccess(l10n.homeGpsUpdateSuccess);
-      });
-    } catch (e) {
-      _showError(e is String ? e : l10n.homeGenericError);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  void _showPermissionSettingsDialog(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          l10n.homeGpsPermissionDenied,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          l10n.homeGpsPermissionDeniedPermanent,
-          style: const TextStyle(fontSize: 14, height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(
-              l10n.requestCancel,
-              style: const TextStyle(color: Colors.grey),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0D2B45),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              Geolocator.openAppSettings();
-            },
-            child: const Text('Abrir Ajustes'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openAddressPicker(
-    BuildContext context,
-    HomeBloc homeBloc,
-  ) async {
-    final l10n = AppLocalizations.of(context)!;
-    final result = await Navigator.push<Map<String, dynamic>?>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddressPickerPage(
-          initialAddress:
-              widget.user.address == l10n.homeGpsCurrentLocationAddress
-              ? ''
-              : widget.user.address,
-        ),
-      ),
-    );
-    if (result != null && mounted) {
-      final address = result['address'] as String;
-      final lat = result['latitude'] as double;
-      final lng = result['longitude'] as double;
-      _updateLocationManual(context, homeBloc, address, lat, lng);
-    }
-  }
-
-  Future<void> _updateLocationManual(
-    BuildContext context,
-    HomeBloc homeBloc,
-    String address,
-    double latitude,
-    double longitude,
-  ) async {
-    if (address.trim().isEmpty) return;
-
-    final l10n = AppLocalizations.of(context)!;
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final profileRepo = di.sl<ProfileRepository>();
-      final result = await profileRepo.updateProfessionalProfile(
-        address: address.trim(),
-        latitude: latitude,
-        longitude: longitude,
-      );
-
-      result.fold((failure) => _showError(failure.message), (_) {
-        homeBloc.add(LoadUserData());
-        _showSuccess(l10n.homeFixAddressSuccess);
-      });
-    } catch (e) {
-      _showError(l10n.homeGenericError);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final homeBloc = context.read<HomeBloc>();
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final double screenHeight = MediaQuery.of(context).size.height;
-    final bool isSmallScreen = screenHeight < 750;
-    final String currentAddress =
-        (widget.user.address != null && widget.user.address!.trim().isNotEmpty)
-        ? widget.user.address!.trim()
-        : l10n.homeNoAddressConfigured;
-    final hasCoordinates =
-        widget.user.latitude != null && widget.user.longitude != null;
-
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: isSmallScreen ? 12 : 16),
-      padding: EdgeInsets.all(isSmallScreen ? 12 : 18),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[900] : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              SvgPicture.asset(
-                'assets/icon/icons_ F28C28/map-point.svg',
-                width: isSmallScreen ? 20 : 24,
-                height: isSmallScreen ? 20 : 24,
-                colorFilter: const ColorFilter.mode(
-                  Color(0xFF0D2B45),
-                  BlendMode.srcIn,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  l10n.homeServiceAreaTitle,
-                  style: TextStyle(
-                    fontSize: isSmallScreen ? 14 : 16,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF2E3135),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(
-                  Icons.info_outline_rounded,
-                  color: Color(0xFF0D2B45),
-                  size: 20,
-                ),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      title: Row(
-                        children: [
-                          const Icon(
-                            Icons.map_rounded,
-                            color: Color(0xFF0D2B45),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            l10n.homeServiceAreaInfoTitle,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.homeServiceAreaInfoGps,
-                            style: const TextStyle(fontSize: 13, height: 1.4),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            l10n.homeServiceAreaInfoPin,
-                            style: const TextStyle(fontSize: 13, height: 1.4),
-                          ),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(l10n.commonUnderstood),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-          SizedBox(height: isSmallScreen ? 8 : 14),
-          Text(
-            currentAddress,
-            style: TextStyle(
-              fontSize: isSmallScreen ? 12 : 14,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF2E3135),
-            ),
-          ),
-          if (hasCoordinates) ...[
-            const SizedBox(height: 4),
-            Text(
-              '${l10n.homeCoordinatesLabel}: ${widget.user.latitude.toStringAsFixed(5)}, ${widget.user.longitude.toStringAsFixed(5)}',
-              style: TextStyle(
-                fontSize: isSmallScreen ? 10 : 11,
-                color: Colors.grey[600],
-                fontFamily: 'monospace',
-              ),
-            ),
-          ],
-          SizedBox(height: isSmallScreen ? 12 : 18),
-          if (_isLoading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: CircularProgressIndicator(),
-              ),
-            )
-          else
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _updateLocationWithGPS(context, homeBloc),
-                    icon: SvgPicture.asset(
-                      'assets/icon/icons_ F28C28/dialog.svg',
-                      width: isSmallScreen ? 14 : 16,
-                      height: isSmallScreen ? 14 : 16,
-                      colorFilter: const ColorFilter.mode(
-                        Colors.white,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    label: Text(
-                      l10n.homeGpsActualBtn,
-                      style: TextStyle(
-                        fontSize: isSmallScreen ? 11 : 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0D2B45),
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        vertical: isSmallScreen ? 10 : 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: isSmallScreen ? 8 : 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _openAddressPicker(context, homeBloc),
-                    icon: SvgPicture.asset(
-                      'assets/icon/icons_ F28C28/dialog.svg',
-                      width: isSmallScreen ? 14 : 16,
-                      height: isSmallScreen ? 14 : 16,
-                      colorFilter: const ColorFilter.mode(
-                        Colors.white,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    label: Text(
-                      l10n.homeFixAddressBtn,
-                      style: TextStyle(
-                        fontSize: isSmallScreen ? 11 : 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0B6E4F),
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        vertical: isSmallScreen ? 10 : 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          // Switch.adaptive(
-          //   value: isUrgencyModeActive,
-          //   onChanged: onToggleUrgencyMode,
-          //   activeColor: urgencyColor,
-          //   activeTrackColor: urgencyColor.withValues(alpha: 0.3),
-          // ),
-        ],
-      ),
-    );
-  }
-}

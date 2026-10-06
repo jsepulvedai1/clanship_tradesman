@@ -58,15 +58,19 @@ class _MainShellPageState extends State<MainShellPage> {
             eventType == 'job_created' ||
             eventType == 'job_updated' ||
             eventType == 'job_status_changed' ||
-            eventType == 'job_cancelled') {
+            eventType == 'job_cancelled' ||
+            eventType == 'job_proposal_rejected_taken') {
           final l10n = AppLocalizations.of(context)!;
           final String title = eventType == 'job_created'
               ? l10n.homeNotifNewRequest
               : (eventType == 'job_cancelled'
-                  ? 'Trabajo Cancelado/Rechazado'
-                  : (eventType == 'job_updated' || eventType == 'job_status_changed'
-                      ? l10n.homeNotifJobUpdated
-                      : l10n.homeNotifNewMessage));
+                    ? 'Trabajo Cancelado/Rechazado'
+                    : (eventType == 'job_proposal_rejected_taken'
+                          ? 'Cotización no aceptada'
+                          : (eventType == 'job_updated' ||
+                                    eventType == 'job_status_changed'
+                                ? l10n.homeNotifJobUpdated
+                                : l10n.homeNotifNewMessage)));
           final String msgText = message.isNotEmpty
               ? message
               : l10n.homeNotifDefaultBody;
@@ -74,6 +78,27 @@ class _MainShellPageState extends State<MainShellPage> {
           debugPrint(
             'Saved local notification for event $rawEvent: $title - $msgText',
           );
+
+          if (eventType == 'job_proposal_rejected_taken') {
+            if (mounted) {
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: Text(title),
+                  content: Text(msgText),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Entendido'),
+                    ),
+                  ],
+                ),
+              );
+            }
+          }
         }
 
         if (eventType == 'profile_validated' ||
@@ -136,7 +161,9 @@ class _MainShellPageState extends State<MainShellPage> {
       barrierDismissible: true,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Text('Plan Inicial Finalizado'),
           content: const Text(
             'Has alcanzado el límite de trabajos para tu plan inicial. Puedes revisar los detalles y beneficios de los planes disponibles.',
@@ -220,14 +247,15 @@ class _MainShellPageState extends State<MainShellPage> {
             ),
             bottomNavigationBar: BlocBuilder<RequestsBloc, RequestsState>(
               builder: (context, requestsState) {
-                final bool hasUnread =
-                    requestsState is RequestsLoaded &&
-                    requestsState.requests.any(
-                      (r) => !r.isRead || r.hasUnreadMessages,
-                    );
+                int unreadCount = 0;
+                if (requestsState is RequestsLoaded) {
+                  unreadCount = requestsState.requests
+                      .where((r) => !r.isRead || r.hasUnreadMessages)
+                      .length;
+                }
                 return _PremiumBottomNavBar(
                   currentIndex: state.currentIndex,
-                  hasUnreadRequests: hasUnread,
+                  unreadRequestsCount: unreadCount,
                   onTap: (index) {
                     context.read<NavigationBloc>().add(TabChanged(index));
                   },
@@ -244,12 +272,12 @@ class _MainShellPageState extends State<MainShellPage> {
 class _PremiumBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
-  final bool hasUnreadRequests;
+  final int unreadRequestsCount;
 
   const _PremiumBottomNavBar({
     required this.currentIndex,
     required this.onTap,
-    required this.hasUnreadRequests,
+    required this.unreadRequestsCount,
   });
 
   @override
@@ -276,7 +304,7 @@ class _PremiumBottomNavBar extends StatelessWidget {
         activeIcon: Icons.assignment_rounded,
         inactiveIcon: Icons.assignment_outlined,
         label: l10n.navRequests,
-        showBadge: hasUnreadRequests,
+        badgeCount: unreadRequestsCount,
       ),
       _NavBarItemData(
         activeIcon: Icons.campaign_rounded,
@@ -316,14 +344,24 @@ class _PremiumBottomNavBar extends StatelessWidget {
         children: List.generate(items.length, (index) {
           final item = items[index];
           final bool isActive = currentIndex == index;
-          
+
           Key? itemKey;
           switch (index) {
-            case 0: itemKey = TutorialKeys.navInicioKey; break;
-            case 1: itemKey = TutorialKeys.navSolicitudesKey; break;
-            case 2: itemKey = TutorialKeys.navBuscaKey; break;
-            case 3: itemKey = TutorialKeys.navProfileKey; break;
-            case 4: itemKey = TutorialKeys.navAjustesKey; break;
+            case 0:
+              itemKey = TutorialKeys.navInicioKey;
+              break;
+            case 1:
+              itemKey = TutorialKeys.navSolicitudesKey;
+              break;
+            case 2:
+              itemKey = TutorialKeys.navBuscaKey;
+              break;
+            case 3:
+              itemKey = TutorialKeys.navProfileKey;
+              break;
+            case 4:
+              itemKey = TutorialKeys.navAjustesKey;
+              break;
           }
 
           return Expanded(
@@ -335,7 +373,10 @@ class _PremiumBottomNavBar extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Badge(
-                    isLabelVisible: item.showBadge,
+                    isLabelVisible: item.badgeCount > 0,
+                    label: item.badgeCount > 0
+                        ? Text('${item.badgeCount}')
+                        : null,
                     backgroundColor: const Color(0xFFEF4444),
                     child: Icon(
                       isActive ? item.activeIcon : item.inactiveIcon,
@@ -376,12 +417,12 @@ class _NavBarItemData {
   final IconData activeIcon;
   final IconData inactiveIcon;
   final String label;
-  final bool showBadge;
+  final int badgeCount;
 
   const _NavBarItemData({
     required this.activeIcon,
     required this.inactiveIcon,
     required this.label,
-    this.showBadge = false,
+    this.badgeCount = 0,
   });
 }

@@ -18,6 +18,7 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
 
   StreamSubscription? _messagesSubscription;
   StreamSubscription? _jobStatusSubscription;
+  bool _isSendingAttachment = false;
 
   ChatMessagesBloc({
     required this.getChatHistory,
@@ -44,7 +45,7 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
       // Sort history to show older messages first
       history.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-      emit(ChatMessagesLoaded(history));
+      emit(ChatMessagesLoaded(history, isSendingAttachment: _isSendingAttachment));
 
       // 2. Subscribe to WebSocket Stream for messages
       _messagesSubscription?.cancel();
@@ -100,6 +101,7 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
           updatedMessages,
           jobStatus: newStatus,
           cancellationReason: currentState.cancellationReason,
+          isSendingAttachment: _isSendingAttachment,
         ));
       }
     }
@@ -115,6 +117,7 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
         currentState.messages,
         jobStatus: event.newStatus,
         cancellationReason: event.cancellationReason,
+        isSendingAttachment: _isSendingAttachment,
       ));
     }
   }
@@ -123,6 +126,16 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
     SendMessage event,
     Emitter<ChatMessagesState> emit,
   ) async {
+    if (state is ChatMessagesLoaded && event.fileBase64 != null) {
+      _isSendingAttachment = true;
+      final currentState = state as ChatMessagesLoaded;
+      emit(ChatMessagesLoaded(
+        currentState.messages,
+        jobStatus: currentState.jobStatus,
+        cancellationReason: currentState.cancellationReason,
+        isSendingAttachment: true,
+      ));
+    }
     try {
       await sendChatMessage(
         event.roomId,
@@ -133,6 +146,17 @@ class ChatMessagesBloc extends Bloc<ChatMessagesEvent, ChatMessagesState> {
       );
     } catch (e) {
       debugPrint('Error sending message: $e');
+    } finally {
+      if (state is ChatMessagesLoaded && event.fileBase64 != null) {
+        _isSendingAttachment = false;
+        final currentState = state as ChatMessagesLoaded;
+        emit(ChatMessagesLoaded(
+          currentState.messages,
+          jobStatus: currentState.jobStatus,
+          cancellationReason: currentState.cancellationReason,
+          isSendingAttachment: false,
+        ));
+      }
     }
   }
 

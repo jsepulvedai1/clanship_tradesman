@@ -353,7 +353,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navRequests => 'Demandes';
 
   @override
-  String get navSearch => 'Recherches';
+  String get navSearch => 'Devis';
 
   @override
   String get navProfile => 'Profil';

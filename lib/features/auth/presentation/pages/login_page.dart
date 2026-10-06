@@ -1,6 +1,7 @@
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_event.dart';
 import 'package:clanship_mobile_tradesman/features/auth/presentation/bloc/auth_state.dart';
+import 'package:clanship_mobile_tradesman/core/config/shorebird_update_manager.dart';
 import 'package:clanship_mobile_tradesman/core/utils/lower_case_text_formatter.dart';
 import 'package:clanship_mobile_tradesman/core/theme/bloc/language_bloc.dart';
 import 'package:clanship_mobile_tradesman/features/navigation/presentation/pages/main_shell_page.dart';
@@ -611,6 +612,16 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ],
           ),
+        ),
+        const SizedBox(height: 12),
+        // BOTÓN TEMPORAL DE PRUEBA SHOREBIRD
+        TextButton.icon(
+          icon: const Icon(Icons.bug_report, size: 16),
+          label: const Text('PROBAR POPUP SHOREBIRD'),
+          style: TextButton.styleFrom(foregroundColor: Colors.red),
+          onPressed: () {
+            ShorebirdUpdateManager.showTestUpdateDialog(context);
+          },
         ),
       ],
     );

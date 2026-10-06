@@ -13,6 +13,26 @@ class ActiveRequestItem extends StatelessWidget {
     required this.onTap,
   });
 
+  String _formatDateOnly(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '';
+    try {
+      final date = DateTime.parse(dateStr);
+      final months = [
+        'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+        'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+      ];
+      return '${date.day.toString().padLeft(2, '0')} de ${months[date.month - 1]} de ${date.year}';
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  String _formatTimeOnly(String? timeStr) {
+    if (timeStr == null || timeStr.isEmpty) return '';
+    final formattedTime = timeStr.length >= 5 ? timeStr.substring(0, 5) : timeStr;
+    return '$formattedTime hrs';
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isUnread = !request.isRead || request.hasUnreadMessages;
@@ -26,6 +46,9 @@ class ActiveRequestItem extends StatelessWidget {
         request.status == 'SCHEDULED' ||
         request.status == 'AGREED' ||
         request.status == 'IN_VISIT';
+
+    final String displayDate = _formatDateOnly(request.scheduledDate);
+    final String displayTime = _formatTimeOnly(request.scheduledTime);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -252,28 +275,60 @@ class ActiveRequestItem extends StatelessWidget {
                     if (request.scheduledDate != null &&
                         request.scheduledDate!.isNotEmpty) ...[
                       Expanded(
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.calendar_today_rounded,
-                              size: 14,
-                              color: AppColors.primaryBlue,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                '${request.scheduledDate} ${request.scheduledTime ?? ''}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark
-                                      ? Colors.white70
-                                      : Colors.black87,
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: 14,
+                                  color: AppColors.primaryBlue,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    displayDate,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.black87,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
+                            if (displayTime.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.access_time_rounded,
+                                    size: 14,
+                                    color: AppColors.primaryBlue,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      displayTime,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: isDark
+                                            ? Colors.white70
+                                            : Colors.black87,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ),

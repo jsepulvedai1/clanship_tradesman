@@ -15,6 +15,13 @@ abstract class RequestsRemoteDataSource {
     required String scheduledDate,
     required String scheduledTime,
     String? message,
+    List<String>? attachmentsBase64,
+  });
+  Future<void> completeJob(
+    int jobId, {
+    double? finalPrice,
+    String? tradesmanComments,
+    List<String>? finishedPhotosBase64,
   });
 }
 
@@ -44,6 +51,39 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
         'jobId': jobId,
         'newStatus': newStatus,
         'cancellationReason': cancellationReason,
+      },
+      fetchPolicy: FetchPolicy.networkOnly,
+    );
+
+    final QueryResult result = await client.mutate(options);
+
+    if (result.hasException) {
+      throw Exception(result.exception.toString());
+    }
+  }
+
+  @override
+  Future<void> completeJob(
+    int jobId, {
+    double? finalPrice,
+    String? tradesmanComments,
+    List<String>? finishedPhotosBase64,
+  }) async {
+    const String mutation = r'''
+      mutation CompleteJob($jobId: Int!, $finalPrice: Decimal, $tradesmanComments: String, $finishedPhotosBase64: [String]) {
+        completeJob(jobId: $jobId, finalPrice: $finalPrice, tradesmanComments: $tradesmanComments, finishedPhotosBase64: $finishedPhotosBase64) {
+          success
+        }
+      }
+    ''';
+
+    final MutationOptions options = MutationOptions(
+      document: gql(mutation),
+      variables: {
+        'jobId': jobId,
+        'finalPrice': finalPrice,
+        'tradesmanComments': tradesmanComments,
+        if (finishedPhotosBase64 != null) 'finishedPhotosBase64': finishedPhotosBase64,
       },
       fetchPolicy: FetchPolicy.networkOnly,
     );
@@ -277,6 +317,7 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
           description
           address
           budget
+          desiredDate
           isUrgent
           status
           createdAt
@@ -317,6 +358,7 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
     required String scheduledDate,
     required String scheduledTime,
     String? message,
+    List<String>? attachmentsBase64,
   }) async {
     const String mutation = r'''
       mutation SubmitJobProposal(
@@ -324,14 +366,16 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
         $estimatedPrice: Float!,
         $scheduledDate: Date!,
         $scheduledTime: Time!,
-        $message: String
+        $message: String,
+        $attachmentsBase64: [String]
       ) {
         submitJobProposal(
           publicRequestId: $publicRequestId,
           estimatedPrice: $estimatedPrice,
           scheduledDate: $scheduledDate,
           scheduledTime: $scheduledTime,
-          message: $message
+          message: $message,
+          attachmentsBase64: $attachmentsBase64
         ) {
           success
           proposal {
@@ -350,6 +394,7 @@ class RequestsRemoteDataSourceImpl implements RequestsRemoteDataSource {
         'scheduledDate': scheduledDate,
         'scheduledTime': scheduledTime,
         'message': message,
+        if (attachmentsBase64 != null) 'attachmentsBase64': attachmentsBase64,
       },
     );
 

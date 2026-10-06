@@ -352,7 +352,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navRequests => 'Requests';
 
   @override
-  String get navSearch => 'Search';
+  String get navSearch => 'Quotes';
 
   @override
   String get navProfile => 'Profile';

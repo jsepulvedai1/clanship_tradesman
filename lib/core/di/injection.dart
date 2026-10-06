@@ -39,6 +39,8 @@ import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/get_
 import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/update_job_status_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/mark_job_as_read_usecase.dart';
 import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/schedule_job_visit_usecase.dart';
+import 'package:clanship_mobile_tradesman/features/requests/domain/usecases/complete_job_usecase.dart';
+
 import 'package:clanship_mobile_tradesman/features/requests/presentation/bloc/requests_bloc.dart';
 
 import 'package:clanship_mobile_tradesman/features/chat/data/datasources/chat_remote_data_source.dart';
@@ -90,6 +92,8 @@ Future<void> init() async {
       updateJobStatus: sl(),
       markJobAsRead: sl(),
       scheduleJobVisit: sl(),
+      completeJob: sl(),
+
     ),
   );
 
@@ -151,6 +155,8 @@ Future<void> init() async {
   sl.registerLazySingleton(() => UpdateJobStatusUseCase(sl()));
   sl.registerLazySingleton(() => MarkJobAsReadUseCase(sl()));
   sl.registerLazySingleton(() => ScheduleJobVisitUseCase(sl()));
+  sl.registerLazySingleton(() => CompleteJobUseCase(sl()));
+
   sl.registerLazySingleton(() => GetOrCreateChatRoomUseCase(sl()));
   sl.registerLazySingleton(() => GetChatHistoryUseCase(sl()));
   sl.registerLazySingleton(() => StreamChatMessagesUseCase(sl()));

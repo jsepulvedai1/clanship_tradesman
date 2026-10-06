@@ -1,3 +1,4 @@
+import 'package:clanship_mobile_tradesman/features/requests/presentation/pages/complete_job_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -410,23 +411,6 @@ class _ActiveRequestDetailPageState extends State<ActiveRequestDetailPage> {
                   //),
                 ],
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _showScheduleDialog(context, jobIdInt),
-                  icon: const Icon(Icons.calendar_today_rounded),
-                  label: Text(l10n.requestScheduleVisit),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
-              ),
             ],
           ),
         );
@@ -480,6 +464,7 @@ class _ActiveRequestDetailPageState extends State<ActiveRequestDetailPage> {
                   ),
                 ),
               ),
+
             ],
           ),
         );
@@ -534,6 +519,7 @@ class _ActiveRequestDetailPageState extends State<ActiveRequestDetailPage> {
                   ),
                 ),
               ),
+
               const SizedBox(height: 12),
               TextButton(
                 onPressed: () => _showRejectionDialog(context, jobIdInt),
@@ -556,8 +542,14 @@ class _ActiveRequestDetailPageState extends State<ActiveRequestDetailPage> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                context.read<RequestsBloc>().add(
-                  UpdateJobStatusEvent(jobId: jobIdInt, newStatus: 'FINISHED'),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CompleteJobPage(
+                      jobId: jobIdInt,
+                      agreedPrice: widget.request.agreedPrice ?? 0.0,
+                    ),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -580,6 +572,7 @@ class _ActiveRequestDetailPageState extends State<ActiveRequestDetailPage> {
         return const SizedBox();
     }
   }
+
 
   Future<void> _showScheduleDialog(BuildContext context, int jobId) async {
     final l10n = AppLocalizations.of(context)!;

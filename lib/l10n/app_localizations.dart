@@ -763,7 +763,7 @@ abstract class AppLocalizations {
   /// No description provided for @navSearch.
   ///
   /// In en, this message translates to:
-  /// **'Search'**
+  /// **'Quotes'**
   String get navSearch;
 
   /// No description provided for @navProfile.
